@@ -31,6 +31,9 @@ pub enum Command {
     ConfirmAdd {
         only_files: Option<Vec<usize>>,
         folder: Option<String>,
+        /// Where this one goes, which is not always where the next one will.
+        /// `None` keeps the session's folder.
+        destination: Option<String>,
     },
     /// Throw away what `Inspect` found.
     CancelAdd,

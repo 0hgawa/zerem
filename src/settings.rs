@@ -48,6 +48,17 @@ pub struct Settings {
     pub dark: bool,
     pub sort_col: usize,
     pub sort_desc: bool,
+    /// The shelves: a name and where torrents on it are written.
+    ///
+    /// Made by typing a name in the add dialog rather than in a manager of
+    /// their own — see [`zerem_core::category`] for why there is no manager.
+    pub categories: zerem_core::Shelves,
+    /// Which shelf each torrent is on, by infohash.
+    ///
+    /// Here and not in the engine because it is an organising idea, not a
+    /// transfer one: librqbit neither knows nor needs to know. A `BTreeMap` so
+    /// the file is stable between saves and a diff of it says something.
+    pub assigned: std::collections::BTreeMap<String, String>,
     /// Whether the state rail is on screen. Like the column widths, nobody
     /// chooses this in a panel — they arrive at it by using the app.
     pub rail_open: bool,
@@ -97,6 +108,8 @@ impl Default for Settings {
             dark: true,
             sort_col: 0,
             sort_desc: false,
+            categories: zerem_core::Shelves::new(),
+            assigned: std::collections::BTreeMap::new(),
             rail_open: true,
             column_widths: Vec::new(),
             column_visible: Vec::new(),

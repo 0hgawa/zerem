@@ -286,3 +286,10 @@ msgstr "Voltar aos limites cheios"
 
 msgid "Folder"
 msgstr "Pasta"
+
+# Categorias.
+msgid "Categories"
+msgstr "Categorias"
+
+msgid "Category"
+msgstr "Categoria"

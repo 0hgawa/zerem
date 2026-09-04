@@ -181,8 +181,8 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.finish_inspect(source).await;
             Ok(())
         }
-        Command::ConfirmAdd { ref only_files, ref folder } => {
-            session.confirm_add(only_files.clone(), folder.clone()).await
+        Command::ConfirmAdd { ref only_files, ref folder, ref destination } => {
+            session.confirm_add(only_files.clone(), folder.clone(), destination.clone()).await
         }
         Command::CancelAdd => {
             session.cancel_add();

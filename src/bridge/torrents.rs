@@ -78,6 +78,32 @@ pub fn wire(
         }
     });
 
+    wire_rail(ui, state, store, views);
+}
+
+/// The rail: which states and which shelves the view is narrowed to.
+///
+/// Its own function because it is its own question. Everything above acts on a
+/// torrent; these three act on what is being looked at.
+fn wire_rail(
+    ui: &MainWindow,
+    state: &Rc<UiState>,
+    store: &Rc<crate::settings::Store>,
+    views: &Rc<super::Views>,
+) {
+    let list = ui.global::<TorrentList>();
+
+    list.on_show_category({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |name| {
+            let Some(ui) = ui.upgrade() else { return };
+            let chosen = (!name.is_empty()).then(|| name.to_string());
+            state.set_category(chosen, &state.snapshot());
+            super::detail::follow_selection(&ui, &state);
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
     list.on_toggle_rail({
         let (store, ui) = (store.clone(), ui.as_weak());
         move || {
@@ -154,7 +180,7 @@ pub fn wire(
 
     wire_adding(ui, state, views);
     wire_columns(ui, state, store);
-    wire_removing(ui, state, views);
+    wire_removing(ui, state, store, views);
 }
 
 // --- adding ----------------------------------------------------------------
@@ -265,7 +291,12 @@ fn wire_columns(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings
 }
 // --- removing --------------------------------------------------------------
 
-fn wire_removing(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+fn wire_removing(
+    ui: &MainWindow,
+    state: &Rc<UiState>,
+    store: &Rc<crate::settings::Store>,
+    views: &Rc<super::Views>,
+) {
     let list = ui.global::<TorrentList>();
 
     // The toolbar, the context menu and Delete: the selection.
@@ -297,7 +328,7 @@ fn wire_removing(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>)
     });
 
     list.on_confirm_accept({
-        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        let (state, store, ui, views) = (state.clone(), store.clone(), ui.as_weak(), views.clone());
         move || {
             let Some(ui) = ui.upgrade() else { return };
             let list = ui.global::<TorrentList>();
@@ -307,7 +338,12 @@ fn wire_removing(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>)
             let seq = state.snapshot().seq;
             // What the dialog was opened about, not what is selected now — the
             // row button aims at a torrent that may not be selected at all.
-            for id in state.remove_target() {
+            let targets = state.remove_target();
+            // Which shelf a torrent was on outlives the torrent otherwise: the
+            // assignment is keyed by info hash and nothing else would ever ask
+            // about that hash again.
+            state.forget_assigned(&targets, &store);
+            for id in targets {
                 state.engine.send(Command::Remove { id, delete_data });
                 state.expect_remove(id, seq);
             }

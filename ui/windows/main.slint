@@ -336,6 +336,37 @@ export component MainWindow inherits Window {
                             tint: Theme.danger;
                             chosen => { TorrentList.show-state(5); }
                         }
+
+                        // The shelves, under the states and only once there is
+                        // one. An empty heading over an empty list is a
+                        // promise the app has not kept yet.
+                        if TorrentList.categories.length > 0: Rectangle {
+                            height: 22px;
+                            HorizontalLayout {
+                                padding-left: 9px;
+                                VerticalLayout {
+                                    alignment: end;
+                                    Text {
+                                        text: @tr("Categories");
+                                        color: Theme.text-dim;
+                                        font-size: Theme.fs-label;
+                                        font-family: Theme.font;
+                                        font-weight: 600;
+                                    }
+                                }
+                            }
+                        }
+                        for c in TorrentList.categories: RailItem {
+                            label: c.name;
+                            glyph: Lucide.folder-open;
+                            count: c.count;
+                            active: c.active;
+                            tint: Theme.warn;
+                            // Clicking the one already on widens back, which is
+                            // the only way out that does not need a second
+                            // control saying "all".
+                            chosen => { TorrentList.show-category(c.active ? "" : c.name); }
+                        }
                     }
                 }
 

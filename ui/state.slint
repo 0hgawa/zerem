@@ -71,6 +71,13 @@ export struct PeerEntry {
     up: string,
 }
 
+/// One shelf in the rail: what it is called and how many are on it.
+export struct CategoryEntry {
+    name: string,
+    count: string,
+    active: bool,
+}
+
 export struct PendingFileEntry {
     path: string,
     size: string,
@@ -96,6 +103,11 @@ export global AddState {
     /// Whether there is a folder at all — a single-file torrent goes straight
     /// into the destination and has nothing to name.
     in-out property <bool> has-folder;
+    /// The shelf this torrent goes on. Typing a name that is already a shelf
+    /// moves the destination to that shelf's folder; typing a new one makes it
+    /// mean whatever destination is showing.
+    in-out property <string> category;
+    callback category-typed(string);
     /// "Not enough room in this folder — 2.51 GB short", or empty. A warning
     /// and not a refusal: see the dialog for why the Add button stays live.
     in-out property <string> shortfall;
@@ -261,6 +273,10 @@ export global TorrentList {
     in-out property <int> shown;
     /// Whether the rail is on screen. Persisted, like the drawer.
     in-out property <bool> rail-open: true;
+    /// The shelves, with their counts. Built in Rust like every other list.
+    in-out property <[CategoryEntry]> categories;
+    /// Which shelf the view is on, or empty for all of them.
+    in-out property <string> category;
     in-out property <int> sort-col;
     in-out property <bool> sort-desc;
     in-out property <int> selected-count;
@@ -311,6 +327,8 @@ export global TorrentList {
     callback filter-changed(string);
     /// A click in the rail. Answered at once, not on the tick.
     callback show-state(int);
+    /// A click on a shelf. Empty widens back to all of them.
+    callback show-category(string);
     callback toggle-rail();
     /// Everything the view is showing — never a row it is hiding, which would
     /// be a delete acting on something nobody could see.

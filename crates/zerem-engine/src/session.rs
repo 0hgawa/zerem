@@ -320,6 +320,7 @@ impl TorrentSession {
                 self.pending = Some(Pending {
                     source: Arc::from(source),
                     name: if name.is_empty() { Arc::from(source) } else { name },
+                    info_hash: Arc::from(format!("{:?}", listed.info_hash).as_str()),
                     files,
                     fetching: false,
                     error: None,
@@ -344,12 +345,17 @@ impl TorrentSession {
         &mut self,
         only_files: Option<Vec<usize>>,
         folder: Option<String>,
+        destination: Option<String>,
     ) -> anyhow::Result<()> {
         let bytes = self.pending_bytes.take().context("nothing was read to add")?;
         let pending = self.pending.take().context("nothing was read to add")?;
         let source = pending.source.to_string();
         let named = folder.filter(|f| zerem_core::subfolder(f, pending.files.len()).is_some());
-        let folder = self.folder_for(named.as_deref().unwrap_or(&pending.name), pending.files.len());
+        // Where this one goes, which is not always where the next one will: a
+        // shelf has a folder of its own and the session's default is untouched.
+        let root = destination.map_or_else(|| self.output_dir.clone(), PathBuf::from);
+        let sub = zerem_core::subfolder(named.as_deref().unwrap_or(&pending.name), pending.files.len());
+        let folder = sub.map_or_else(|| root.clone(), |name| root.join(name)).to_string_lossy().into_owned();
 
         // From the bytes `inspect` already has, so a magnet is not fetched from
         // the swarm a second time.

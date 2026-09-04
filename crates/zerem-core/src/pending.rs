@@ -25,6 +25,10 @@ pub struct Pending {
     /// can name it if the metadata never arrives.
     pub source: Arc<str>,
     pub name: Arc<str>,
+    /// Lower-case hex, once the metadata has arrived. It is what a torrent is
+    /// called for the rest of its life, and the only key an assignment made
+    /// here can still be found by later.
+    pub info_hash: Arc<str>,
     pub files: Vec<PendingFile>,
     /// Set while a magnet's metadata is still being fetched from the swarm,
     /// which can take a while and has to look like waiting rather than like
@@ -40,6 +44,7 @@ impl Pending {
         Self {
             source: Arc::from(source),
             name: Arc::from(source),
+            info_hash: Arc::from(""),
             files: Vec::new(),
             fetching: true,
             error: None,
@@ -51,6 +56,7 @@ impl Pending {
         Self {
             source: Arc::from(source),
             name: Arc::from(source),
+            info_hash: Arc::from(""),
             files: Vec::new(),
             fetching: false,
             error: Some(Arc::from(error)),
@@ -101,6 +107,7 @@ mod tests {
         Pending {
             source: Arc::from("magnet:?xt=urn:btih:abc"),
             name: Arc::from("Something"),
+            info_hash: Arc::from("abc"),
             files: sizes
                 .iter()
                 .enumerate()

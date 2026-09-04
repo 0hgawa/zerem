@@ -77,6 +77,12 @@ pub struct UiState {
     /// into the text filter: they answer different questions, and one has to
     /// survive the other being typed.
     shown: Cell<Shown>,
+    /// Which shelf the view is narrowed to, and what is on each. Three filters
+    /// now, and they combine — each answers a different question and none of
+    /// them is a substitute for the others.
+    category: RefCell<Option<String>>,
+    assigned: RefCell<HashMap<String, String>>,
+    shelves: RefCell<Vec<String>>,
     /// The row count the cached order was built against.
     ///
     /// Not `order.len()`: with a filter on, the order is shorter than the
@@ -119,6 +125,9 @@ impl UiState {
             order: RefCell::new(Vec::new()),
             filter: RefCell::new(Filter::default()),
             shown: Cell::new(Shown::default()),
+            category: RefCell::new(None),
+            assigned: RefCell::new(HashMap::new()),
+            shelves: RefCell::new(Vec::new()),
             built_for: Cell::new(0),
             selected: RefCell::new(HashSet::new()),
             anchor: Cell::new(0),
@@ -233,6 +242,75 @@ impl UiState {
         selected.retain(|id| visible.contains(id));
     }
 
+    /// Narrow the view to one shelf, or widen it back. `None` is all of them.
+    pub fn set_category(&self, name: Option<String>, snapshot: &Snapshot) {
+        *self.category.borrow_mut() = name;
+        self.rebuild_order(snapshot);
+    }
+
+    #[must_use]
+    pub fn category(&self) -> Option<String> {
+        self.category.borrow().clone()
+    }
+
+    /// Adopt which torrent is on which shelf, and what the shelves are. Held
+    /// here rather than looked up through the settings on every row of every
+    /// tick.
+    pub fn adopt_shelves(&self, settings: &crate::settings::Settings) {
+        let mut mine = self.assigned.borrow_mut();
+        mine.clear();
+        mine.extend(settings.assigned.iter().map(|(k, v)| (k.clone(), v.clone())));
+        *self.shelves.borrow_mut() = settings.categories.keys().cloned().collect();
+    }
+
+    /// Drop the shelf assignments of torrents that are going away.
+    ///
+    /// Kept keyed by info hash, so nothing else in the app would ever ask about
+    /// these again — the entries would sit in the settings file for the life of
+    /// the install, and a torrent re-added later would silently reappear on a
+    /// shelf somebody had removed it from.
+    pub fn forget_assigned(&self, ids: &[TorrentId], store: &std::rc::Rc<crate::settings::Store>) {
+        let snapshot = self.snapshot();
+        let gone: Vec<String> = snapshot
+            .torrents
+            .iter()
+            .filter(|row| ids.contains(&row.id))
+            .map(|row| row.info_hash.to_string())
+            .collect();
+        if gone.is_empty() {
+            return;
+        }
+        let mut mine = self.assigned.borrow_mut();
+        for hash in &gone {
+            mine.remove(hash);
+        }
+        drop(mine);
+        store.update(|s| {
+            for hash in &gone {
+                s.assigned.remove(hash);
+            }
+        });
+    }
+
+    /// Every shelf, in the order the rail draws them.
+    #[must_use]
+    pub fn shelf_names(&self) -> Vec<String> {
+        self.shelves.borrow().clone()
+    }
+
+    /// How many torrents are on each shelf, by folded name.
+    #[must_use]
+    pub fn counts(&self, snapshot: &Snapshot) -> std::collections::HashMap<String, usize> {
+        let assigned = self.assigned.borrow();
+        let mut counts = std::collections::HashMap::new();
+        for row in &snapshot.torrents {
+            if let Some(name) = assigned.get(row.info_hash.as_ref()) {
+                *counts.entry(zerem_core::category::key(name)).or_insert(0) += 1;
+            }
+        }
+        counts
+    }
+
     /// Narrow the view to one state, or widen it back.
     ///
     /// Rebuilt at once for the same reason typing is: a click that waits for
@@ -259,7 +337,7 @@ impl UiState {
     /// plain total and the matched count.
     #[must_use]
     pub fn is_filtering(&self) -> bool {
-        !self.filter.borrow().is_empty() || self.shown.get() != Shown::All
+        !self.filter.borrow().is_empty() || self.shown.get() != Shown::All || self.category.borrow().is_some()
     }
 
     /// Sort everything, then drop what the filter excludes.
@@ -273,6 +351,14 @@ impl UiState {
         let shown = self.shown.get();
         if shown != Shown::All {
             order.retain(|&i| shown.matches(snapshot.torrents[i].state));
+        }
+        if let Some(wanted) = self.category.borrow().as_deref().map(zerem_core::category::key) {
+            let assigned = self.assigned.borrow();
+            order.retain(|&i| {
+                assigned
+                    .get(snapshot.torrents[i].info_hash.as_ref())
+                    .is_some_and(|name| zerem_core::category::key(name) == wanted)
+            });
         }
         let filter = self.filter.borrow();
         if !filter.is_empty() {

@@ -90,7 +90,12 @@ impl Choice {
     }
 }
 
-pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+pub fn wire(
+    ui: &MainWindow,
+    state: &Rc<UiState>,
+    store: &Rc<crate::settings::Store>,
+    views: &Rc<super::Views>,
+) {
     let add = ui.global::<AddState>();
 
     add.on_cancel({
@@ -103,16 +108,42 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
     });
 
     add.on_confirm({
-        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        let (state, store, ui, views) = (state.clone(), store.clone(), ui.as_weak(), views.clone());
         move || {
             let Some(ui) = ui.upgrade() else { return };
-            ui.global::<AddState>().set_open(false);
-            let folder = ui.global::<AddState>().get_folder().trim().to_owned();
+            let add = ui.global::<AddState>();
+            add.set_open(false);
+
+            let folder = add.get_folder().trim().to_owned();
+            let destination = add.get_destination().to_string();
+            let category = add.get_category().trim().to_owned();
+
+            // The whole of how a shelf is made: a name, and wherever this
+            // torrent is going becomes what that name means. Re-typing it later
+            // with a different destination moves the shelf rather than making a
+            // second one — see `zerem_core::category`.
+            if zerem_core::category::is_named(&category) {
+                let hash = state.snapshot().pending.as_ref().map(|p| p.info_hash.to_string());
+                store.update(|s| {
+                    zerem_core::category::remember(&mut s.categories, &category, &destination);
+                    if let Some(hash) = hash.clone().filter(|h| !h.is_empty()) {
+                        let stored = zerem_core::category::canonical(&s.categories, &category)
+                            .unwrap_or(category.as_str())
+                            .to_owned();
+                        s.assigned.insert(hash, stored);
+                    }
+                });
+                state.adopt_shelves(&store.get());
+            }
+
             state.engine.send(Command::ConfirmAdd {
                 only_files: views.add.only_files(),
                 // Sent only when it is a rename. Unchanged, it is the torrent's
                 // own name and the engine derives it anyway.
                 folder: (!folder.is_empty()).then_some(folder),
+                // Where this one goes, which a shelf can make different from
+                // where the next one will.
+                destination: (!destination.is_empty()).then_some(destination),
             });
             super::refresh_now(&ui, &state, &views);
         }
@@ -143,6 +174,20 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
     // Same folder setting the preferences panel edits — changing it here is not
     // a per-torrent destination, it is the destination, chosen at the moment
     // somebody is actually thinking about it.
+    add.on_category_typed({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move |name| {
+            let Some(ui) = ui.upgrade() else { return };
+            // A shelf the app already knows moves the destination to its folder.
+            // One it does not is simply a name for now — it learns the folder
+            // when the torrent is confirmed, from whatever destination is
+            // showing then.
+            if let Some(folder) = zerem_core::category::folder_of(&store.get().categories, &name) {
+                super::add::show_destination(&ui, folder);
+            }
+        }
+    });
+
     add.on_change_destination({
         let ui = ui.as_weak();
         move || {
@@ -168,6 +213,7 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, choice: &Choice) {
         choice.adopt(pending);
         // A different torrent: whatever was typed belonged to the last one.
         add.set_folder(slint::SharedString::default());
+        add.set_category(slint::SharedString::default());
     }
 
     push!(add, get_name, set_name, pending.name.as_ref().into());

@@ -44,7 +44,7 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings::St
     prefs::wire(ui, state, store, views);
     detail::wire(ui, state, store, views);
     menu::wire(ui, state, views);
-    add::wire(ui, state, views);
+    add::wire(ui, state, store, views);
 }
 
 /// Faster than the engine publishes, deliberately.
@@ -118,6 +118,7 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
     push!(list, get_selection_running, set_selection_running, state.model.all_running(&selection));
     push!(list, get_sort_col, set_sort_col, state.sort().col as i32);
     push!(list, get_shown, set_shown, state.shown().index());
+    shelves(ui, state, snapshot);
     push!(list, get_sort_desc, set_sort_desc, state.sort().desc);
     // Looked up fresh every refresh: a re-sort or a removal moves the row, and
     // the arrows have to stay on the torrent rather than on the position.
@@ -181,6 +182,32 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
 
     detail::refresh(ui, snapshot, &views.detail);
     add::refresh(ui, snapshot, &views.add);
+}
+
+/// The shelves in the rail, with how many are on each.
+///
+/// Rebuilt from the snapshot rather than kept in step by hand: a torrent
+/// removed, added or re-assigned all change the counts, and three places
+/// remembering to update one number is three places that will not.
+fn shelves(ui: &MainWindow, state: &UiState, snapshot: &Snapshot) {
+    let counts = state.counts(snapshot);
+    let on = state.category().map(|name| zerem_core::category::key(&name));
+    let rows: Vec<crate::CategoryEntry> = state
+        .shelf_names()
+        .into_iter()
+        .map(|name| {
+            let key = zerem_core::category::key(&name);
+            crate::CategoryEntry {
+                count: counts.get(&key).copied().unwrap_or(0).to_string().into(),
+                active: on.as_deref() == Some(key.as_str()),
+                name: name.into(),
+            }
+        })
+        .collect();
+    let list = ui.global::<TorrentList>();
+    // Replaced whole. It is a handful of rows that change when somebody adds a
+    // torrent, which is not a rate worth diffing for.
+    list.set_categories(slint::ModelRc::new(slint::VecModel::from(rows)));
 }
 
 /// Say that something finished.

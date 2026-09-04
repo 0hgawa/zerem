@@ -113,6 +113,59 @@ export component AddDialog inherits Modal {
                 }
             }
 
+            // A shelf is made by naming one here, and where this torrent goes
+            // becomes what that name means. Typing a name the app already knows
+            // moves the destination to that shelf's folder — which is the whole
+            // feature: nobody navigates to the series folder twice.
+            HorizontalLayout {
+                spacing: 10px;
+                VerticalLayout {
+                    alignment: center;
+                    width: 66px;
+                    Text {
+                        text: @tr("Category");
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                    }
+                }
+                Rectangle {
+                    height: 32px;
+                    border-radius: Theme.radius;
+                    background: shelf-input.has-focus ? Theme.surface-hi : Theme.hover;
+                    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+                    accessible-role: text-input;
+                    accessible-label: @tr("Category");
+                    accessible-value: AddState.category;
+
+                    HorizontalLayout {
+                        padding-left: 9px;
+                        padding-right: 9px;
+                        shelf-input := TextInput {
+                            text <=> AddState.category;
+                            color: Theme.text;
+                            font-size: Theme.fs-body;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                            single-line: true;
+                            edited => { AddState.category-typed(self.text); }
+                        }
+                    }
+
+                    // Empty is a real answer, so it is spelled out rather than
+                    // left as a blank nobody knows is optional.
+                    if AddState.category == "": Text {
+                        x: 9px;
+                        text: @tr("None");
+                        color: Theme.idle;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
             // Directly under the folder it is about, with the Change button that
             // fixes it still on screen above. The Add button stays live on
             // purpose: the volume may be freed before the download gets there,
