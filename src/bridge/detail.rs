@@ -170,6 +170,23 @@ impl Models {
         image
     }
 
+    /// Where a row's file actually is on disk.
+    ///
+    /// The torrent's folder plus the path the torrent declares. `None` when the
+    /// drawer is not on a torrent, when that torrent has no folder yet, or when
+    /// the row is not one of its files — all of which mean the same thing to
+    /// the caller, which is that there is nothing to open.
+    fn path_of(&self, state: &UiState, index: i32) -> Option<std::path::PathBuf> {
+        let id = *self.shown.borrow().as_ref()?;
+        let snapshot = state.snapshot();
+        let row = snapshot.torrents.iter().find(|t| t.id == id)?;
+        if row.folder.is_empty() {
+            return None;
+        }
+        let path = self.files.row_data(usize::try_from(index).ok()?)?.path;
+        Some(std::path::Path::new(row.folder.as_ref()).join(path.as_str()))
+    }
+
     /// Light or unlight one pin without waiting for the engine. Same optimistic
     /// rule the ticks follow.
     fn set_first(&self, index: usize, first: bool) {
@@ -229,6 +246,8 @@ pub fn wire(
     store: &Rc<crate::settings::Store>,
     views: &Rc<super::Views>,
 ) {
+    wire_menu(ui, state, views);
+
     let detail = ui.global::<DetailState>();
 
     detail.on_close({
@@ -335,6 +354,57 @@ pub fn wire(
             // Redrawn at once so the drawer is not blank for up to a tick after
             // it opens — the first snapshot with details is a moment away.
             super::refresh_now(&ui, &state, &views);
+        }
+    });
+}
+
+/// The right-click menu on a file: where it opened, and the two things it can
+/// do that nothing else in the app offers.
+fn wire_menu(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+    let detail = ui.global::<DetailState>();
+
+    detail.on_open_file_menu({
+        let ui = ui.as_weak();
+        move |index, x, y| {
+            let Some(ui) = ui.upgrade() else { return };
+            let detail = ui.global::<DetailState>();
+            detail.set_file_menu_index(index);
+            detail.set_file_menu_x(x);
+            detail.set_file_menu_y(y);
+            detail.set_file_menu_open(true);
+        }
+    });
+
+    detail.on_close_file_menu({
+        let ui = ui.as_weak();
+        move || {
+            if let Some(ui) = ui.upgrade() {
+                ui.global::<DetailState>().set_file_menu_open(false);
+            }
+        }
+    });
+
+    detail.on_open_file({
+        let (state, views, ui) = (state.clone(), views.clone(), ui.as_weak());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            ui.global::<DetailState>().set_file_menu_open(false);
+            match views.detail.path_of(&state, index) {
+                Some(path) => zerem_shell::open(&path),
+                None => state.set_notice(zerem_core::tr("That file is not on disk yet")),
+            }
+        }
+    });
+
+    detail.on_reveal_file({
+        let (state, views, ui) = (state.clone(), views.clone(), ui.as_weak());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            ui.global::<DetailState>().set_file_menu_open(false);
+            match views.detail.path_of(&state, index) {
+                Some(path) => zerem_shell::reveal(&path),
+                None => state.set_notice(zerem_core::tr("That file is not on disk yet")),
+            }
         }
     });
 }

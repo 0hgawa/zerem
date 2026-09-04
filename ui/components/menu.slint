@@ -6,7 +6,7 @@
 // toolbar to act on what they are pointing at is the small friction that adds up.
 
 import { Theme } from "../theme.slint";
-import { TorrentList } from "../state.slint";
+import { DetailState, FileEntry, TorrentList } from "../state.slint";
 import { Icon, Lucide } from "icons.slint";
 
 component Item inherits Rectangle {
@@ -147,6 +147,58 @@ export component ContextMenu inherits MenuSurface {
 /// four. The name is listed and disabled rather than left out — showing seven of
 /// eight columns would raise the question of where the eighth went, and the
 /// answer is that it is the row's identity and never optional.
+/// The right-click menu on one file of a torrent.
+///
+/// What qBittorrent offers here is Open, Open containing folder, and a
+/// priority with four levels. Three of those levels do not exist in this
+/// engine: librqbit knows whether a file is wanted and whether one file is
+/// being fetched ahead of the rest, and nothing between. Offering "High" and
+/// "Maximum" as separate rows would be two controls that do the same thing,
+/// which is worse than a shorter menu.
+///
+/// So the three states it really has, as three rows that read as a choice.
+export component FileMenu inherits MenuSurface {
+    property <FileEntry> file: DetailState.files[DetailState.file-menu-index];
+    at-x: DetailState.file-menu-x;
+    at-y: DetailState.file-menu-y;
+    dismissed => { DetailState.close-file-menu(); }
+
+    Item {
+        label: @tr("Open");
+        glyph: Lucide.play;
+        // A file that is still coming down opens as whatever has arrived of
+        // it, which for video is a few seconds and a codec error.
+        enabled: root.file.complete;
+        chosen => { DetailState.open-file(DetailState.file-menu-index); }
+    }
+    Item {
+        label: @tr("Open containing folder");
+        glyph: Lucide.folder-open;
+        chosen => { DetailState.reveal-file(DetailState.file-menu-index); }
+    }
+    Separator { }
+    Item {
+        label: @tr("Do not download");
+        glyph: Lucide.x;
+        enabled: root.file.wanted;
+        chosen => { DetailState.toggle-file(DetailState.file-menu-index); }
+    }
+    Item {
+        label: @tr("Download");
+        glyph: Lucide.check;
+        enabled: !root.file.wanted;
+        chosen => { DetailState.toggle-file(DetailState.file-menu-index); }
+    }
+    Item {
+        label: root.file.first ? @tr("Stop fetching this one first") : @tr("Fetch this one first");
+        glyph: Lucide.arrow-up-to-line;
+        // Nothing to bring forward on a file that has arrived, or one that is
+        // not coming at all.
+        enabled: root.file.wanted && !root.file.complete;
+        chosen => { DetailState.toggle-first(DetailState.file-menu-index); }
+    }
+}
+
 export component ColumnsMenu inherits MenuSurface {
     at-x: TorrentList.columns-x;
     at-y: TorrentList.columns-y;

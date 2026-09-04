@@ -199,7 +199,18 @@ component FileLine inherits Rectangle {
 
     // Hover only. It is what lifts the row and brings the pin out, and it must
     // not also be the switch.
-    ta := TouchArea { }
+    //
+    // It does take the right button, though. The menu wants the whole line as
+    // its target — a right-click anywhere on a file is about that file — and
+    // this is the one area that covers all of it.
+    ta := TouchArea {
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down) {
+                DetailState.open-file-menu(root.index, self.absolute-position.x + self.mouse-x,
+                                           self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
 
     // The gutter the tick sits in — 38 px wide and the full height of the row,
     // which is still more than twice the square itself.

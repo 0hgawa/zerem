@@ -71,7 +71,7 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
         move || {
             let Some(ui) = ui.upgrade() else { return };
             match folder_of(&state) {
-                Some(folder) => reveal(&folder),
+                Some(folder) => zerem_shell::reveal(std::path::Path::new(&folder)),
                 None => state.set_notice("That torrent has no folder yet"),
             }
             let _ = ui;
@@ -118,19 +118,4 @@ fn magnet_of(state: &UiState) -> Option<String> {
     let snapshot = state.snapshot();
     let row = snapshot.torrents.iter().find(|t| t.id == id)?;
     (!row.info_hash.is_empty()).then(|| row.magnet())
-}
-
-/// Show a folder in the system file manager.
-///
-/// Failure is deliberately quiet: the folder may have been deleted from under
-/// us, and the file manager is the one that should say so, not a toast here.
-fn reveal(folder: &str) {
-    #[cfg(windows)]
-    let result = std::process::Command::new("explorer").arg(folder).spawn();
-    #[cfg(not(windows))]
-    let result = std::process::Command::new("xdg-open").arg(folder).spawn();
-
-    if let Err(e) = result {
-        tracing::warn!(folder, error = %e, "could not open the folder");
-    }
 }

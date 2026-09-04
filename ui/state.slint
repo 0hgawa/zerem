@@ -164,6 +164,23 @@ export global DetailState {
     /// Fetch this file before the others, or stop. Same rule: applied at once,
     /// corrected by the next snapshot if the engine refused.
     callback toggle-first(int);
+
+    // --- the right-click menu on a file ---
+    //
+    // Which line it was opened on, and where. Held here rather than passed
+    // through the menu because the menu is a sibling of the list, not a child:
+    // it floats over the whole window so it cannot be clipped by the panel it
+    // came from.
+    in-out property <bool> file-menu-open;
+    in-out property <int> file-menu-index: -1;
+    in-out property <length> file-menu-x;
+    in-out property <length> file-menu-y;
+    callback open-file-menu(int, length, length);
+    callback close-file-menu();
+    /// Hand the file to whatever the desktop opens it with.
+    callback open-file(int);
+    /// Show it in the file manager, selected.
+    callback reveal-file(int);
     /// Every file at once, both ways — the tick above the list. Fetching
     /// nothing is allowed and the row says so; it used to be refused, which
     /// made this a control that only worked in one direction.

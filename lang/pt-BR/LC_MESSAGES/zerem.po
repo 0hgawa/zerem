@@ -310,3 +310,19 @@ msgstr "Categorias"
 
 msgid "Category"
 msgstr "Categoria"
+
+# O menu de botão direito sobre um arquivo do torrent.
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Open containing folder"
+msgstr "Abrir a pasta do arquivo"
+
+msgid "Do not download"
+msgstr "Não baixar"
+
+msgid "Download"
+msgstr "Baixar"
+
+msgid "Fetch this one first"
+msgstr "Baixar este primeiro"
