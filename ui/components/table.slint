@@ -123,10 +123,21 @@ export component TableRow inherits Rectangle {
     accessible-label: root.data.a11y;
     accessible-item-selected: root.data.selected;
     accessible-action-default => { TorrentList.select(root.index, false, false); }
-    background: data.selected ? Theme.selected
-        : hovered ? Theme.hover
-        : mod(index, 2) == 1 ? Theme.row-alt
-        : transparent;
+    // The stripe stays on the row itself. Selection and hover do not: Windows
+    // 11 draws those as a rounded shape inset from the edges — File Explorer,
+    // the Start menu, every list it ships — and a highlight that runs edge to
+    // edge is the single thing that makes a list look like Windows 7.
+    background: mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    Rectangle {
+        x: 4px;
+        y: 2px;
+        width: parent.width - 8px;
+        height: parent.height - 4px;
+        border-radius: Theme.radius-row;
+        background: data.selected ? Theme.selected : hovered ? Theme.hover : transparent;
+        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    }
 
     // A right-click has to open the menu wherever it lands, and three areas
     // cover parts of this row. Each forwards to here so the row is named once.
@@ -134,13 +145,18 @@ export component TableRow inherits Rectangle {
         TorrentList.open-menu(root.index, x, y);
     }
 
-    // Selection marker as a rail rather than a border: it never shifts the
-    // layout, so a row does not jump by a pixel when it is picked.
+    // The accent bar beside the chosen row: three pixels, rounded at both ends,
+    // half the row's height and centred on it. It is the most recognisable
+    // thing Windows 11 draws, and it never shifts the layout — a row does not
+    // jump by a pixel when it is picked.
     Rectangle {
-        x: 0;
-        width: 2px;
-        height: parent.height;
-        background: data.selected ? Theme.accent-fill : transparent;
+        x: 1px;
+        width: 3px;
+        height: data.selected ? parent.height * 0.5 : 0px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 1.5px;
+        background: Theme.accent-fill;
+        animate height { duration: Theme.quick; easing: Theme.ease-emphasized(); }
     }
 
     HorizontalLayout {

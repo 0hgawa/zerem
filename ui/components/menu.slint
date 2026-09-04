@@ -20,13 +20,26 @@ component Item inherits Rectangle {
     in property <bool> closes: true;
     callback chosen;
 
-    height: 28px;
-    background: ta.has-hover ? Theme.hover : transparent;
+    // 32 and not 28, and the highlight inset from the card rather than run to
+    // its edges: those two numbers are most of what a Windows 11 flyout is.
+    // A full-bleed hover inside a rounded card leaves square corners poking
+    // into round ones, which is the detail that makes a menu look old.
+    height: 32px;
+
+    Rectangle {
+        x: 4px;
+        width: parent.width - 8px;
+        height: parent.height - 2px;
+        y: 1px;
+        border-radius: Theme.radius-row;
+        background: ta.has-hover && root.enabled ? Theme.hover : transparent;
+        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    }
 
     HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 10px;
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
         VerticalLayout {
             alignment: center;
             Icon {
@@ -63,8 +76,16 @@ component Item inherits Rectangle {
 }
 
 component Separator inherits Rectangle {
-    height: 5px;
-    Rectangle { y: 2px; height: 1px; background: Theme.border; }
+    height: 7px;
+    // Inset to the same margin the highlight uses, so the line stops where the
+    // rounded pill above it stops instead of running into the card's corner.
+    Rectangle {
+        x: 12px;
+        width: parent.width - 24px;
+        y: 3px;
+        height: 1px;
+        background: Theme.border;
+    }
 }
 
 /// The scrim and the card. Everything that floats sits on one of these.
@@ -85,19 +106,26 @@ component MenuSurface inherits Rectangle {
 
     Rectangle {
         width: root.card-width;
-        height: body.preferred-height + 8px;
+        height: body.preferred-height + 10px;
         // Clamped so a right-click near an edge does not open the menu off it.
         x: min(root.at-x, parent.width - self.width - 4px);
         y: min(root.at-y, parent.height - self.height - 4px);
-        background: Theme.surface;
-        border-radius: 10px;
-        // No outline: the shadow is what lifts it off the table behind.
-        drop-shadow-blur: 18px;
-        drop-shadow-color: #00000066;
+        // The layer a flyout floats on, which is not the layer the bars are.
+        background: Theme.card;
+        border-radius: Theme.radius-float;
+        // A hairline *and* a shadow, which is the one place this app draws a
+        // line and means it. Windows 11 puts a stroke on every flyout for a
+        // reason a shadow cannot cover: a light menu over light content has
+        // nothing else to say where it ends.
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 20px;
+        drop-shadow-offset-y: 4px;
+        drop-shadow-color: #0000006b;
 
         body := VerticalLayout {
-            padding-top: 4px;
-            padding-bottom: 4px;
+            padding-top: 5px;
+            padding-bottom: 5px;
             @children
         }
     }

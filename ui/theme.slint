@@ -158,5 +158,16 @@ export global Theme {
     // list reading like the rest of the system.
     out property <length> row-h: 32px;
     out property <length> header-h: 32px;
-    out property <length> radius: 8px;
+    // Fluent's corner ramp, which is three numbers and not one.
+    //
+    // 4 for a control — a button, a field, a tick — and this is the one that
+    // was most wrong: buttons were 16px pills, which is Material's shape, and a
+    // pill among square-cornered Windows chrome is the first thing that reads
+    // as "not from here".
+    //
+    // 5 for a row's highlight, which is what Windows 11 lists draw.
+    // 8 for anything that floats: a flyout, a card, a dialog.
+    out property <length> radius: 4px;
+    out property <length> radius-row: 5px;
+    out property <length> radius-float: 8px;
 }

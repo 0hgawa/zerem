@@ -117,7 +117,20 @@ component FileLine inherits Rectangle {
         : root.entry.complete ? @tr("Finished")
         : root.entry.pct;
     accessible-action-default => { DetailState.toggle-file(root.index); }
-    background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
+    background: mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    // The same inset pill the table draws, for the same reason: a highlight
+    // that runs to the edges of a panel is what makes a list look like Windows
+    // 7. Behind the layout, so every cell still draws over it.
+    Rectangle {
+        x: 4px;
+        y: 1px;
+        width: parent.width - 8px;
+        height: parent.height - 2px;
+        border-radius: Theme.radius-row;
+        background: ta.has-hover ? Theme.hover : transparent;
+        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    }
 
     HorizontalLayout {
         padding-left: 12px;

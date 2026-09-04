@@ -15,7 +15,19 @@ component FileLine inherits Rectangle {
     in property <PendingFileEntry> entry;
     in property <int> index;
     height: 26px;
-    background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
+    background: mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    // The inset pill again — every list in the app draws its highlight the same
+    // way, which is the point of there being one.
+    Rectangle {
+        x: 4px;
+        y: 1px;
+        width: parent.width - 8px;
+        height: parent.height - 2px;
+        border-radius: Theme.radius-row;
+        background: ta.has-hover ? Theme.hover : transparent;
+        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    }
 
     HorizontalLayout {
         padding-left: 12px;
