@@ -96,6 +96,10 @@ export global AddState {
 /// engine is not even asked for this until then.
 export global DetailState {
     in-out property <bool> open;
+    /// How wide the drawer is. Pushed from Rust, which owns the clamp and the
+    /// saving — sizing it as a share of the window would read better and is a
+    /// binding loop, since the window derives its own width from its children.
+    in-out property <length> width: 440px;
     in-out property <string> title;
     in-out property <string> tab: "files";
     in-out property <[FileEntry]> files;
@@ -118,6 +122,11 @@ export global DetailState {
     /// only whole-list action worth a button: the other direction would leave
     /// the torrent fetching nothing, which is refused.
     callback restore-all-files();
+    /// Dragging the drawer's left edge. Same shape as the column handles: the
+    /// press records where it started, and every pixel of the drag reports its
+    /// distance from there rather than an absolute width.
+    callback resize-begin();
+    callback resize-move(length);
 }
 
 // Joins now because there is finally something to hold. Speeds arrive already

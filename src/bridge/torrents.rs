@@ -39,6 +39,16 @@ pub fn wire(
         move |index, ctrl, shift| {
             let Some(ui) = ui.upgrade() else { return };
             state.select(index.max(0) as usize, ctrl, shift);
+            // A plain click opens the drawer on what was clicked — the way a
+            // mail client shows a message. Reaching for a button to see what
+            // is inside a torrent is a step nobody should have to find.
+            //
+            // Only a plain one. Ctrl and Shift are building a selection of
+            // several, and a drawer can only show one: opening it there would
+            // be picking a torrent out of the group on the user's behalf.
+            if !ctrl && !shift {
+                ui.global::<crate::DetailState>().set_open(true);
+            }
             // The drawer follows the selection: what it shows has to be what
             // is highlighted, or it is showing the wrong torrent.
             super::detail::follow_selection(&ui, &state);

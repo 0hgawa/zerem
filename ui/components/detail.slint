@@ -6,11 +6,12 @@
 // the mobile pattern, side sheets the desktop one.
 //
 // The room it buys is vertical, so every line here is two lines: a path or an
-// address, and its numbers underneath. That reads better in 330 px than a
-// four-column table ever did in 1180.
+// address, and its numbers underneath. That reads better than a four-column
+// table ever did in 1180 — but it needs the width to do it, which is why the
+// left edge drags and the number it lands on is remembered.
 //
-// Closed by default, as before. The list is the app; everything else stays out
-// of the way until it is asked for.
+// Opened by clicking a row, the way a mail client opens a message. The list is
+// still the app; this is what the click was always asking for.
 
 import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
@@ -206,6 +207,23 @@ export component DetailDrawer inherits Rectangle {
     background: Theme.surface;
 
     Rectangle { x: 0; width: 1px; height: parent.height; background: Theme.border; }
+
+    // The grip, on the edge the drawer grows from. Same eight pixels and the
+    // same cursor the column handles use, because it is the same gesture — and
+    // declared before the content so a control inside the panel still wins its
+    // own clicks.
+    TouchArea {
+        x: -3px;
+        width: 8px;
+        height: parent.height;
+        mouse-cursor: col-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { DetailState.resize-begin(); }
+        }
+        moved => {
+            if (self.pressed) { DetailState.resize-move(self.mouse-x - self.pressed-x); }
+        }
+    }
 
     VerticalLayout {
         spacing: 0px;

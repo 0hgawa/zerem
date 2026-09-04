@@ -110,6 +110,7 @@ fn main() -> Result<(), slint::PlatformError> {
     ));
     list.set_rows(ModelRc::from(state.model.clone()));
     state.restore_view(&settings);
+    bridge::detail::show_width(&ui, &state);
     bridge::prefs::show(&ui, &settings);
 
     for source in opening {

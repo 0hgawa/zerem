@@ -19,6 +19,16 @@ use crate::model::{ApplyStats, TorrentModel};
 pub const MIN_COL_W: f32 = 48.0;
 pub const MAX_COL_W: f32 = 640.0;
 
+/// The details drawer, in pixels.
+///
+/// It started at a fixed 330 and that was too narrow to read a file path in —
+/// every line elided. The floor is where the two-line layout still works; the
+/// ceiling is where the drawer would start being the app and the table its
+/// sidebar, which is the wrong way round.
+pub const MIN_DRAWER_W: f32 = 280.0;
+pub const MAX_DRAWER_W: f32 = 900.0;
+pub const DEFAULT_DRAWER_W: f32 = 440.0;
+
 const DEFAULT_WIDTHS: [f32; 8] = [300.0, 200.0, 108.0, 96.0, 96.0, 84.0, 84.0, 66.0];
 
 /// How long a message the UI raised itself stays up. Long enough to read,
@@ -50,6 +60,9 @@ pub struct UiState {
     /// header, the rows and the column menu all read the one source.
     pub columns: Rc<VecModel<bool>>,
 
+    /// How wide the drawer is. Held here rather than in the `.slint` so it can
+    /// be clamped, saved and restored with everything else the view remembers.
+    drawer_width: Cell<f32>,
     /// Reused across ticks — the display order allocates once, not every second.
     order: RefCell<Vec<usize>>,
     /// What the view is narrowed to. Parsed once per keystroke, not per row.
@@ -92,6 +105,7 @@ impl UiState {
             model: Rc::new(TorrentModel::new()),
             widths: Rc::new(VecModel::from(DEFAULT_WIDTHS.to_vec())),
             columns: Rc::new(VecModel::from(vec![true; sort::COLUMNS])),
+            drawer_width: Cell::new(DEFAULT_DRAWER_W),
             order: RefCell::new(Vec::new()),
             filter: RefCell::new(Filter::default()),
             built_for: Cell::new(0),
@@ -135,17 +149,25 @@ impl UiState {
                 self.columns.set_row_data(i, shown || i == 0);
             }
         }
+        self.drawer_width.set(settings.drawer_width.clamp(MIN_DRAWER_W, MAX_DRAWER_W));
+    }
+
+    #[must_use]
+    pub fn drawer_width(&self) -> f32 {
+        self.drawer_width.get()
     }
 
     pub fn save_view(&self, store: &Rc<crate::settings::Store>) {
         let sort = self.sort.get();
         let widths: Vec<f32> = self.widths.iter().collect();
         let visible: Vec<bool> = self.columns.iter().collect();
+        let drawer = self.drawer_width.get();
         store.update(|s| {
             s.sort_col = sort.col;
             s.sort_desc = sort.desc;
             s.column_widths = widths;
             s.column_visible = visible;
+            s.drawer_width = drawer;
         });
     }
 
@@ -436,6 +458,18 @@ impl UiState {
     pub fn resize(&self, column: usize, delta: f32) {
         let width = (self.resize_base.get() + delta).clamp(MIN_COL_W, MAX_COL_W);
         self.widths.set_row_data(column, width);
+    }
+
+    pub fn begin_drawer_resize(&self) {
+        self.resize_base.set(self.drawer_width.get());
+    }
+
+    /// The grip is on the drawer's *left* edge, so dragging left widens it —
+    /// the delta and the width move in opposite directions.
+    pub fn resize_drawer(&self, delta: f32) -> f32 {
+        let width = (self.resize_base.get() - delta).clamp(MIN_DRAWER_W, MAX_DRAWER_W);
+        self.drawer_width.set(width);
+        width
     }
 
     /// The latest snapshot, straight from the engine.

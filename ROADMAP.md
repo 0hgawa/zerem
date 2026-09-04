@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,06 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,07 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,06 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,07 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -379,10 +379,17 @@ linhas, então o upload se lê contra o download a olho — e como as amostras s
 as taxas já publicadas, a escala herda a estabilidade delas. Minuto ocioso não
 desenha nada, e voltar da bandeja recomeça o minuto em vez de emendar dois.
 
-A geometria tem teste; o desenho não. O `Path` do renderizador por software
-desenha traços — é o `zeno` por baixo, e ele já estava linkado: trocar as duas
-linhas por um retângulo devolve 10 KB do binário. Mas **como fica na tela é
-verificação humana**, na mesma lista do scroll com 2000 linhas.
+✅ **Verificado na tela**, com o app baixando: a linha azul do download tem
+forma e a verde do upload fica no chão, exatamente como desenhado. O `Path` do
+renderizador por software desenha traços — é o `zeno` por baixo, e ele já estava
+linkado: trocar as duas linhas por um retângulo devolve 10 KB do binário.
+
+A mesma captura pegou um bug que nenhum teste pegaria: **cinco ícones estavam
+desenhados errado**. Um `m` minúsculo abrindo um subcaminho concatenado é
+relativo a onde o subcaminho anterior terminou, então a seta do rodapé era uma
+haste com a ponta fora da grade, o sol não tinha raios diagonais, e a lupa e o
+ícone de imagem tinham perdido um traço cada. O comentário no topo do
+`icons.slint` afirmava que a concatenação era segura; agora diz quando é.
 
 ⏳ **Acessibilidade** — contraste verificado, rótulos AccessKit, navegação por
 teclado sem armadilha de foco.

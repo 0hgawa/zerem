@@ -47,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,06 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,07 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
@@ -106,7 +106,7 @@ $env:ZEREM_LOG = "debug"   # imprime o custo de cada tick
 | `Ctrl+O` | abre um `.torrent` |
 | `Ctrl+,` | preferências |
 | `Ctrl+F` | vai para o filtro; `Esc` volta para a lista |
-| `Ctrl+I` | abre ou fecha o painel de detalhes |
+| `Ctrl+I` | abre ou fecha o painel de detalhes — clicar numa linha também abre |
 | `Espaço` | pausa ou inicia a seleção |
 | `Delete` | remove a seleção — **pergunta antes** |
 | `↑` `↓` | anda pela lista; com `Shift` estende a seleção |
@@ -137,9 +137,15 @@ nunca para um `remove_file`.
 
 ## Detalhes
 
-`Ctrl+I` ou o botão na barra abre um painel **à direita** da tabela, com abas de
-**Arquivos** e **Peers** do torrent selecionado. Fechado por padrão — a lista é
-o app, e o resto fica fora do caminho até ser pedido.
+**Clicar numa linha abre** um painel **à direita** da tabela, com abas de
+**Arquivos** e **Peers** daquele torrent — do jeito que um cliente de e-mail
+abre a mensagem em que se clica. Procurar um botão para ver o que tem dentro de
+um torrent é um passo que ninguém deveria ter de achar. `Ctrl+I` e o botão na
+barra continuam alternando, e o × do painel fecha.
+
+Só o clique simples abre. `Ctrl` e `Shift` estão montando uma seleção de
+vários, e um painel só mostra um: abri-lo ali seria escolher um torrent do
+grupo no lugar de quem clicou.
 
 À direita e não embaixo: um painel sob a tabela custa linhas, que é a única
 coisa para que a janela serve; um painel ao lado custa colunas, das quais as
@@ -148,8 +154,13 @@ padrão móvel, *side sheet* o de desktop. Em compensação, com o painel aberto
 numa janela estreita as últimas colunas ficam cortadas; estreite uma coluna ou
 alargue a janela.
 
+**A borda esquerda do painel arrasta**, com a mesma alça e o mesmo cursor das
+colunas da tabela — é o mesmo gesto. A largura sobrevive a fechar e reabrir,
+como as colunas: ninguém escolhe essa medida num painel de preferências, se
+chega nela; chegar nela duas vezes é que é o aborrecimento.
+
 Cada linha do painel tem duas: o caminho ou o endereço, e os números embaixo.
-Isso lê melhor em 330 px do que uma tabela de quatro colunas jamais leu em 1180.
+Isso lê melhor em 440 px do que uma tabela de quatro colunas jamais leu em 1180.
 
 **O tique na aba de Arquivos liga e desliga o download de cada um**, com o
 torrent rodando. Clicar em qualquer ponto da linha alterna — um quadrado de

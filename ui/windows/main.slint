@@ -334,11 +334,11 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                // A constant, deliberately. Sizing it as a share of the window
-                // reads better and is a binding loop: the window's own width is
-                // derived from what its children ask for, so a child that asks
-                // for a fraction of the window asks about itself.
-                if DetailState.open: DetailDrawer { width: 330px; }
+                // Dragged, not fixed, and not a share of the window either: the
+                // window derives its own width from what its children ask for,
+                // so a child asking for a fraction of the window asks about
+                // itself. Rust owns the number, clamps it and saves it.
+                if DetailState.open: DetailDrawer { width: DetailState.width; }
             }
 
             StatusBar { }

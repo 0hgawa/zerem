@@ -124,7 +124,12 @@ impl Models {
     }
 }
 
-pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+pub fn wire(
+    ui: &MainWindow,
+    state: &Rc<UiState>,
+    store: &Rc<crate::settings::Store>,
+    views: &Rc<super::Views>,
+) {
     let detail = ui.global::<DetailState>();
 
     detail.on_close({
@@ -134,6 +139,24 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
             ui.global::<DetailState>().set_open(false);
             // Not merely hidden: the engine stops building this.
             state.engine.send(Command::WatchDetails(None));
+        }
+    });
+
+    detail.on_resize_begin({
+        let state = state.clone();
+        move || state.begin_drawer_resize()
+    });
+
+    detail.on_resize_move({
+        let (state, store, ui) = (state.clone(), store.clone(), ui.as_weak());
+        move |delta| {
+            let Some(ui) = ui.upgrade() else { return };
+            // Pushed straight back rather than waiting for the next tick: a
+            // drag that lags its own cursor is the one gesture people notice.
+            ui.global::<DetailState>().set_width(state.resize_drawer(delta));
+            // Every pixel of the drag lands here; the 400 ms debounce in the
+            // store is what turns the whole drag into one write.
+            state.save_view(&store);
         }
     });
 
@@ -188,6 +211,14 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
             super::refresh_now(&ui, &state, &views);
         }
     });
+}
+
+/// Put the remembered drawer width back, once, at startup.
+///
+/// Not part of `refresh`: it changes only when someone drags the edge, and the
+/// drag pushes it itself.
+pub fn show_width(ui: &MainWindow, state: &UiState) {
+    ui.global::<DetailState>().set_width(state.drawer_width());
 }
 
 /// Tell the engine what to watch, or to stop.
