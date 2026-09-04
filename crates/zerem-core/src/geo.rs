@@ -45,6 +45,16 @@ pub fn country(addr: IpAddr) -> Option<&'static str> {
     let table = table()?;
     let (key, family) = match addr {
         IpAddr::V4(v4) => (u64::from(u32::from_be_bytes(v4.octets())), &table.v4),
+        // An IPv4 address wearing an IPv6 coat, which is most of them here: the
+        // listener binds the unspecified IPv6 address to get both families on
+        // one socket, and every IPv4 peer that connects *in* is reported as
+        // `::ffff:a.b.c.d`. Looked up as IPv6 it lands in the first sixteen
+        // bytes of the address space, which nobody has been given, so it drew
+        // no flag at all — for the majority of incoming peers.
+        IpAddr::V6(v6) if v6.to_ipv4_mapped().is_some() => {
+            let mapped = v6.to_ipv4_mapped().unwrap_or(std::net::Ipv4Addr::UNSPECIFIED);
+            (u64::from(u32::from_be_bytes(mapped.octets())), &table.v4)
+        }
         IpAddr::V6(v6) => {
             let octets = v6.octets();
             let head = u32::from_be_bytes([octets[0], octets[1], octets[2], octets[3]]);
@@ -238,6 +248,17 @@ mod tests {
         assert_eq!(at("127.0.0.1"), None, "loopback");
         assert_eq!(at("240.0.0.1"), None, "reserved");
         assert_eq!(at("0.0.0.1"), None, "below every allocation");
+    }
+
+    #[test]
+    fn an_ipv4_address_in_an_ipv6_coat_is_still_that_address() {
+        // The listener binds the unspecified IPv6 address to get both families
+        // on one socket, so every IPv4 peer connecting in arrives as
+        // `::ffff:a.b.c.d`. Read as IPv6 that lands in space nobody has been
+        // given, and the majority of incoming peers drew no flag at all.
+        assert_eq!(at("::ffff:8.8.8.8"), at("8.8.8.8"));
+        assert_eq!(at("::ffff:200.160.2.3"), Some("BR"));
+        assert_eq!(at("::ffff:10.0.0.1"), None, "private is private in either coat");
     }
 
     #[test]

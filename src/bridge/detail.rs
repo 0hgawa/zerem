@@ -42,11 +42,17 @@ pub struct Models {
     /// per second. A miss that comes back empty is cached too: a platform with
     /// no answer should be asked once, not forty times.
     icons: RefCell<HashMap<String, Image>>,
-    /// The flag for each country seen so far, under the same rule as the icons:
-    /// a swarm is fifty peers from a dozen countries, and decoding one flag per
-    /// peer per second would be decoding the same twelve pictures over and over.
-    /// A peer whose address is in space nobody has been given caches an empty
-    /// image, so the table is asked once and not once a tick.
+    /// The flag for each country seen so far.
+    ///
+    /// Keyed by the country and not by the peer, which is what it was at first:
+    /// a swarm is fifty peers from a dozen countries, so twelve entries answer
+    /// for fifty. Keyed by address it also grew without bound — every peer ever
+    /// seen, on every port it ever reconnected from, for the life of the
+    /// process. There are two hundred and thirty-nine countries and there
+    /// always will be.
+    ///
+    /// An address nobody has been delegated keys the empty string, so it is
+    /// looked up once rather than once a tick.
     flags: RefCell<HashMap<String, Image>>,
     /// Whose files these are. Taken from the details the drawer last drew
     /// rather than from the selection: a click acts on the torrent whose lines
@@ -144,29 +150,25 @@ impl Models {
 
     /// The flag of whoever was given this address.
     ///
-    /// Keyed by the address rather than the country because the country is what
-    /// the lookup costs — a walk through the table — and the peer list hands the
-    /// same addresses back every tick. An address nobody has been delegated, and
-    /// a country the flag set does not carry, both cache an empty image: the
-    /// answer will not change, and the row simply has a gap where the picture
-    /// would be.
+    /// The country lookup runs every time — it is a binary search and a short
+    /// walk, and a peer list is fifty rows once a second. What is cached is the
+    /// picture, which costs a decode and an allocation.
+    ///
+    /// An address nobody has been delegated, and a country the flag set does
+    /// not carry, both come back as an empty image: the row keeps its slot and
+    /// simply has a gap where the picture would be.
     fn flag_for(&self, addr: &str) -> Image {
-        if let Some(cached) = self.flags.borrow().get(addr) {
+        let country = host_of(addr).and_then(|host| host.parse().ok()).and_then(zerem_core::country);
+        let key = country.unwrap_or_default();
+        if let Some(cached) = self.flags.borrow().get(key) {
             return cached.clone();
         }
-        let image = addr
-            .rsplit_once(':')
-            .map_or(addr, |(host, _)| host.trim_start_matches('[').trim_end_matches(']'))
-            .parse()
-            .ok()
-            .and_then(zerem_core::country)
-            .and_then(zerem_core::flag)
-            .map_or_else(Image::default, |flag| {
-                let mut buffer = SharedPixelBuffer::<Rgba8Pixel>::new(flag.width, flag.height);
-                buffer.make_mut_bytes().copy_from_slice(&flag.pixels);
-                Image::from_rgba8(buffer)
-            });
-        self.flags.borrow_mut().insert(addr.to_owned(), image.clone());
+        let image = country.and_then(zerem_core::flag).map_or_else(Image::default, |flag| {
+            let mut buffer = SharedPixelBuffer::<Rgba8Pixel>::new(flag.width, flag.height);
+            buffer.make_mut_bytes().copy_from_slice(&flag.pixels);
+            Image::from_rgba8(buffer)
+        });
+        self.flags.borrow_mut().insert(key.to_owned(), image.clone());
         image
     }
 
@@ -533,6 +535,16 @@ fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: 
             }
         })
         .collect()
+}
+
+/// The address out of a `host:port`, brackets and all.
+///
+/// librqbit reports a socket address, and an IPv6 one wears square brackets
+/// that `IpAddr` will not parse. Splitting on the *last* colon, because an IPv6
+/// address is mostly colons.
+fn host_of(addr: &str) -> Option<&str> {
+    let host = addr.rsplit_once(':').map_or(addr, |(host, _)| host);
+    Some(host.trim_start_matches('[').trim_end_matches(']')).filter(|host| !host.is_empty())
 }
 
 fn build_peers(details: &Details, flags: &[Image]) -> Vec<PeerEntry> {
