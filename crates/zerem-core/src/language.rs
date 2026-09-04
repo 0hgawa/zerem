@@ -43,33 +43,35 @@ pub fn resolve(tag: &str) -> &'static str {
         .map_or(SHIPPED[0].0, |(t, _)| *t)
 }
 
-/// What to show for a stored preference, and the tag to hand the renderer.
+/// Every choice the panel offers, in the order it lists them.
 ///
-/// `SYSTEM` keeps its own name here rather than resolving: the panel has to say
-/// "System" when that is what was chosen, not the language it happens to
-/// produce today.
+/// "Follow the machine" first, then each shipped language named in itself. The
+/// first label is the only one that is a word rather than a name, so it is the
+/// only one the caller has to translate.
 #[must_use]
-pub fn label(stored: &str) -> &'static str {
-    if stored == SYSTEM {
-        return "System";
-    }
-    SHIPPED.iter().find(|(t, _)| *t == stored).map_or("System", |(_, name)| *name)
+pub fn choices() -> Vec<(&'static str, &'static str)> {
+    std::iter::once((SYSTEM, "System")).chain(SHIPPED.iter().copied()).collect()
 }
 
-/// The next choice in the list, wrapping through "System".
+/// Where a stored preference sits in [`choices`].
 ///
-/// The same shape the transfer limits use: a short list is faster to step
-/// through than a menu is to open, and impossible to get wrong.
+/// A tag the app does not ship — hand-edited into the settings file, or dropped
+/// from a later build — reads as "follow the machine", which is the answer that
+/// still works rather than a position that does not exist.
 #[must_use]
-pub fn next(stored: &str) -> &'static str {
-    let order: Vec<&str> = std::iter::once(SYSTEM).chain(SHIPPED.iter().map(|(t, _)| *t)).collect();
-    let at = order.iter().position(|t| *t == stored).unwrap_or(0);
-    order[(at + 1) % order.len()]
+pub fn index_of(stored: &str) -> usize {
+    choices().iter().position(|(tag, _)| *tag == stored).unwrap_or(0)
+}
+
+/// The tag at a position in [`choices`], for a click on that row.
+#[must_use]
+pub fn at(index: usize) -> &'static str {
+    choices().get(index).map_or(SYSTEM, |(tag, _)| *tag)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{label, next, resolve, SHIPPED, SYSTEM};
+    use super::{at, choices, index_of, resolve, SHIPPED, SYSTEM};
 
     #[test]
     fn the_source_language_is_first_and_is_the_fallback() {
@@ -104,23 +106,27 @@ mod tests {
     }
 
     #[test]
-    fn following_the_machine_keeps_its_own_name() {
+    fn following_the_machine_is_the_first_choice_and_keeps_its_own_name() {
         // The panel has to say "System" when that is what was chosen, not the
         // language it happens to produce today.
-        assert_eq!(label(SYSTEM), "System");
-        assert_eq!(label("pt-BR"), "Português (Brasil)");
-        assert_eq!(label("xx"), "System", "a hand-edited tag we do not ship");
+        let all = choices();
+        assert_eq!(all[0], (SYSTEM, "System"));
+        assert_eq!(all.len(), SHIPPED.len() + 1, "every shipped language is offered");
     }
 
     #[test]
-    fn stepping_wraps_through_the_whole_list_and_back() {
-        let mut seen = vec![SYSTEM];
-        let mut at = SYSTEM;
-        for _ in 0..SHIPPED.len() {
-            at = next(at);
-            seen.push(at);
+    fn a_position_and_a_tag_are_the_same_choice_read_two_ways() {
+        for (i, (tag, _)) in choices().iter().enumerate() {
+            assert_eq!(index_of(tag), i);
+            assert_eq!(at(i), *tag);
         }
-        assert_eq!(next(at), SYSTEM, "the last step comes home");
-        assert_eq!(seen.len(), SHIPPED.len() + 1, "every choice is reachable");
+    }
+
+    #[test]
+    fn a_tag_we_do_not_ship_reads_as_following_the_machine() {
+        // Hand-edited into the settings file, or shipped by a build that had it
+        // and dropped by this one. Either way the answer that still works.
+        assert_eq!(index_of("xx"), 0);
+        assert_eq!(at(999), SYSTEM);
     }
 }

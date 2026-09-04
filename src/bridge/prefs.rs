@@ -86,12 +86,24 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     push!(prefs, get_add_paused, set_add_paused, settings.add_paused);
     push!(prefs, get_utp, set_utp, settings.utp);
     push!(prefs, get_upnp, set_upnp, settings.upnp);
-    push!(prefs, get_language, set_language, language::label(&settings.language).into());
     apply_language(&settings.language);
+    offer_languages(&prefs, &settings.language);
 
     ui.global::<Theme>().set_dark(settings.dark);
     // The add dialog shows the same folder, because it is the same setting.
     super::add::show_destination(ui, &settings.download_dir.display().to_string());
+}
+
+/// Put the list of languages, and which one is chosen, in front of the panel.
+///
+/// Rebuilt on every change rather than filled once, because the first entry is
+/// "System" — a word, not a name — and a word in a list of languages has to be
+/// in the language the window is now speaking.
+fn offer_languages(prefs: &Prefs, chosen: &str) {
+    let names: Vec<slint::SharedString> =
+        language::choices().into_iter().map(|(_, name)| zerem_core::text::tr(name).into()).collect();
+    prefs.set_languages(slint::ModelRc::new(slint::VecModel::from(names)));
+    prefs.set_language_index(language::index_of(chosen) as i32);
 }
 
 /// Tell both catalogues which language to answer in.
@@ -186,16 +198,18 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
     prefs.on_set_utp(flag(store, |s, on| s.utp = on));
     prefs.on_set_upnp(flag(store, |s, on| s.upnp = on));
 
-    prefs.on_cycle_language({
+    prefs.on_set_language({
         let (store, ui) = (store.clone(), ui.as_weak());
-        move || {
+        move |at| {
             let Some(ui) = ui.upgrade() else { return };
-            let next = language::next(&store.get().language).to_owned();
-            store.update(|s| s.language.clone_from(&next));
-            // Pushed and applied here rather than waiting for the next tick:
-            // the whole window changing language is the feedback for the click.
-            push!(ui.global::<Prefs>(), get_language, set_language, language::label(&next).into());
-            apply_language(&next);
+            let chosen = language::at(at.max(0) as usize).to_owned();
+            store.update(|s| s.language.clone_from(&chosen));
+            // Applied here rather than on the next tick: the whole window
+            // changing language is the feedback for the click. The list itself
+            // is rebuilt too — "System" is a word, and it is the one entry that
+            // has to change with the language it sits in.
+            apply_language(&chosen);
+            offer_languages(&ui.global::<Prefs>(), &chosen);
         }
     });
 

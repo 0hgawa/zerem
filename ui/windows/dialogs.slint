@@ -5,7 +5,9 @@ import { Theme } from "../theme.slint";
 import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind } from "../components/button.slint";
 import { ScrollView } from "std-widgets.slint";
-import { Check, Field, Modal, NumberField, RailItem, SettingsGroup } from "../components/common.slint";
+import {
+    Check, Divider, Dropdown, Modal, NumberBox, RailItem, SettingsCard, SettingsGroup, SettingsRow, Toggle
+} from "../components/common.slint";
 import { Prefs, TorrentList } from "../state.slint";
 
 /// Everything the app will let somebody change, one subject at a time.
@@ -16,19 +18,24 @@ import { Prefs, TorrentList } from "../state.slint";
 /// for the same reason a table of contents is: the shape of what is on offer is
 /// visible before anything is read.
 ///
+/// Inside a room the rows are grouped onto cards, and each row says what it is
+/// on the left and carries what changes it on the right. That is the shape of
+/// every settings screen on this desktop, and it replaced a fixed label column
+/// that made each row read as a field on a form rather than a choice.
+///
 /// The three restart-only settings are here, which reverses an earlier call.
 /// The objection was right — a control that *silently* does nothing until the
 /// next launch is worse than no control — and it was an argument against the
-/// silence rather than against the control. Connection says so once, at the
-/// bottom, covering all three.
+/// silence rather than against the control. Connection says so once, under the
+/// card, covering all three.
 export component Preferences inherits Modal {
-    card-width: 700px;
+    card-width: 740px;
     // Stated, not asked. The pane is a ScrollView, and a ScrollView reports a
     // small preferred height on purpose — hugging its content is the one thing
     // it exists not to do. Asking it collapsed the card to a title, a sliver of
     // list and the Done button. The Modal still clamps this against the window,
     // so a short desktop gets a shorter dialog rather than one off the edge.
-    card-height: 470px;
+    card-height: 520px;
     dismissed => { Prefs.close(); }
 
     /// Which room is open. Local rather than global: the dialog is rebuilt each
@@ -37,28 +44,33 @@ export component Preferences inherits Modal {
     property <string> section: "downloads";
 
     VerticalLayout {
-        padding: 22px;
-        spacing: 14px;
-
-        Text {
-            text: @tr("Preferences");
-            color: Theme.text;
-            font-size: Theme.fs-title;
-            font-family: Theme.font;
-            font-weight: 600;
-        }
+        padding: 20px;
+        spacing: 12px;
 
         HorizontalLayout {
             vertical-stretch: 1;
-            spacing: 20px;
+            spacing: 18px;
 
             // The same rail the main window uses for states, because it is the
             // same idea — and a second one drawn slightly differently is how an
             // interface starts to look assembled rather than designed.
             VerticalLayout {
-                width: 158px;
+                width: 168px;
                 spacing: 2px;
                 alignment: start;
+
+                Text {
+                    text: @tr("Preferences");
+                    color: Theme.text;
+                    font-size: Theme.fs-title;
+                    font-family: Theme.font;
+                    font-weight: 600;
+                    // Sits over the rail rather than over the whole card: it
+                    // names the window, and what is on the right already has
+                    // its own heading.
+                    height: 38px;
+                    vertical-alignment: center;
+                }
 
                 RailItem {
                     label: @tr("Downloads");
@@ -91,142 +103,189 @@ export component Preferences inherits Modal {
                 viewport-width: self.width;
 
                 VerticalLayout {
-                    spacing: 16px;
+                    spacing: 10px;
                     padding-right: 12px;
                     alignment: start;
 
-                    if root.section == "downloads": VerticalLayout {
-                        spacing: 16px;
+                    // The room's own name, mirroring the door that was opened.
+                    // Windows does this, and it is what tells somebody who
+                    // clicked without reading where they have landed.
+                    Text {
+                        text: root.section == "downloads" ? @tr("Downloads")
+                            : root.section == "speed" ? @tr("Speed")
+                            : root.section == "connection" ? @tr("Connection")
+                            : @tr("Appearance");
+                        color: Theme.text;
+                        font-size: Theme.fs-title;
+                        font-family: Theme.font;
+                        font-weight: 600;
+                        height: 38px;
+                        vertical-alignment: center;
+                    }
 
-                        Field {
-                            label: @tr("Save to");
-                            value: Prefs.download-dir;
-                            hint: @tr("Torrents already in the list keep their folder.");
-                            action: @tr("Change");
-                            glyph: Lucide.folder-open;
-                            activated => { Prefs.pick-download-dir(); }
+                    if root.section == "downloads": SettingsCard {
+                        SettingsRow {
+                            title: @tr("Save to");
+                            subtitle: Prefs.download-dir;
+                            Button {
+                                label: @tr("Change");
+                                glyph: Lucide.folder-open;
+                                clicked => { Prefs.pick-download-dir(); }
+                            }
                         }
-
-                        NumberField {
-                            label: @tr("Download at once");
-                            value: Prefs.max-active;
-                            placeholder: @tr("No limit");
-                            hint: @tr("The rest wait their turn. Seeding never waits.");
-                            committed(text) => { Prefs.set-max-active(text); }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Download at once");
+                            subtitle: @tr("The rest wait their turn. Seeding never waits.");
+                            NumberBox {
+                                label: @tr("Download at once");
+                                value: Prefs.max-active;
+                                placeholder: @tr("No limit");
+                                committed(text) => { Prefs.set-max-active(text); }
+                            }
                         }
-
-                        Check {
-                            label: @tr("Add torrents stopped");
-                            checked: Prefs.add-paused;
-                            toggled(on) => { Prefs.set-add-paused(on); }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Add torrents stopped");
+                            Toggle {
+                                on: Prefs.add-paused;
+                                hint: @tr("Add torrents stopped");
+                                toggled(on) => { Prefs.set-add-paused(on); }
+                            }
                         }
                     }
 
-                    if root.section == "speed": VerticalLayout {
-                        spacing: 16px;
-
-                        // Down and up together. The two alternates used to sit
+                    if root.section == "speed": SettingsCard {
+                        // Down and up together. The two alternates used to come
                         // between them, so the pair somebody actually came to
                         // set read as four unrelated fields.
-                        NumberField {
-                            label: @tr("Download limit");
-                            value: Prefs.down-limit;
-                            unit: @tr("kB/s");
-                            placeholder: @tr("Unlimited");
-                            committed(text) => { Prefs.set-down-limit(text); }
+                        SettingsRow {
+                            title: @tr("Download limit");
+                            NumberBox {
+                                label: @tr("Download limit");
+                                value: Prefs.down-limit;
+                                unit: @tr("kB/s");
+                                placeholder: @tr("Unlimited");
+                                committed(text) => { Prefs.set-down-limit(text); }
+                            }
                         }
-
-                        NumberField {
-                            label: @tr("Upload limit");
-                            value: Prefs.up-limit;
-                            unit: @tr("kB/s");
-                            placeholder: @tr("Unlimited");
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Upload limit");
                             // The one that matters day to day, so it says why.
-                            hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
-                            committed(text) => { Prefs.set-up-limit(text); }
-                        }
-
-                        SettingsGroup { text: @tr("Alternative limits"); }
-
-                        // Said once, above the pair it is about, rather than
-                        // hanging off whichever of the two happened to be last.
-                        Text {
-                            text: @tr("The second pair, for when the line is needed for something else. The button in the toolbar switches to them.");
-                            color: Theme.text-dim;
-                            font-size: Theme.fs-label;
-                            font-family: Theme.font;
-                            wrap: word-wrap;
-                        }
-
-                        NumberField {
-                            label: @tr("Slow download");
-                            value: Prefs.alt-down-limit;
-                            unit: @tr("kB/s");
-                            placeholder: @tr("Unlimited");
-                            committed(text) => { Prefs.set-alt-down-limit(text); }
-                        }
-
-                        NumberField {
-                            label: @tr("Slow upload");
-                            value: Prefs.alt-up-limit;
-                            unit: @tr("kB/s");
-                            placeholder: @tr("Unlimited");
-                            committed(text) => { Prefs.set-alt-up-limit(text); }
+                            subtitle: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
+                            NumberBox {
+                                label: @tr("Upload limit");
+                                value: Prefs.up-limit;
+                                unit: @tr("kB/s");
+                                placeholder: @tr("Unlimited");
+                                committed(text) => { Prefs.set-up-limit(text); }
+                            }
                         }
                     }
 
-                    if root.section == "connection": VerticalLayout {
-                        spacing: 16px;
+                    // The caveat belongs to the folder above, and it is about
+                    // what changing it will not do — a footnote, not a
+                    // description of the row.
+                    if root.section == "downloads": Text {
+                        text: @tr("Torrents already in the list keep their folder.");
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                    }
 
-                        NumberField {
-                            label: @tr("Listening port");
-                            value: Prefs.port;
-                            placeholder: "6881";
-                            committed(text) => { Prefs.set-port(text); }
+                    if root.section == "speed": SettingsGroup { text: @tr("Alternative limits"); }
+
+                    if root.section == "speed": SettingsCard {
+                        SettingsRow {
+                            title: @tr("Slow download");
+                            // Said once, on the first of the pair, rather than
+                            // hanging off whichever happened to be last.
+                            subtitle: @tr("The second pair, for when the line is needed for something else. The button in the toolbar switches to them.");
+                            NumberBox {
+                                label: @tr("Slow download");
+                                value: Prefs.alt-down-limit;
+                                unit: @tr("kB/s");
+                                placeholder: @tr("Unlimited");
+                                committed(text) => { Prefs.set-alt-down-limit(text); }
+                            }
                         }
-
-                        Check {
-                            label: @tr("uTP — yields to other traffic on the same line");
-                            checked: Prefs.utp;
-                            toggled(on) => { Prefs.set-utp(on); }
-                        }
-
-                        Check {
-                            label: @tr("Ask the router to open the port (UPnP)");
-                            checked: Prefs.upnp;
-                            toggled(on) => { Prefs.set-upnp(on); }
-                        }
-
-                        // Once, for all three. The port carried its own copy of
-                        // this and the two checkboxes another, so the same
-                        // sentence was on screen twice.
-                        Text {
-                            text: @tr("All three take effect the next time Zerem starts.");
-                            color: Theme.text-dim;
-                            font-size: Theme.fs-label;
-                            font-family: Theme.font;
-                            wrap: word-wrap;
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Slow upload");
+                            NumberBox {
+                                label: @tr("Slow upload");
+                                value: Prefs.alt-up-limit;
+                                unit: @tr("kB/s");
+                                placeholder: @tr("Unlimited");
+                                committed(text) => { Prefs.set-alt-up-limit(text); }
+                            }
                         }
                     }
 
-                    if root.section == "appearance": VerticalLayout {
-                        spacing: 16px;
-
-                        Field {
-                            label: @tr("Language");
-                            value: Prefs.language;
-                            action: @tr("Change");
-                            glyph: Lucide.file-text;
-                            activated => { Prefs.cycle-language(); }
+                    if root.section == "connection": SettingsCard {
+                        SettingsRow {
+                            title: @tr("Listening port");
+                            NumberBox {
+                                label: @tr("Listening port");
+                                value: Prefs.port;
+                                placeholder: "6881";
+                                committed(text) => { Prefs.set-port(text); }
+                            }
                         }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("uTP — yields to other traffic on the same line");
+                            Toggle {
+                                on: Prefs.utp;
+                                hint: @tr("uTP — yields to other traffic on the same line");
+                                toggled(on) => { Prefs.set-utp(on); }
+                            }
+                        }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Ask the router to open the port (UPnP)");
+                            Toggle {
+                                on: Prefs.upnp;
+                                hint: @tr("Ask the router to open the port (UPnP)");
+                                toggled(on) => { Prefs.set-upnp(on); }
+                            }
+                        }
+                    }
 
-                        Check {
-                            label: @tr("Dark theme");
-                            checked: Theme.dark;
-                            // Through the same callback the toolbar button
-                            // uses, so the choice is written down rather than
-                            // only drawn.
-                            toggled(on) => { TorrentList.toggle-theme(); }
+                    // Once, for all three. The port carried its own copy of
+                    // this and the two switches another, so the same sentence
+                    // was on screen twice.
+                    if root.section == "connection": Text {
+                        text: @tr("All three take effect the next time Zerem starts.");
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                    }
+
+                    if root.section == "appearance": SettingsCard {
+                        SettingsRow {
+                            title: @tr("Language");
+                            Dropdown {
+                                options: Prefs.languages;
+                                current: Prefs.language-index;
+                                hint: @tr("Language");
+                                changed(at) => { Prefs.set-language(at); }
+                            }
+                        }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Dark theme");
+                            Toggle {
+                                on: Theme.dark;
+                                hint: @tr("Dark theme");
+                                // Through the same callback the toolbar button
+                                // uses, so the choice is written down rather
+                                // than only drawn.
+                                toggled(on) => { TorrentList.toggle-theme(); }
+                            }
                         }
                     }
                 }

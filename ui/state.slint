@@ -197,8 +197,12 @@ export global Prefs {
     in-out property <bool> add-paused;
     in-out property <bool> utp;
     in-out property <bool> upnp;
-    /// What the language row shows — "System", or the language named in itself.
-    in-out property <string> language;
+    /// Every language on offer: "System" first, then each one named in itself.
+    /// Filled once at startup — the set a build ships cannot change while it
+    /// runs.
+    in-out property <[string]> languages;
+    /// Which of them is chosen.
+    in-out property <int> language-index;
     /// "No limit", or how many download at once.
     in-out property <string> max-active;
 
@@ -224,10 +228,10 @@ export global Prefs {
     callback set-add-paused(bool);
     callback set-utp(bool);
     callback set-upnp(bool);
-    /// Steps to the next shipped language, wrapping through "System". The swap
-    /// is live: Slint's bundled translations are a property, so every string
-    /// redraws without a restart.
-    callback cycle-language();
+    /// Chooses a language by its place in `languages`. The swap is live:
+    /// Slint's bundled translations are a property, so every string redraws
+    /// without a restart.
+    callback set-language(int);
 }
 
 export global SessionState {

@@ -106,51 +106,71 @@ export component Check inherits Rectangle {
     }
 }
 
-/// A label, a value, and the control that changes it.
-export component Field inherits HorizontalLayout {
-    in property <string> label;
-    in property <string> value;
-    in property <string> action;
-    in property <string> glyph;
-    in property <string> hint;
-    callback activated;
-    spacing: 12px;
+/// A group of settings rows on a panel of their own.
+///
+/// What makes a settings screen readable is not the rows, it is the grouping:
+/// four cards of three are taken in at a glance where twelve rows in a column
+/// have to be read. The panel is a raised surface rather than an outline —
+/// Fluent separates by layer, and this app draws no boxes.
+export component SettingsCard inherits Rectangle {
+    background: Theme.surface-hi;
+    border-radius: 10px;
+    VerticalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        @children
+    }
+}
 
-    VerticalLayout {
-        alignment: center;
-        width: 118px;
-        Text {
-            text: root.label;
-            color: Theme.text-dim;
-            font-size: Theme.fs-body;
-            font-family: Theme.font;
+/// The hairline between two rows of a card.
+///
+/// Inset by the card's own padding so it separates the rows without drawing a
+/// line across the panel — the distinction between a divider and a border, and
+/// the reason this one is allowed.
+export component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
+}
+
+/// One setting: what it is on the left, what changes it on the right.
+///
+/// The name and its explanation stack and take all the room they need; the
+/// control sits at the right edge where the eye already is after reading. It
+/// replaces a fixed label column that made every row read as a form field, and
+/// it is the shape every settings screen on this desktop uses.
+export component SettingsRow inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    min-height: 52px;
+
+    HorizontalLayout {
+        padding-top: 9px;
+        padding-bottom: 9px;
+        spacing: 14px;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: root.title;
+                color: Theme.text;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+            }
+            if root.subtitle != "": Text {
+                text: root.subtitle;
+                color: Theme.text-dim;
+                font-size: Theme.fs-label;
+                font-family: Theme.font;
+                wrap: word-wrap;
+            }
         }
-    }
-    VerticalLayout {
-        horizontal-stretch: 1;
-        alignment: center;
-        spacing: 2px;
-        Text {
-            text: root.value;
-            color: Theme.text;
-            font-size: Theme.fs-body;
-            font-family: Theme.font;
-            overflow: elide;
-        }
-        if root.hint != "": Text {
-            text: root.hint;
-            color: Theme.text-dim;
-            font-size: Theme.fs-label;
-            font-family: Theme.font;
-            wrap: word-wrap;
-        }
-    }
-    VerticalLayout {
-        alignment: center;
-        Button {
-            label: root.action;
-            glyph: root.glyph;
-            clicked => { root.activated(); }
+        VerticalLayout {
+            alignment: center;
+            @children
         }
     }
 }
@@ -433,101 +453,223 @@ export component RailItem inherits Rectangle {
 /// Committed on Enter or on leaving the field, never per keystroke. Typing
 /// "500" one character at a time would apply 5, then 50, then 500, and the
 /// first two of those are a connection throttled to nothing for a moment.
-export component NumberField inherits HorizontalLayout {
+export component NumberBox inherits HorizontalLayout {
     in property <string> label;
-    in property <string> hint;
     in property <string> unit;
     in property <string> placeholder;
     in-out property <string> value;
     callback committed(string);
-    spacing: 12px;
+    spacing: 8px;
+    alignment: end;
 
     VerticalLayout {
         alignment: center;
-        width: 118px;
-        Text {
-            text: root.label;
-            color: Theme.text-dim;
-            font-size: Theme.fs-body;
-            font-family: Theme.font;
-        }
-    }
 
-    VerticalLayout {
-        horizontal-stretch: 1;
-        alignment: center;
-        spacing: 3px;
+        Rectangle {
+            width: 92px;
+            height: 32px;
+            border-radius: Theme.radius;
+            background: input.has-focus ? Theme.surface : Theme.hover;
+            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
-        HorizontalLayout {
-            spacing: 8px;
-            alignment: start;
+            accessible-role: text-input;
+            accessible-label: root.label;
+            accessible-value: root.value;
+            accessible-placeholder-text: root.placeholder;
 
-            box := Rectangle {
-                width: 96px;
-                height: 32px;
-                border-radius: Theme.radius;
-                background: input.has-focus ? Theme.surface-hi : Theme.hover;
-                animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
-
-                accessible-role: text-input;
-                accessible-label: root.label;
-                accessible-value: root.value;
-                accessible-placeholder-text: root.placeholder;
-
-                HorizontalLayout {
-                    padding-left: 9px;
-                    padding-right: 9px;
-                    input := TextInput {
-                        text <=> root.value;
-                        color: Theme.text;
-                        font-size: Theme.fs-body;
-                        font-family: Theme.font;
-                        vertical-alignment: center;
-                        single-line: true;
-                        // Digits only. Refusing the keystroke beats accepting it
-                        // and explaining afterwards.
-                        input-type: number;
-                        accepted => { root.committed(self.text); }
-                        changed has-focus => {
-                            if (!self.has-focus) { root.committed(self.text); }
-                        }
-                    }
-                }
-
-                if root.value == "" && !input.has-focus: Text {
-                    x: 9px;
-                    text: root.placeholder;
-                    color: Theme.idle;
+            HorizontalLayout {
+                padding-left: 9px;
+                padding-right: 9px;
+                input := TextInput {
+                    text <=> root.value;
+                    color: Theme.text;
                     font-size: Theme.fs-body;
                     font-family: Theme.font;
                     vertical-alignment: center;
-                    height: parent.height;
+                    single-line: true;
+                    // Digits only. Refusing the keystroke beats accepting it
+                    // and explaining afterwards.
+                    input-type: number;
+                    accepted => { root.committed(self.text); }
+                    changed has-focus => {
+                        if (!self.has-focus) { root.committed(self.text); }
+                    }
                 }
             }
 
-            if root.unit != "": VerticalLayout {
-                alignment: center;
-                Text {
-                    text: root.unit;
-                    color: Theme.text-dim;
-                    font-size: Theme.fs-body;
-                    font-family: Theme.font;
-                }
+            if root.value == "" && !input.has-focus: Text {
+                x: 9px;
+                text: root.placeholder;
+                color: Theme.idle;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                vertical-alignment: center;
+                height: parent.height;
             }
         }
+    }
 
-        if root.hint != "": Text {
-            text: root.hint;
+    // A fixed slot rather than a hugging one, so the boxes of a card line up
+    // whether or not the row beside them carries a unit.
+    VerticalLayout {
+        alignment: center;
+        width: 32px;
+        Text {
+            text: root.unit;
             color: Theme.text-dim;
             font-size: Theme.fs-label;
             font-family: Theme.font;
-            wrap: word-wrap;
         }
     }
 }
 
-/// A heading inside a settings panel. Groups are what keep ten rows from
-/// reading as a list of ten unrelated things.
+/// A switch, for a setting that is on or off.
+///
+/// A tick box asks "is this ticked?" and a switch says "this is on", which is
+/// the question a preference actually answers. The list of files in the add
+/// dialog keeps its tick boxes for the same reason: those are a selection, and
+/// a selection is exactly what a tick box is for.
+///
+/// Fluent's proportions: a 40×20 track, outlined and empty when off, filled
+/// with the accent when on, and a thumb that grows a little as it crosses.
+export component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    /// What is being switched. Taken from the row's title, because a switch on
+    /// its own announces nothing.
+    in property <string> hint;
+    callback toggled(bool);
+
+    width: 40px;
+    height: 20px;
+    border-radius: 10px;
+    background: root.on ? Theme.accent : transparent;
+    border-width: 1px;
+    border-color: root.on ? transparent : Theme.text-dim;
+    animate background, border-color { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+    accessible-role: switch;
+    accessible-label: root.hint;
+    accessible-checkable: true;
+    accessible-checked: root.on;
+    accessible-action-default => { root.flip(); }
+
+    function flip() {
+        root.on = !root.on;
+        root.toggled(root.on);
+    }
+
+    Rectangle {
+        width: root.on ? 14px : 12px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.on ? #ffffff : Theme.text-dim;
+        x: root.on ? parent.width - self.width - 3px : 4px;
+        y: (parent.height - self.height) / 2;
+        animate x, width, background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    }
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.flip(); }
+    }
+}
+
+/// A closed list of choices, opened on click.
+///
+/// For a set too long to lay out side by side and too short to search. The
+/// language list is the case that asked for it: stepping through it with a
+/// button meant clicking twice to get back to what you had.
+export component Dropdown inherits Rectangle {
+    in property <[string]> options;
+    in property <string> hint;
+    in-out property <int> current;
+    callback changed(int);
+
+    width: 190px;
+    height: 32px;
+    border-radius: Theme.radius;
+    background: ta.has-hover ? Theme.surface : Theme.hover;
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+    accessible-role: combobox;
+    accessible-label: root.hint;
+    accessible-value: root.options[root.current];
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 6px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            Text {
+                text: root.options[root.current];
+                color: Theme.text;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                overflow: elide;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Icon { glyph: Lucide.chevron-down; size: 14px; }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { pop.show(); }
+    }
+
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: root.width;
+        Rectangle {
+            background: Theme.surface-hi;
+            border-radius: 8px;
+            drop-shadow-blur: 18px;
+            drop-shadow-color: #00000059;
+            VerticalLayout {
+                padding: 4px;
+                for name[i] in root.options: Rectangle {
+                    height: 32px;
+                    border-radius: Theme.radius;
+                    background: i == root.current ? Theme.selected : (item.has-hover ? Theme.hover : transparent);
+
+                    accessible-role: list-item;
+                    accessible-label: name;
+                    accessible-item-selected: i == root.current;
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        Text {
+                            text: name;
+                            color: i == root.current ? Theme.accent : Theme.text;
+                            font-size: Theme.fs-body;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                    }
+
+                    item := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.current = i;
+                            root.changed(i);
+                            pop.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A heading above a card. Groups are what keep ten rows from reading as a
+/// list of ten unrelated things.
 export component SettingsGroup inherits Text {
     color: Theme.text-dim;
     font-size: Theme.fs-label;

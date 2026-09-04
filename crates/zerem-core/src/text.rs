@@ -56,7 +56,7 @@ pub fn current() -> Lang {
 ///
 /// Sorted, and a test says so: the lookup is a binary search, and an unsorted
 /// table would fail quietly, missing some entries while their neighbours work.
-const TABLE: [(&str, &str); 18] = [
+const TABLE: [(&str, &str); 19] = [
     ("Another program has one of the files open", "Outro programa está com um dos arquivos aberto"),
     ("Checking", "Verificando"),
     ("Connecting", "Conectando"),
@@ -72,6 +72,7 @@ const TABLE: [(&str, &str); 18] = [
     ("Paused", "Pausado"),
     ("Queued", "Na fila"),
     ("Seeding", "Semeando"),
+    ("System", "Sistema"),
     ("That drive is not available", "Essa unidade não está disponível"),
     ("The download folder is not there any more", "A pasta de destino não existe mais"),
     ("The download folder is read-only", "A pasta de destino é somente leitura"),
