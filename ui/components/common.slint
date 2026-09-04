@@ -53,18 +53,20 @@ export component Tick inherits Rectangle {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    // Ink, not accent. A column of saturated blue squares was the first thing
-    // the eye landed on in a panel whose content is filenames — and a tick box
-    // is not a highlight, it is a statement of fact. `text` is near-black on a
-    // light theme and near-white on a dark one, so the mark keeps the same
-    // weight against the paper in both.
-    background: on ? Theme.text : Theme.surface-hi;
+    // The mark, and not a filled square carrying one.
+    //
+    // Ticked is the *quiet* state here, which is the opposite of how a
+    // checkbox usually works and right for this list: nearly every file in a
+    // torrent is wanted, so a filled box on every row was a column of solid
+    // blocks saying "normal". The square is what says "not this one", and the
+    // mark alone is what says yes.
+    background: on ? transparent : Theme.surface-hi;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
     if on: Icon {
         glyph: Lucide.check;
-        // The paper colour, which is the maximum contrast against the ink
-        // behind it in either theme.
-        tint: Theme.bg;
+        // Ink: near-black on a light theme, near-white on a dark one, so it
+        // keeps the same weight against the paper in both.
+        tint: Theme.text;
         size: 12px;
         // Heavier than Lucide's own twelfth: at twelve pixels that is a
         // hairline, and this mark is read at a glance down a column.
