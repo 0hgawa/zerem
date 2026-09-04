@@ -80,12 +80,11 @@ impl Choice {
         let chosen: Vec<u64> = files.iter().filter(|(_, w)| *w).map(|(s, _)| *s).collect();
         let total: u64 = files.iter().map(|(s, _)| *s).sum();
         let picked: u64 = chosen.iter().sum();
-        let text = format!(
-            "{} of {} files · {} of {}",
+        let text = zerem_core::text::files_choice(
             chosen.len(),
             files.len(),
-            fmt::bytes(picked),
-            fmt::bytes(total)
+            &fmt::bytes(picked),
+            &fmt::bytes(total),
         );
         (text, chosen.len(), picked)
     }

@@ -503,7 +503,7 @@ impl TorrentSession {
         anyhow::ensure!(count > 0, "this torrent's file list has not arrived yet");
 
         entry.wanted = zerem_core::ticked(&entry.wanted, file, wanted)
-            .context("at least one file has to be downloaded")?;
+            .context(zerem_core::tr("at least one file has to be downloaded"))?;
         // Un-ticking a file drops its pin with it: a file nobody is fetching
         // cannot be the one being fetched first.
         for (pin, want) in entry.first.iter_mut().zip(&entry.wanted) {

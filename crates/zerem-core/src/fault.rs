@@ -23,7 +23,7 @@
 /// everything into vagueness.
 #[must_use]
 pub fn explain(raw: &str) -> Option<&'static str> {
-    reason(os_code(raw)?)
+    reason(os_code(raw)?).map(crate::text::tr)
 }
 
 /// The `(os error N)` that `io::Error` prints at the end of its `Display`.

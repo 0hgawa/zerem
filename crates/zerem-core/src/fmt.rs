@@ -115,7 +115,7 @@ pub fn progress(done: u64, size: u64) -> String {
 #[must_use]
 pub fn shortfall(needed: u64, free: u64) -> Option<String> {
     let short = needed.checked_sub(free).filter(|&short| short > 0)?;
-    Some(format!("Not enough room in this folder — {} short", bytes(short)))
+    Some(crate::text::shortfall(&bytes(short)))
 }
 
 /// What the line above the file list says while something is being fetched
@@ -126,18 +126,14 @@ pub fn shortfall(needed: u64, free: u64) -> Option<String> {
 /// disagreeing about the same list is one line too many.
 #[must_use]
 pub fn fetching_first(pinned: usize, waiting: usize) -> String {
-    let files = if pinned == 1 { "file" } else { "files" };
-    if waiting == 0 {
-        return format!("{pinned} {files} first");
-    }
-    format!("{pinned} {files} first · {waiting} waiting")
+    crate::text::fetching_first(pinned, waiting)
 }
 
 /// How much of the list is showing, while a filter is on. Replaces the plain
 /// total rather than joining it: two counts side by side is one too many.
 #[must_use]
 pub fn matched(shown: usize, total: usize) -> String {
-    format!("{shown} of {total}")
+    crate::text::matched(shown, total)
 }
 
 #[cfg(test)]

@@ -17,6 +17,7 @@ pub mod language;
 pub mod pending;
 pub mod rate;
 pub mod sort;
+pub mod text;
 pub mod torrent;
 
 pub use choice::{flags, is_narrowed, ticked, to_fetch};
@@ -29,4 +30,5 @@ pub use language::SHIPPED as LANGUAGES;
 pub use pending::{Pending, PendingFile};
 pub use rate::Rate;
 pub use sort::Sort;
+pub use text::tr;
 pub use torrent::{SessionStats, Stall, State, TorrentId, TorrentRow};

@@ -72,6 +72,10 @@ fn apply_language(stored: &str) {
         stored.to_owned()
     };
     let chosen = language::resolve(&tag);
+    // Both halves, from one decision. The `.slint` half is Slint's bundled
+    // catalogue; the half Rust composes is [`zerem_core::text`], and they have
+    // to be told the same thing or the window would be half translated.
+    zerem_core::text::set(chosen);
     if let Err(e) = slint::select_bundled_translation(chosen) {
         // Not fatal and not silent: the window opens in the source language,
         // which is a readable app rather than a missing one.

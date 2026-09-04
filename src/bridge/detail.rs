@@ -150,10 +150,8 @@ impl Models {
             .filter(|&&(_, wanted)| wanted)
             .fold((0_usize, 0_u64), |(n, b), &(size, _)| (n + 1, b + size));
 
-        if count == sizes.len() {
-            return (format!("{} files · {}", sizes.len(), fmt::bytes(total)), false);
-        }
-        (format!("{count} of {} files · {} of {}", sizes.len(), fmt::bytes(bytes), fmt::bytes(total)), true)
+        let text = zerem_core::text::files_choice(count, sizes.len(), &fmt::bytes(bytes), &fmt::bytes(total));
+        (text, count != sizes.len())
     }
 }
 

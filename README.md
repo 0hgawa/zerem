@@ -119,13 +119,20 @@ autotools sob MSVC — uma toolchain que ninguém deveria precisar para rodar
 `cargo build`. Empacotar custa uma pasta de `.po` e nenhuma dependência de
 runtime.
 
-**O que está traduzido, e o que não está.** As 56 strings do `.slint` — botões,
-diálogos, estados vazios, rótulos de acessibilidade — estão. As ~54 que o Rust
-monta — os estados da coluna, as causas de parada, as frases de falha, as
-unidades — **ainda não**: elas vivem em Rust porque a regra do projeto é que o
-`.slint` nunca formata nada, e o `@tr()` com argumentos é avaliado por quadro
-dentro de um `for`, que é exatamente o custo que essa regra existe para evitar.
-Elas precisam de um segundo catálogo, e é o próximo passo.
+**São dois catálogos, e não é duplicação.** Os conjuntos são disjuntos: um
+segura a moldura, o outro as frases feitas de números. As 56 strings do `.slint`
+vivem nos `.po`; as que o Rust monta — estados da coluna, causas de parada,
+frases de falha, as contagens do painel — vivem em
+[`text.rs`](crates/zerem-core/src/text.rs), porque a regra do projeto é que o
+`.slint` nunca formata nada e `@tr()` com argumentos é avaliado por quadro
+dentro de um `for` — exatamente o custo que essa regra evita.
+
+Lá dentro há duas formas, e a divisão não é estilística. String fixa entra numa
+tabela e é buscada pelo próprio original em inglês, como o gettext faz. String
+com número dentro não pode: `format!` exige literal, então essas são escritas
+uma por idioma, onde a ordem das palavras é livre para diferir e o compilador
+ainda confere os argumentos. É por isso que "faltam 2,51 GB" pôde virar frase de
+gente em vez de um template com as palavras embaralhadas em volta do buraco.
 
 **Só pt-BR por enquanto.** Traduzir 140 strings para 12 idiomas sem ninguém para
 revisar seria publicar 11 conjuntos de erros plausíveis. A mecânica está pronta:

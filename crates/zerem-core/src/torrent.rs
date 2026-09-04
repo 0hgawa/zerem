@@ -41,13 +41,13 @@ pub enum Stall {
 
 impl Stall {
     #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
+    pub fn label(self) -> &'static str {
+        crate::text::tr(match self {
             Self::Metadata => "Fetching metadata",
             Self::NoPeers => "No peers found",
             Self::Connecting => "Connecting",
             Self::Idle => "No one is sharing",
-        }
+        })
     }
 
     /// Whether this is something wrong or something in progress.
@@ -75,14 +75,14 @@ pub enum State {
 
 impl State {
     #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
+    pub fn label(self) -> &'static str {
+        crate::text::tr(match self {
             Self::Paused => "Paused",
             Self::Checking => "Checking",
             Self::Downloading => "Downloading",
             Self::Seeding => "Seeding",
             Self::Error => "Error",
-        }
+        })
     }
 
     /// The discriminant the UI colours by. Kept as a plain integer because it
