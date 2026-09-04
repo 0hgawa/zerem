@@ -517,15 +517,20 @@ fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: 
         .files
         .iter()
         .enumerate()
-        .map(|(i, f)| FileEntry {
-            path: f.path.as_ref().into(),
-            size: fmt::bytes(f.size).into(),
-            pct: fmt::percent(f.done, f.size).into(),
-            progress: f.progress_bp() as f32 / 10_000.0,
-            complete: f.is_complete(),
-            wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
-            first: pins.get(i).copied().unwrap_or(f.first),
-            icon: icons.get(i).cloned().unwrap_or_default(),
+        .map(|(i, f)| {
+            let (folder, name) = zerem_core::split_path(&f.path);
+            FileEntry {
+                path: f.path.as_ref().into(),
+                folder: folder.into(),
+                name: name.into(),
+                size: fmt::bytes(f.size).into(),
+                pct: fmt::percent(f.done, f.size).into(),
+                progress: f.progress_bp() as f32 / 10_000.0,
+                complete: f.is_complete(),
+                wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
+                first: pins.get(i).copied().unwrap_or(f.first),
+                icon: icons.get(i).cloned().unwrap_or_default(),
+            }
         })
         .collect()
 }

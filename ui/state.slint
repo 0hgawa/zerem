@@ -44,7 +44,15 @@ export struct Row {
 // interpolated in the UI would be one more place formatting could drift from
 // the rest of the app.
 export struct FileEntry {
+    /// The whole relative path, which is what a screen reader is told and what
+    /// the file is opened by. What is *drawn* is the two halves below.
     path: string,
+    /// Where it lives, already carrying its separators, and empty for a file
+    /// at the top of the torrent. Dim, because it is not what anyone is
+    /// looking for — the name is.
+    folder: string,
+    /// What it is called.
+    name: string,
     /// The icon the desktop itself shows for this kind of file, so a `.mkv`
     /// here carries the same picture it carries in Explorer. Empty on a
     /// platform that has no such notion, and the line falls back to a glyph.

@@ -150,14 +150,29 @@ component FileLine inherits Rectangle {
         // every other list in this app puts numbers at. It also left the ticks
         // as a tall column of blue with nothing beside them, which is why the
         // panel read as a checkbox list rather than a file list.
-        DetailCell {
-            text: entry.path;
-            font-size: Theme.fs-body;
+        // Two halves, dimmed apart. `Featurettes\Trailer.mkv` printed whole put
+        // the folder in the same weight as the name, and the name is the whole
+        // of what anybody is looking for — the folder only says which of two
+        // files called `01.mkv` this one is. Rust splits it; see
+        // `zerem_core::split_path`, and the rule that the window formats
+        // nothing.
+        HorizontalLayout {
             horizontal-stretch: 1;
-            // A file that is not coming down dims rather than disappears: it is
-            // still in the torrent, it is just not being fetched. A finished
-            // one stops competing with the ones still moving.
-            color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+            spacing: 0px;
+            if entry.folder != "": DetailCell {
+                text: entry.folder;
+                font-size: Theme.fs-body;
+                color: Theme.idle;
+            }
+            DetailCell {
+                text: entry.name;
+                font-size: Theme.fs-body;
+                horizontal-stretch: 1;
+                // A file that is not coming down dims rather than disappears:
+                // it is still in the torrent, it is just not being fetched. A
+                // finished one stops competing with the ones still moving.
+                color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+            }
         }
 
         // What it is doing, in the slot before the size, so the sizes stay in
