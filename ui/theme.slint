@@ -116,11 +116,13 @@ export global Theme {
     // semibold most interfaces reach for. Segoe UI Variable is a variable font,
     // so the axis takes the number rather than snapping to the nearest cut.
     //
-    // The typeface itself is not copyable. Universal Sans is licensed from
-    // Family Type and cannot be redistributed inside an application; grok.com
-    // names Inter as its own fallback, which is OFL and could be bundled, at
-    // about 300 KB a weight before subsetting. Until that is decided this stays
-    // on the face Windows already has.
+    // The typeface itself did not come across, and will not. Universal Sans is
+    // licensed from Family Type and cannot be redistributed inside an
+    // application. grok.com names Inter as its own fallback, which is OFL and
+    // could be bundled — at about 300 KB a weight, 600 for the two this needs,
+    // with no subsetting tool on hand to bring that down. Decided against: the
+    // face Windows already has costs nothing, is the one every other window on
+    // this desktop is set in, and carries the 550 weight on its own axis.
     out property <int> semibold: 550;
 
     // --- motion ---

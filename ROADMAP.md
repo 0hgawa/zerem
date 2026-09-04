@@ -521,6 +521,17 @@ num projeto cuja tese é "medido, não prometido" seria o pior desfecho possíve
 
 ---
 
+## Decisões tomadas
+
+- **Tipografia**: Segoe UI Variable Text, pesos 400 e 550. Inter (fallback do
+  grok.com) foi considerada e recusada — 600 KB para dois pesos, sem ferramenta
+  de subset à mão, para trocar uma face que o Windows já tem por outra.
+- **Idiomas**: os dez restantes ficam para depois do app pronto. O mecanismo
+  está completo e pt-BR também; o que falta é tradutor, e traduzir uma interface
+  que ainda muda é traduzir duas vezes.
+
+---
+
 ## Fase 5+ — Backlog
 
 Em ordem de valor por custo. Nada entra antes da Fase 4 fechada.

@@ -9,6 +9,7 @@ pub mod attention;
 pub mod disk;
 pub mod file_icon;
 pub mod locale;
+pub mod relocate;
 pub mod screen;
 pub mod single_instance;
 
@@ -17,5 +18,6 @@ pub use attention::ask as ask_attention;
 pub use disk::free_space;
 pub use file_icon::for_extension as file_icon;
 pub use locale::preferred as preferred_language;
+pub use relocate::{carry, Fault};
 pub use screen::{fit, work_area};
 pub use single_instance::{acquire, Instance};
