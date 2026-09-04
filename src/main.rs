@@ -176,7 +176,9 @@ fn main() -> Result<(), slint::PlatformError> {
 fn fit_to_desktop(ui: &MainWindow) {
     let window = ui.window();
     let size = window.size();
-    let (width, height) = zerem_shell::fit((size.width, size.height), zerem_shell::work_area());
+    let desktop = zerem_shell::work_area();
+
+    let (width, height) = zerem_shell::fit((size.width, size.height), desktop);
     if (width, height) != (size.width, size.height) {
         tracing::debug!(
             from = ?(size.width, size.height),
@@ -184,5 +186,17 @@ fn fit_to_desktop(ui: &MainWindow) {
             "window brought inside the desktop"
         );
         window.set_size(slint::PhysicalSize::new(width, height));
+    }
+
+    // And in the middle of it. Sized first, because where the middle is depends
+    // on how big the window ended up.
+    //
+    // Every launch, rather than remembering where it was left. A window that
+    // comes back where it was is the better behaviour for something opened all
+    // day; this is opened, watched, and closed, and "where did it go" on a
+    // second monitor that is not there any more is the failure that costs more
+    // than the convenience is worth.
+    if let Some((x, y)) = zerem_shell::centre((width, height), desktop) {
+        window.set_position(slint::PhysicalPosition::new(x, y));
     }
 }
