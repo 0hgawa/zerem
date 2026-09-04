@@ -42,6 +42,12 @@ pub struct Models {
     /// per second. A miss that comes back empty is cached too: a platform with
     /// no answer should be asked once, not forty times.
     icons: RefCell<HashMap<String, Image>>,
+    /// The flag for each country seen so far, under the same rule as the icons:
+    /// a swarm is fifty peers from a dozen countries, and decoding one flag per
+    /// peer per second would be decoding the same twelve pictures over and over.
+    /// A peer whose address is in space nobody has been given caches an empty
+    /// image, so the table is asked once and not once a tick.
+    flags: RefCell<HashMap<String, Image>>,
     /// Whose files these are. Taken from the details the drawer last drew
     /// rather than from the selection: a click acts on the torrent whose lines
     /// are on screen, which for one tick after the selection moves is not yet
@@ -60,6 +66,7 @@ impl Models {
             sizes: RefCell::new(Vec::new()),
             pins: RefCell::new(Vec::new()),
             icons: RefCell::new(HashMap::new()),
+            flags: RefCell::new(HashMap::new()),
             shown: RefCell::new(None),
             guess: Cell::new(0),
         };
@@ -132,6 +139,34 @@ impl Models {
             Image::from_rgba8_premultiplied(buffer)
         });
         self.icons.borrow_mut().insert(extension, image.clone());
+        image
+    }
+
+    /// The flag of whoever was given this address.
+    ///
+    /// Keyed by the address rather than the country because the country is what
+    /// the lookup costs — a walk through the table — and the peer list hands the
+    /// same addresses back every tick. An address nobody has been delegated, and
+    /// a country the flag set does not carry, both cache an empty image: the
+    /// answer will not change, and the row simply has a gap where the picture
+    /// would be.
+    fn flag_for(&self, addr: &str) -> Image {
+        if let Some(cached) = self.flags.borrow().get(addr) {
+            return cached.clone();
+        }
+        let image = addr
+            .rsplit_once(':')
+            .map_or(addr, |(host, _)| host.trim_start_matches('[').trim_end_matches(']'))
+            .parse()
+            .ok()
+            .and_then(zerem_core::country)
+            .and_then(zerem_core::flag)
+            .map_or_else(Image::default, |flag| {
+                let mut buffer = SharedPixelBuffer::<Rgba8Pixel>::new(flag.width, flag.height);
+                buffer.make_mut_bytes().copy_from_slice(&flag.pixels);
+                Image::from_rgba8(buffer)
+            });
+        self.flags.borrow_mut().insert(addr.to_owned(), image.clone());
         image
     }
 
@@ -359,7 +394,8 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
     // Gathered before the borrow below, because looking one up can insert one.
     let icons: Vec<Image> = details.files.iter().map(|f| models.icon_for(&f.path)).collect();
     apply(&models.files, build_files(details, &models.sizes.borrow(), &models.pins.borrow(), &icons));
-    apply(&models.peers, build_peers(details));
+    let flags: Vec<Image> = details.peers.iter().map(|p| models.flag_for(&p.addr)).collect();
+    apply(&models.peers, build_peers(details, &flags));
     show_choice(ui, models);
 }
 
@@ -411,12 +447,14 @@ fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: 
         .collect()
 }
 
-fn build_peers(details: &Details) -> Vec<PeerEntry> {
+fn build_peers(details: &Details, flags: &[Image]) -> Vec<PeerEntry> {
     details
         .peers
         .iter()
-        .map(|p| PeerEntry {
+        .enumerate()
+        .map(|(i, p)| PeerEntry {
             addr: p.addr.as_ref().into(),
+            flag: flags.get(i).cloned().unwrap_or_default(),
             // An unnamed peer is one that has not said, not one called "".
             client: p.client.as_deref().unwrap_or("unknown").into(),
             transport: p.transport.label().into(),

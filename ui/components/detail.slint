@@ -275,6 +275,20 @@ component PeerLine inherits Rectangle {
 
         HorizontalLayout {
             spacing: 8px;
+            // Left of the address, where it is read first and answers "who is
+            // this?" before the number has to be. A fixed slot whether or not
+            // there is a flag in it, so the addresses stay in one column
+            // instead of stepping in and out as peers come and go.
+            VerticalLayout {
+                alignment: center;
+                width: 20px;
+                Image {
+                    source: entry.flag;
+                    width: 20px;
+                    height: 15px;
+                    image-fit: contain;
+                }
+            }
             DetailCell {
                 text: entry.addr;
                 font-size: Theme.fs-body;

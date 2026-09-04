@@ -1,0 +1,16 @@
+# Packs the country flags that ship inside Zerem.
+#
+# Its own workspace, like `tools/geo`, so the one heavy dependency it needs —
+# a PNG decoder — never reaches the app. What the app carries is this tool's
+# output, `assets/flags.bin`, and a forty-line reader.
+[workspace]
+
+[package]
+name = "zerem-flags-build"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# PNG in, resampling for the handful of flags that are not 4:3. Nothing else.
+image = { version = "0.25", default-features = false, features = ["png"] }

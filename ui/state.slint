@@ -64,6 +64,9 @@ export struct FileEntry {
 
 export struct PeerEntry {
     addr: string,
+    /// Whose address this is. Empty for one nobody has been delegated, which
+    /// draws nothing rather than a placeholder.
+    flag: image,
     client: string,
     transport: string,
     state: string,
