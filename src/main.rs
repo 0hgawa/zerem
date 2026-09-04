@@ -152,8 +152,21 @@ fn main() -> Result<(), slint::PlatformError> {
     // After the window exists, not before: asked any earlier it has no size to
     // read and the preferred one is applied afterwards, over the top of the
     // answer. Which is exactly how this looked fixed once and then was not.
+    //
+    // And on the event loop rather than before it. Between `show` and the first
+    // turn of the loop the window exists without being mapped: a size set there
+    // lands, a *position* is quietly dropped, and the software renderer keeps
+    // dirty regions from a geometry that no longer holds — so the window opened
+    // where the desktop put it, with pieces of it missing. Queued here, the
+    // first thing the loop does is place the window, before anything is drawn.
     ui.show()?;
-    fit_to_desktop(&ui);
+    let placing = ui.as_weak();
+    slint::invoke_from_event_loop(move || {
+        if let Some(ui) = placing.upgrade() {
+            fit_to_desktop(&ui);
+        }
+    })
+    .unwrap_or_else(|e| tracing::warn!("could not queue the window placement: {e}"));
     slint::run_event_loop()?;
 
     // A setting changed a fraction of a second before the window closed is still
