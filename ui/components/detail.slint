@@ -117,6 +117,21 @@ component FileLine inherits Rectangle {
             Tick { on: entry.wanted; }
         }
 
+        // The desktop's own icon for this kind of file. Whatever the user
+        // installed to open it is what they will recognise, and a glyph drawn
+        // here would be a second opinion about something already answered.
+        VerticalLayout {
+            alignment: center;
+            Image {
+                source: entry.icon;
+                width: 16px;
+                height: 16px;
+                image-fit: contain;
+                // A file nobody asked for fades with its name.
+                opacity: entry.wanted ? 1.0 : 0.45;
+            }
+        }
+
         VerticalLayout {
             spacing: 3px;
             horizontal-stretch: 1;
@@ -413,23 +428,65 @@ export component DetailDrawer inherits Rectangle {
         // What is actually coming down, above the list rather than inside it.
         // The torrent's own size is not the number the reader wants once
         // something has been left out.
-        if DetailState.tab == "files" && DetailState.files.length > 0: HorizontalLayout {
-            padding-left: 12px;
-            padding-right: 8px;
-            padding-top: 5px;
-            spacing: 4px;
-            DetailCell { text: DetailState.files-choice; horizontal-stretch: 1; }
-            // No "None" beside it, deliberately. It applies to a running
-            // torrent, so it would be a button whose only possible outcome is
-            // the refusal that a torrent has to fetch something. Choosing a
-            // handful out of thousands is what the add dialog is for; this is
-            // the way back from having unticked too much.
-            if DetailState.files-partial: Button {
-                label: @tr("All");
-                kind: ButtonKind.text;
+        // The folder above what is inside it, the way a file manager shows one
+        // — and the way the client everybody is coming from shows this.
+        //
+        // The tick is the whole list at once. It only ever goes one way, which
+        // is not a gap: a torrent that fetches nothing is refused, so the other
+        // direction has no outcome but a refusal. This is the way back from
+        // having unticked too much; choosing a handful out of thousands is what
+        // the add dialog is for.
+        if DetailState.tab == "files" && DetailState.files.length > 0: Rectangle {
+            height: 34px;
+            background: head.has-hover ? Theme.hover : transparent;
+            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+            accessible-role: checkbox;
+            accessible-label: DetailState.files-folder;
+            accessible-checkable: true;
+            accessible-checked: !DetailState.files-partial;
+            accessible-action-default => { DetailState.restore-all-files(); }
+
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 10px;
+
+                VerticalLayout {
+                    alignment: center;
+                    // Filled when everything is coming down, hollow the moment
+                    // anything is not — the mixed state a file manager shows as
+                    // a dash, said here by the tick simply not being on.
+                    Tick { on: !DetailState.files-partial; }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Icon { glyph: Lucide.folder-open; tint: Theme.warn; size: 16px; }
+                }
+                Text {
+                    text: DetailState.files-folder;
+                    color: Theme.text;
+                    font-size: Theme.fs-body;
+                    font-family: Theme.font;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    DetailCell { text: DetailState.files-choice; }
+                }
+            }
+
+            head := TouchArea {
+                width: 38px;
+                height: parent.height;
+                mouse-cursor: pointer;
                 clicked => { DetailState.restore-all-files(); }
             }
         }
+
 
         if DetailState.tab == "files" && DetailState.files.length > 0: ListView {
             for f[i] in DetailState.files: FileLine { entry: f; index: i; }

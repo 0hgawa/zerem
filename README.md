@@ -252,6 +252,17 @@ quadro, e texto pulando entre duas elisões não é movimento, é defeito.
 Cada linha do painel tem duas: o caminho ou o endereço, e os números embaixo.
 Isso lê melhor em 360 px do que uma tabela de quatro colunas jamais leu em 1180.
 
+A lista tem **a pasta no topo**, do jeito que um gerenciador de arquivos mostra
+uma pasta acima do que tem dentro — e do jeito que o cliente de onde todo mundo
+está vindo mostra isto. O tique dela é a lista inteira de uma vez.
+
+Cada linha carrega **o ícone que o próprio sistema mostra** para aquele tipo de
+arquivo. Não um desenhado aqui: um `.mkv` no Zerem leva a mesma figura que leva
+no Explorer, porque essa figura é o que *você* instalou para abri-lo, e um
+desenho nosso seria uma segunda opinião sobre algo que a máquina já respondeu.
+É perguntado pela extensão e **o arquivo nunca é tocado**, então funciona antes
+de qualquer byte existir no disco.
+
 **O tique na aba de Arquivos liga e desliga o download de cada um**, com o
 torrent rodando. Clicar em qualquer ponto da linha alterna — um quadrado de
 16 px é pouco para se acertar cinquenta vezes seguidas — e a linha acima da

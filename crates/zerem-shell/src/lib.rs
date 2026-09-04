@@ -6,10 +6,12 @@
 
 pub mod assoc;
 pub mod disk;
+pub mod file_icon;
 pub mod locale;
 pub mod single_instance;
 
 pub use assoc::{ensure_registered, Outcome, Registration};
 pub use disk::free_space;
+pub use file_icon::for_extension as file_icon;
 pub use locale::preferred as preferred_language;
 pub use single_instance::{acquire, Instance};

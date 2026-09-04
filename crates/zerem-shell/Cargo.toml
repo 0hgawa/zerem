@@ -27,7 +27,12 @@ windows = { version = "0.59", features = [
     "Win32_System_Threading",
     # Registry writes and the shell notification that refreshes associations.
     "Win32_System_Registry",
+    # The icon handler behind a registered extension is a COM object.
+    "Win32_System_Com",
     "Win32_UI_Shell",
+    # SHGetFileInfoW, and turning the HICON it hands back into pixels.
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
 ] }
 
 [lints]

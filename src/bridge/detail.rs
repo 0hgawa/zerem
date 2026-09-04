@@ -11,9 +11,12 @@
 //! could ever save.
 
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::rc::Rc;
 
-use slint::{ComponentHandle, Model as _, ModelRc, SharedString, VecModel};
+use slint::{
+    ComponentHandle, Image, Model as _, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel,
+};
 use zerem_core::{fmt, Details, TorrentId};
 use zerem_engine::{Command, Snapshot};
 
@@ -32,6 +35,13 @@ pub struct Models {
     /// snapshot already on its way when the pin was clicked knows nothing about
     /// it and would un-light it for a quarter of a second.
     pins: RefCell<Vec<bool>>,
+    /// The desktop's own icon for each extension seen so far.
+    ///
+    /// Cached because the answer is the same for every `.mkv` in a season pack
+    /// and asking the shell is a COM call — once per kind, not once per file
+    /// per second. A miss that comes back empty is cached too: a platform with
+    /// no answer should be asked once, not forty times.
+    icons: RefCell<HashMap<String, Image>>,
     /// Whose files these are. Taken from the details the drawer last drew
     /// rather than from the selection: a click acts on the torrent whose lines
     /// are on screen, which for one tick after the selection moves is not yet
@@ -49,6 +59,7 @@ impl Models {
             peers: Rc::new(VecModel::default()),
             sizes: RefCell::new(Vec::new()),
             pins: RefCell::new(Vec::new()),
+            icons: RefCell::new(HashMap::new()),
             shown: RefCell::new(None),
             guess: Cell::new(0),
         };
@@ -100,6 +111,28 @@ impl Models {
                 self.files.set_row_data(i, row);
             }
         }
+    }
+
+    /// The desktop's icon for whatever this path ends in.
+    ///
+    /// Keyed by extension and folded to lower case, because `.MKV` and `.mkv`
+    /// are one kind of file and asking twice would cache two copies of one
+    /// picture.
+    fn icon_for(&self, path: &str) -> Image {
+        let extension = std::path::Path::new(path)
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        if let Some(cached) = self.icons.borrow().get(&extension) {
+            return cached.clone();
+        }
+        let image = zerem_shell::file_icon(&extension).map_or_else(Image::default, |bitmap| {
+            let mut buffer = SharedPixelBuffer::<Rgba8Pixel>::new(bitmap.width, bitmap.height);
+            buffer.make_mut_bytes().copy_from_slice(&bitmap.rgba);
+            Image::from_rgba8_premultiplied(buffer)
+        });
+        self.icons.borrow_mut().insert(extension, image.clone());
+        image
     }
 
     /// Light or unlight one pin without waiting for the engine. Same optimistic
@@ -323,7 +356,9 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
     push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
 
     models.adopt(snapshot.seq, details);
-    apply(&models.files, build_files(details, &models.sizes.borrow(), &models.pins.borrow()));
+    // Gathered before the borrow below, because looking one up can insert one.
+    let icons: Vec<Image> = details.files.iter().map(|f| models.icon_for(&f.path)).collect();
+    apply(&models.files, build_files(details, &models.sizes.borrow(), &models.pins.borrow(), &icons));
     apply(&models.peers, build_peers(details));
     show_choice(ui, models);
 }
@@ -334,6 +369,9 @@ fn show_choice(ui: &MainWindow, models: &Models) {
     let (summary, partial) = models.choice();
     push!(detail, get_files_choice, set_files_choice, summary.into());
     push!(detail, get_files_partial, set_files_partial, partial);
+    // The folder the files sit in is the torrent's own name, which the title
+    // already carries — read from there rather than derived a second time.
+    push!(detail, get_files_folder, set_files_folder, detail.get_title());
 }
 
 /// Replace a model's contents, reusing the rows that did not change.
@@ -355,7 +393,7 @@ fn apply<T: Clone + PartialEq + 'static>(model: &Rc<VecModel<T>>, next: Vec<T>) 
 
 /// `chosen` is what the drawer believes, which is the snapshot's answer except
 /// while a click is still in flight — see [`Models::adopt`].
-fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool]) -> Vec<FileEntry> {
+fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: &[Image]) -> Vec<FileEntry> {
     details
         .files
         .iter()
@@ -368,6 +406,7 @@ fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool]) -> Vec<
             complete: f.is_complete(),
             wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
             first: pins.get(i).copied().unwrap_or(f.first),
+            icon: icons.get(i).cloned().unwrap_or_default(),
         })
         .collect()
 }
