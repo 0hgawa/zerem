@@ -58,6 +58,11 @@ struct Entry {
     wanted_running: bool,
     /// Its turn. Lower goes first; pressing Start moves it below everything.
     position: i64,
+    /// Whether it was already finished last tick.
+    ///
+    /// `None` until it has been seen once, which is what stops every torrent
+    /// that was already complete announcing itself the moment the app opens.
+    was_complete: Option<bool>,
 }
 
 impl Entry {
@@ -74,6 +79,7 @@ impl Entry {
             first: Vec::new(),
             wanted_running: true,
             position: 0,
+            was_complete: None,
         }
     }
 
@@ -786,6 +792,7 @@ impl TorrentSession {
         self.seq += 1;
 
         let mut torrents: Vec<TorrentRow> = Vec::with_capacity(self.entries.len());
+        let mut finished = Vec::new();
         for (id, entry) in &mut self.entries {
             let (name, name_key) = entry.resolve_name();
             let content = entry.resolve_content();
@@ -806,6 +813,13 @@ impl TorrentSession {
             // reads as an app that ignored the click.
             if row.state == State::Paused && entry.wanted_running && self.queued.holds(&entry.info_hash) {
                 row.state = State::Queued;
+            }
+            // The moment it crossed, and only that moment. The first sighting
+            // records without announcing, so a library of finished torrents
+            // does not all shout at once when the app opens.
+            let complete = row.size > 0 && row.is_complete();
+            if entry.was_complete.replace(complete) == Some(false) && complete {
+                finished.push(row.name.clone());
             }
             torrents.push(row);
         }
@@ -830,6 +844,7 @@ impl TorrentSession {
         let snapshot = Snapshot::new(self.seq, self.generation, torrents)
             .with_notice(notice)
             .with_details(details)
+            .with_finished(finished)
             .with_pending(self.pending.clone());
 
         // Recorded from the totals the snapshot just derived, so the footer

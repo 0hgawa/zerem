@@ -107,6 +107,7 @@ pub fn start_tick(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<Views>) -> sl
 /// Pull a snapshot through to the screen — the single path by which anything
 /// reaches the table.
 pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Views) {
+    announce(state, snapshot);
     state.prune_selection(snapshot);
     state.refresh_order(snapshot);
     let applied = state.apply(snapshot);
@@ -180,6 +181,24 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
 
     detail::refresh(ui, snapshot, &views.detail);
     add::refresh(ui, snapshot, &views.add);
+}
+
+/// Say that something finished.
+///
+/// The status bar, and a flash of the taskbar button if the window is not the
+/// one in front. Never a steal of focus: interrupting whatever somebody is
+/// doing to announce that a file arrived is the behaviour that makes people
+/// turn notifications off.
+///
+/// One line however many landed at once. Four notices in four seconds would
+/// push each other off before any of them was read.
+fn announce(state: &UiState, snapshot: &Snapshot) {
+    let Some(first) = snapshot.finished.first() else { return };
+    match snapshot.finished.len() {
+        1 => state.set_notice(&zerem_core::text::finished_one(first)),
+        n => state.set_notice(&zerem_core::text::finished_many(n)),
+    }
+    zerem_shell::ask_attention();
 }
 
 /// Redraw against the engine's current snapshot. Used after an optimistic edit,

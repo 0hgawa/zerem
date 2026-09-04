@@ -460,6 +460,22 @@ Esconder a janela **para o tique**, então nada é amostrado enquanto ela está
 fora. Voltar recomeça o minuto em vez de emendar dois minutos separados e
 chamar o resultado de "os últimos sessenta segundos".
 
+## Quando termina
+
+Um download que acaba é dito na barra de status pelo nome, e o botão do app
+**pisca na barra de tarefas** se a janela não estiver na frente. Nada rouba o
+foco: interromper o que a pessoa está fazendo para anunciar que um arquivo
+chegou é o comportamento que faz todo mundo desligar notificação.
+
+Se a janela já estiver na frente, não pisca — é um jeito de dizer "quando você
+voltar", e quem está olhando já voltou. Vários terminando no mesmo segundo viram
+uma linha só: quatro avisos em quatro segundos se empurram antes de qualquer um
+ser lido.
+
+É o anúncio que dá para fazer hoje. Um *toast* de verdade quer um AppUserModelID
+e um atalho no menu Iniciar para ser atribuído, o que significa uma cópia
+instalada — ele entra com o instalador.
+
 ## Bandeja
 
 **Fechar a janela esconde, não encerra.** Um cliente que para de semear porque a

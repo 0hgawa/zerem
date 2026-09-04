@@ -36,6 +36,13 @@ pub struct Snapshot {
     /// magnet that would not parse, a port already in use. Clears itself after
     /// a few ticks.
     pub notice: Option<Arc<str>>,
+    /// Torrents that finished on this tick, by name.
+    ///
+    /// The event and not the state: a consumer that compared completeness
+    /// between snapshots would announce every torrent again after any hiccup,
+    /// and one that read it from the row could not tell "finished just now"
+    /// from "finished last Tuesday".
+    pub finished: Vec<Arc<str>>,
     /// The last minute of session throughput, which the footer draws.
     ///
     /// Carried as samples rather than as a drawing: the contract here is what
@@ -55,6 +62,7 @@ impl Snapshot {
             details: None,
             pending: None,
             history: History::default(),
+            finished: Vec::new(),
         }
     }
 
@@ -73,6 +81,12 @@ impl Snapshot {
     #[must_use]
     pub fn with_pending(mut self, pending: Option<zerem_core::Pending>) -> Self {
         self.pending = pending;
+        self
+    }
+
+    #[must_use]
+    pub fn with_finished(mut self, finished: Vec<Arc<str>>) -> Self {
+        self.finished = finished;
         self
     }
 

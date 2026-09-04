@@ -131,6 +131,25 @@ pub fn shortfall(short: &str) -> String {
     }
 }
 
+/// What the status bar says when a download lands.
+#[must_use]
+pub fn finished_one(name: &str) -> String {
+    match current() {
+        Lang::En => format!("{name} finished"),
+        Lang::PtBr => format!("{name} terminou"),
+    }
+}
+
+/// And when several land in the same second — one line rather than four that
+/// push each other off before any is read.
+#[must_use]
+pub fn finished_many(count: usize) -> String {
+    match current() {
+        Lang::En => format!("{count} downloads finished"),
+        Lang::PtBr => format!("{count} downloads terminaram"),
+    }
+}
+
 /// "12 files · 3.72 GB", or the same with a choice made in it.
 #[must_use]
 pub fn files_choice(chosen: usize, total: usize, picked: &str, whole: &str) -> String {
@@ -144,7 +163,10 @@ pub fn files_choice(chosen: usize, total: usize, picked: &str, whole: &str) -> S
 
 #[cfg(test)]
 mod tests {
-    use super::{current, fetching_first, files_choice, matched, set, shortfall, tr, Lang, TABLE};
+    use super::{
+        current, fetching_first, files_choice, finished_many, finished_one, matched, set, shortfall, tr,
+        Lang, TABLE,
+    };
 
     /// The tests share one process and one global, so each says what it wants
     /// and puts the source language back.
@@ -218,6 +240,18 @@ mod tests {
         // would have produced something nobody says out loud.
         assert_eq!(shortfall("2.51 GB"), "Not enough room in this folder — 2.51 GB short");
         with("pt-BR", || assert_eq!(shortfall("2,51 GB"), "Não cabe nesta pasta — faltam 2,51 GB"));
+    }
+
+    #[test]
+    fn a_download_landing_is_named_and_several_are_counted() {
+        // One line however many landed at once: four notices in four seconds
+        // would push each other off before any of them was read.
+        assert_eq!(finished_one("Some.Show.S01"), "Some.Show.S01 finished");
+        assert_eq!(finished_many(3), "3 downloads finished");
+        with("pt-BR", || {
+            assert_eq!(finished_one("Some.Show.S01"), "Some.Show.S01 terminou");
+            assert_eq!(finished_many(3), "3 downloads terminaram");
+        });
     }
 
     #[test]
