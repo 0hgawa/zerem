@@ -326,12 +326,24 @@ impl TorrentSession {
         }
     }
 
-    /// Accept what `inspect` found.
-    pub async fn confirm_add(&mut self, only_files: Option<Vec<usize>>) -> anyhow::Result<()> {
+    /// Accept what `inspect` found, into a folder of the caller's choosing.
+    ///
+    /// `folder` is a rename of the torrent's own subfolder and nothing more:
+    /// librqbit takes the file names from the metadata, so the files inside
+    /// cannot be renamed and the dialog does not pretend they can. An empty
+    /// name, or one that is not a single ordinary path component, falls back to
+    /// the torrent's own — the same guard the derived name gets, because a name
+    /// typed by hand deserves it no less than one that came from a stranger.
+    pub async fn confirm_add(
+        &mut self,
+        only_files: Option<Vec<usize>>,
+        folder: Option<String>,
+    ) -> anyhow::Result<()> {
         let bytes = self.pending_bytes.take().context("nothing was read to add")?;
         let pending = self.pending.take().context("nothing was read to add")?;
         let source = pending.source.to_string();
-        let folder = self.folder_for(&pending.name, pending.files.len());
+        let named = folder.filter(|f| zerem_core::subfolder(f, pending.files.len()).is_some());
+        let folder = self.folder_for(named.as_deref().unwrap_or(&pending.name), pending.files.len());
 
         // From the bytes `inspect` already has, so a magnet is not fetched from
         // the swarm a second time.

@@ -26,8 +26,11 @@ pub enum Command {
     },
     /// Accept what `Inspect` found, downloading only these files. `None` is all
     /// of them, which is what librqbit wants rather than a list naming each one.
+    ///
+    /// `folder` renames the torrent's own subfolder. `None` keeps its name.
     ConfirmAdd {
         only_files: Option<Vec<usize>>,
+        folder: Option<String>,
     },
     /// Throw away what `Inspect` found.
     CancelAdd,

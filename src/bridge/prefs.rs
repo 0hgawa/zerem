@@ -56,6 +56,21 @@ fn typed(text: &str, ceiling: u32) -> u32 {
     text.trim().parse::<u32>().unwrap_or(0).min(ceiling)
 }
 
+/// Which pair of limits is in force.
+///
+/// Two pairs and a switch rather than one pair that gets edited: the point is
+/// to go quiet for an evening and come back, and a single pair means retyping
+/// the real numbers from memory every time.
+#[must_use]
+pub fn in_force(settings: &Settings) -> Command {
+    let (down, up) = if settings.alt_speed {
+        (settings.alt_down_limit, settings.alt_up_limit)
+    } else {
+        (settings.down_limit, settings.up_limit)
+    };
+    Command::SetLimits { down: to_bps(down), up: to_bps(up) }
+}
+
 /// Push the settings into the window. Also the startup path: the theme, the
 /// sort and the column widths are restored by calling this once.
 pub fn show(ui: &MainWindow, settings: &Settings) {
@@ -64,6 +79,9 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     push!(prefs, get_down_limit, set_down_limit, optional(settings.down_limit).into());
     push!(prefs, get_up_limit, set_up_limit, optional(settings.up_limit).into());
     push!(prefs, get_max_active, set_max_active, optional(settings.max_active).into());
+    push!(prefs, get_alt_down_limit, set_alt_down_limit, optional(settings.alt_down_limit).into());
+    push!(prefs, get_alt_up_limit, set_alt_up_limit, optional(settings.alt_up_limit).into());
+    push!(prefs, get_alt_speed, set_alt_speed, settings.alt_speed);
     push!(prefs, get_port, set_port, optional(u32::from(settings.port)).into());
     push!(prefs, get_add_paused, set_add_paused, settings.add_paused);
     push!(prefs, get_utp, set_utp, settings.utp);
@@ -116,6 +134,20 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
 
     prefs.on_set_down_limit(limit(ui, state, store, |s, kb| s.down_limit = kb));
     prefs.on_set_up_limit(limit(ui, state, store, |s, kb| s.up_limit = kb));
+    prefs.on_set_alt_down_limit(limit(ui, state, store, |s, kb| s.alt_down_limit = kb));
+    prefs.on_set_alt_up_limit(limit(ui, state, store, |s, kb| s.alt_up_limit = kb));
+
+    prefs.on_toggle_alt_speed({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let on = !store.get().alt_speed;
+            store.update(|s| s.alt_speed = on);
+            let settings = store.get();
+            state.engine.send(in_force(&settings));
+            push!(ui.global::<Prefs>(), get_alt_speed, set_alt_speed, on);
+        }
+    });
 
     prefs.on_set_max_active({
         let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
@@ -167,6 +199,21 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
         }
     });
 
+    wire_download_dir(ui, state, store, views);
+}
+
+/// The folder picker and the answer coming back from it.
+///
+/// Its own function because it is its own thing: a thread, a native dialog and
+/// a re-entry, where everything above is a field being written down.
+fn wire_download_dir(
+    ui: &MainWindow,
+    state: &Rc<crate::state::UiState>,
+    store: &Rc<Store>,
+    views: &Rc<super::Views>,
+) {
+    let prefs = ui.global::<Prefs>();
+
     prefs.on_pick_download_dir({
         let (store, ui) = (store.clone(), ui.as_weak());
         move || {
@@ -209,8 +256,8 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
         }
     });
 
-    // The view settings have no panel — they are changed by using the app, and
-    // only need to survive a restart.
+    // The theme has no panel row of its own to be wired from — the toolbar
+    // button and the preferences check both come through here.
     ui.global::<TorrentList>().on_toggle_theme({
         let (store, ui) = (store.clone(), ui.as_weak());
         move || {
@@ -242,9 +289,7 @@ fn limit(
         let settings = store.get();
         // Applied at once. librqbit's limiters are settable while it runs, so
         // there is no reason to make anybody wait for a restart.
-        state
-            .engine
-            .send(Command::SetLimits { down: to_bps(settings.down_limit), up: to_bps(settings.up_limit) });
+        state.engine.send(in_force(&settings));
         show(&ui, &settings);
     }
 }

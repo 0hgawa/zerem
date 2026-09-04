@@ -267,3 +267,22 @@ msgstr "pausados"
 
 msgid "total"
 msgstr "total"
+
+# Velocidade alternativa e o nome da pasta no diálogo de adição.
+msgid "Slow download"
+msgstr "Download reduzido"
+
+msgid "Slow upload"
+msgstr "Upload reduzido"
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "O segundo par, para quando a linha for necessária para outra coisa. O botão na barra alterna entre eles."
+
+msgid "Switch to the slow limits"
+msgstr "Mudar para os limites reduzidos"
+
+msgid "Back to the full speed limits"
+msgstr "Voltar aos limites cheios"
+
+msgid "Folder"
+msgstr "Pasta"

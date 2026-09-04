@@ -30,6 +30,14 @@ pub struct Settings {
     /// kB/s, `0` for unlimited.
     pub down_limit: u32,
     pub up_limit: u32,
+    /// The other pair, and the switch between them.
+    ///
+    /// Two sets rather than one that gets edited: the point is to go quiet for
+    /// an evening and come back, and a single pair means retyping the real
+    /// numbers from memory every time.
+    pub alt_down_limit: u32,
+    pub alt_up_limit: u32,
+    pub alt_speed: bool,
     /// Changing these needs a restart, so they are here but not in the panel —
     /// a control that silently does nothing until relaunch is worse than none.
     pub port: u16,
@@ -77,6 +85,12 @@ impl Default for Settings {
             download_dir: engine.download_dir,
             down_limit: 0,
             up_limit: 0,
+            // A tenth of a common line, which is a number somebody will change
+            // — but it is off by default, so it is a starting point and not a
+            // limit imposed on anybody.
+            alt_down_limit: 500,
+            alt_up_limit: 100,
+            alt_speed: false,
             port: engine.port,
             utp: engine.utp,
             upnp: engine.upnp,

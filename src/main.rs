@@ -95,10 +95,7 @@ fn main() -> Result<(), slint::PlatformError> {
 
     // The limits are the one engine setting that is applied rather than built
     // in, because librqbit takes them while it runs.
-    state.engine.send(Command::SetLimits {
-        down: bridge::prefs::to_bps(settings.down_limit),
-        up: bridge::prefs::to_bps(settings.up_limit),
-    });
+    state.engine.send(bridge::prefs::in_force(&settings));
 
     let list = ui.global::<TorrentList>();
     list.set_col_w(ModelRc::from(state.widths.clone()));

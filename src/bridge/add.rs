@@ -107,7 +107,13 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
         move || {
             let Some(ui) = ui.upgrade() else { return };
             ui.global::<AddState>().set_open(false);
-            state.engine.send(Command::ConfirmAdd { only_files: views.add.only_files() });
+            let folder = ui.global::<AddState>().get_folder().trim().to_owned();
+            state.engine.send(Command::ConfirmAdd {
+                only_files: views.add.only_files(),
+                // Sent only when it is a rename. Unchanged, it is the torrent's
+                // own name and the engine derives it anyway.
+                folder: (!folder.is_empty()).then_some(folder),
+            });
             super::refresh_now(&ui, &state, &views);
         }
     });
@@ -160,9 +166,21 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, choice: &Choice) {
     // what stops a second inspect inheriting the first one's ticks.
     if *choice.source.borrow() != *pending.source || choice.rows.row_count() != pending.files.len() {
         choice.adopt(pending);
+        // A different torrent: whatever was typed belonged to the last one.
+        add.set_folder(slint::SharedString::default());
     }
 
     push!(add, get_name, set_name, pending.name.as_ref().into());
+    // Only a torrent with more than one file has a folder of its own — the same
+    // rule the engine applies when it derives one.
+    let named = zerem_core::subfolder(&pending.name, pending.files.len());
+    push!(add, get_has_folder, set_has_folder, named.is_some());
+    if named.is_some() && add.get_folder().is_empty() {
+        // Seeded once, not pushed every tick: it is a field somebody may be
+        // typing in, and a value re-pushed once a second is a value nobody can
+        // edit.
+        add.set_folder(pending.name.as_ref().into());
+    }
     push!(add, get_fetching, set_fetching, pending.fetching);
     push!(add, get_error, set_error, pending.error.as_deref().unwrap_or_default().into());
     add.set_open(true);

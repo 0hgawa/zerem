@@ -118,6 +118,43 @@ export component AddDialog inherits Modal {
             // purpose: the volume may be freed before the download gets there,
             // and files already on disk from a previous run are not counted —
             // refusing on an estimate is worse than saying what it is.
+            if AddState.has-folder: HorizontalLayout {
+                spacing: 10px;
+                VerticalLayout {
+                    alignment: center;
+                    width: 66px;
+                    Text {
+                        text: @tr("Folder");
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                    }
+                }
+                Rectangle {
+                    height: 32px;
+                    border-radius: Theme.radius;
+                    background: name-input.has-focus ? Theme.surface-hi : Theme.hover;
+                    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+                    accessible-role: text-input;
+                    accessible-label: @tr("Folder");
+                    accessible-value: AddState.folder;
+
+                    HorizontalLayout {
+                        padding-left: 9px;
+                        padding-right: 9px;
+                        name-input := TextInput {
+                            text <=> AddState.folder;
+                            color: Theme.text;
+                            font-size: Theme.fs-body;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                            single-line: true;
+                        }
+                    }
+                }
+            }
+
             if AddState.shortfall != "": HorizontalLayout {
                 spacing: 8px;
                 VerticalLayout {

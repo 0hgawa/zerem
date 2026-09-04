@@ -71,6 +71,17 @@ component Toolbar inherits Rectangle {
 
         // Tertiary, so icons alone. Anything that is not about a torrent stays
         // out of the way of everything that is.
+        // One click away, which is the whole point of it: the moment somebody
+        // wants the line back is not a moment they want to open a panel.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.zap;
+                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
+                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
+                clicked => { Prefs.toggle-alt-speed(); }
+            }
+        }
         VerticalLayout {
             alignment: center;
             IconButton {

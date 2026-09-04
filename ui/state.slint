@@ -89,6 +89,13 @@ export global AddState {
     /// number in this app.
     in-out property <string> summary;
     in-out property <string> destination;
+    /// The folder the files go in, which starts as the torrent's own name and
+    /// can be typed over. Only the folder: librqbit takes the file names from
+    /// the metadata, so the dialog does not pretend the files can be renamed.
+    in-out property <string> folder;
+    /// Whether there is a folder at all — a single-file torrent goes straight
+    /// into the destination and has nothing to name.
+    in-out property <bool> has-folder;
     /// "Not enough room in this folder — 2.51 GB short", or empty. A warning
     /// and not a refusal: see the dialog for why the Add button stays live.
     in-out property <string> shortfall;
@@ -171,6 +178,10 @@ export global Prefs {
     in-out property <string> down-limit;
     in-out property <string> up-limit;
     in-out property <string> port;
+    in-out property <string> alt-down-limit;
+    in-out property <string> alt-up-limit;
+    /// Whether the other pair of limits is the one in force.
+    in-out property <bool> alt-speed;
     in-out property <bool> add-paused;
     in-out property <bool> utp;
     in-out property <bool> upnp;
@@ -193,6 +204,11 @@ export global Prefs {
     callback set-up-limit(string);
     callback set-max-active(string);
     callback set-port(string);
+    callback set-alt-down-limit(string);
+    callback set-alt-up-limit(string);
+    /// Switch between the two pairs. On the toolbar as well as here, because
+    /// the whole point of it is being one click away at nine in the evening.
+    callback toggle-alt-speed();
     callback set-add-paused(bool);
     callback set-utp(bool);
     callback set-upnp(bool);

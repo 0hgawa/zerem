@@ -77,6 +77,23 @@ export component Preferences inherits Modal {
                 }
 
                 NumberField {
+                    label: @tr("Slow download");
+                    value: Prefs.alt-down-limit;
+                    unit: @tr("kB/s");
+                    placeholder: @tr("Unlimited");
+                    committed(text) => { Prefs.set-alt-down-limit(text); }
+                }
+
+                NumberField {
+                    label: @tr("Slow upload");
+                    value: Prefs.alt-up-limit;
+                    unit: @tr("kB/s");
+                    placeholder: @tr("Unlimited");
+                    hint: @tr("The second pair, for when the line is needed for something else. The button in the toolbar switches to them.");
+                    committed(text) => { Prefs.set-alt-up-limit(text); }
+                }
+
+                NumberField {
                     label: @tr("Upload limit");
                     value: Prefs.up-limit;
                     unit: @tr("kB/s");

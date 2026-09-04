@@ -48,6 +48,12 @@ estrangulam a conexão por um instante.
 O **limite de upload** é o que importa no dia a dia: sem ele o cliente enche o
 uplink e trava a navegação da casa inteira.
 
+Há **dois pares de limites**, e o botão do raio na barra alterna entre eles. Dois
+pares em vez de um que se edita: o objetivo é ficar quieto por uma noite e
+voltar, e um par só significa redigitar os números de verdade de memória toda
+vez. E fica a um clique de distância de propósito — o momento em que alguém quer
+a linha de volta não é um momento em que essa pessoa quer abrir um painel.
+
 Tudo vive em `%LOCALAPPDATA%\Zerem\settings.json`, escrito atomicamente e com
 debounce. **Porta de escuta, uTP e UPnP estão no arquivo mas não no painel**:
 são fixados quando a sessão é construída, e um controle que silenciosamente não
