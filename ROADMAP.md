@@ -27,33 +27,42 @@ Detalhe técnico das decisões: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Alvos de aceite
 
-Números, não adjetivos. Medidos na Fase 3 e verificados no CI a partir da Fase 4.
-Se um alvo não for atingido, ele vira bug bloqueante — não vira alvo novo.
+Números, não adjetivos. **Medidos e publicados em
+[docs/benchmarks.md](docs/benchmarks.md)**, e verificados no CI a partir da
+Fase 4. Se um alvo não for atingido, ele vira bug bloqueante — não vira alvo
+novo.
 
-A coluna **medido** vem da Fase 0 ([docs/spike-report.md](docs/spike-report.md)),
-com o renderizador por software. Os alvos de memória foram revisados *para baixo*
-depois de medir: o piso não era a lista, era o renderizador. O tamanho do binário
-é a exceção: ele é medido a cada build de release, e a linha abaixo é a de hoje.
+A coluna diz **de onde vem cada número**, porque as duas fontes medem coisas
+diferentes: a Fase 0 mediu protótipos descartáveis, a Fase 3 mede o app. Onde
+não há medição do app, a linha diz isso em vez de herdar o número antigo como se
+fosse novo — um relatório que preenche lacuna por extrapolação é pior que um com
+lacuna, porque a lacuna pelo menos se vê.
 
-| Métrica | Alvo | Medido (Fase 0) |
-|---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,37 MB** ⚠️ (era 13,32 na Fase 1) |
-| RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
-| RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
-| RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
-| CPU ocioso, janela aberta | ≤ 0,5 % | **0,016 %** ✅ |
-| CPU ocioso, minimizado na bandeja | ≤ 0,1 % | **0,000 %** ✅ |
-| Cold start até a janela pintada | ≤ 300 ms | — |
-| CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** ✅ |
-| **CPU semeando** | ≤ 1 % de um núcleo | **0,77 %** ✅ |
-| Custo do tick, 2000 torrents | ≤ 1 ms | **70 – 176 µs** ✅ |
-| Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
-| Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
+| Métrica | Alvo | Medido | Fonte |
+|---|---|---|---|
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,37 MB** ⚠️ | app, hoje |
+| Cold start até a janela existir | ≤ 300 ms | **92 ms** (mediana de 5) ✅ | app, hoje |
+| CPU, janela aberta, baixando | ≤ 0,5 % ocioso | **0,156 %** de um núcleo ✅ | app, hoje |
+| Working set, sessão viva | ≤ 60 MB | **57,6 MB** ✅ | app, hoje |
+| Custo do tick | ≤ 1 ms | p95 **60 µs**, máx **71 µs** ✅ | app, hoje — 1 torrent |
+| Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista | por construção |
+| CPU baixando | ≤ 1,5 % por MB/s | **1,45 %** ✅ | Fase 0 |
+| **CPU semeando** | ≤ 1 % de um núcleo | **0,77 %** ✅ | Fase 0 |
+| CPU ocioso na bandeja | ≤ 0,1 % | **0,000 %** ✅ | Fase 0 |
+| Custo do tick, 2000 torrents | ≤ 1 ms | **70 – 176 µs** ✅ | Fase 0 |
+| RAM — 1000 torrents na lista | ≤ 80 MB WS | ⏳ **não aferido no app** | — |
+| RAM — semeando 20 ativos | ≤ 100 MB WS | ⏳ **não aferido** | — |
+| Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação humana | — |
 
-O binário é o número a vigiar: 15,37 MB deixa menos de 1 MB de folga, e o custo
-não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
-longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
-com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
+**Nenhum alvo aferido falhou.** O binário é o único que dá para vigiar: 15,37 MB
+deixa 0,63 MB de folga, e nada disso foi decoração — a sparkline custa 10 KB e o
+AccessKit 0,22 MB. A conta subiu ao longo das Fases 1 a 3, e caber no orçamento
+por pouco continua sendo caber.
+
+**As três linhas em aberto precisam de uma sessão grande de verdade**, não de
+extrapolação: mil torrents no librqbit são mil handles, mil estados e mil listas
+de arquivos, que é outra conta que a Fase 0 não fez — ela mediu o modelo e o
+renderizador com linhas sintéticas.
 
 Dois desses merecem destaque porque quase todo cliente falha neles: **minimizado
 na bandeja o app não deve renderizar nada** (não é "renderizar pouco" — é parar o
@@ -489,8 +498,12 @@ simplesmente mudá-las de lado.
 em `language.rs` — não há terceiro passo, e esquecer a linha é o que um teste
 pega.
 
-**Encerramento desta fase:** a tabela de alvos de aceite lá em cima é medida e
-publicada em `docs/benchmarks.md`. Alvo não atingido vira bug bloqueante.
+✅ **Encerramento desta fase.** A tabela de alvos foi aferida no binário release
+e publicada em [docs/benchmarks.md](docs/benchmarks.md), com o método de cada
+número e — o que importa mais — **com o que não foi aferido dito com todas as
+letras**. Nenhum alvo medido falhou. Três linhas continuam em aberto porque
+precisam de uma sessão grande de verdade, e preencher tabela por extrapolação
+num projeto cuja tese é "medido, não prometido" seria o pior desfecho possível.
 
 ---
 

@@ -22,10 +22,12 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 > instância única, limites de banda e painel de detalhes. O diálogo de adição
 > escolhe os arquivos antes de começar, e a aba de Arquivos os troca depois. O
 > filtro responde a cada tecla, o diálogo avisa quando não vai caber no disco,
-> um torrent que empaca diz por quê, os números pararam de tremer e o rodapé
-> desenha o último minuto. O que falta é o resto da Fase 3 — erros recuperáveis,
-> movimento, acessibilidade, i18n — e o auto-update da Fase 4; a ordem está no
-> [roadmap](ROADMAP.md).
+> um torrent que empaca diz por quê e um arquivo pode furar a fila. **A Fase 3
+> fechou** — números estáveis, sparkline, movimento, contraste aferido, leitor de
+> tela e a interface em português — e os alvos estão medidos em
+> [docs/benchmarks.md](docs/benchmarks.md). O que falta é o segundo catálogo da
+> i18n e a Fase 4 inteira: instalador, auto-update e benchmarks de regressão no
+> CI. A ordem está no [roadmap](ROADMAP.md).
 
 ## Preferências
 
@@ -45,14 +47,15 @@ tolerado.
 
 ## Medido, não prometido
 
-| | Alvo | Medido |
+| | Alvo | Medido — método em [benchmarks.md](docs/benchmarks.md) |
 |---|---|---|
 | Binário | ≤ 16 MB | **15,37 MB** — o librqbit responde por 4,7 |
-| Working set, sessão viva | — | **60 MB** |
+| Cold start até a janela | ≤ 300 ms | **92 ms** — mediana de 5 execuções |
+| Working set, sessão viva | ≤ 60 MB | **57,6 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
 | CPU semeando | ≤ 1 % de um núcleo | **0,77 %** |
-| Custo do tick | ≤ 1 ms | **70 – 176 µs** |
+| Custo do tick | ≤ 1 ms | **p95 60 µs, máx 71 µs** |
 | Janela escondida | ≤ 0,1 % | **0,000 %** — o tick para, os downloads não |
 
 ## Como está montado
