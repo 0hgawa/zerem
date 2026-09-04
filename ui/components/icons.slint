@@ -99,6 +99,13 @@ export component Icon inherits Rectangle {
     in property <string> glyph;
     in property <brush> tint: Theme.text-dim;
     in property <length> size: 15px;
+    /// How heavy the line is, as a fraction of the size.
+    ///
+    /// Lucide is drawn with a 2-unit stroke on a 24 grid, which is a twelfth —
+    /// the default here, and right for an icon standing on its own. A mark
+    /// inside a 16px box is not standing on its own: at that size a twelfth is
+    /// a hairline, and a tick has to read as a tick from across the row.
+    in property <float> weight: 1.0 / 12.0;
 
     width: size;
     height: size;
@@ -110,7 +117,7 @@ export component Icon inherits Rectangle {
         viewbox-height: 24;
         commands: root.glyph;
         stroke: root.tint;
-        stroke-width: root.size / 12;
+        stroke-width: root.size * root.weight;
         // Round, because that is how the family is drawn — the note at the top
         // of this file says so and the element was defaulting to butt and
         // mitre regardless. It also decides whether a dot renders at all: the

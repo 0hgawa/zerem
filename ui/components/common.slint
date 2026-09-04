@@ -53,12 +53,22 @@ export component Tick inherits Rectangle {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    background: on ? Theme.accent-fill : Theme.surface-hi;
+    // Ink, not accent. A column of saturated blue squares was the first thing
+    // the eye landed on in a panel whose content is filenames — and a tick box
+    // is not a highlight, it is a statement of fact. `text` is near-black on a
+    // light theme and near-white on a dark one, so the mark keeps the same
+    // weight against the paper in both.
+    background: on ? Theme.text : Theme.surface-hi;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
     if on: Icon {
         glyph: Lucide.check;
-        tint: Theme.on-accent;
+        // The paper colour, which is the maximum contrast against the ink
+        // behind it in either theme.
+        tint: Theme.bg;
         size: 12px;
+        // Heavier than Lucide's own twelfth: at twelve pixels that is a
+        // hairline, and this mark is read at a glance down a column.
+        weight: 1.0 / 7.0;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }

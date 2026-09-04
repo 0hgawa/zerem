@@ -28,6 +28,17 @@ pub fn for_extension(extension: &str) -> Option<Bitmap> {
     imp::for_extension(extension)
 }
 
+/// The icon the desktop draws for a folder.
+///
+/// The same question as [`for_extension`] with a different attribute, and worth
+/// asking for the same reason: a folder in this app should look like a folder
+/// in the file manager somebody already has open beside it, not like a drawing
+/// of one.
+#[must_use]
+pub fn for_folder() -> Option<Bitmap> {
+    imp::for_folder()
+}
+
 #[cfg(windows)]
 mod imp {
     use super::Bitmap;
@@ -37,7 +48,9 @@ mod imp {
         DeleteObject, GetDC, GetDIBits, GetObjectW, ReleaseDC, BITMAP, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
         DIB_RGB_COLORS, HGDIOBJ,
     };
-    use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_NORMAL;
+    use windows::Win32::Storage::FileSystem::{
+        FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_NORMAL, FILE_FLAGS_AND_ATTRIBUTES,
+    };
     use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
     use windows::Win32::UI::Shell::{
         SHGetFileInfoW, SHFILEINFOW, SHGFI_ICON, SHGFI_SMALLICON, SHGFI_USEFILEATTRIBUTES,
@@ -80,16 +93,28 @@ mod imp {
     static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     pub fn for_extension(extension: &str) -> Option<Bitmap> {
-        let _held = ONE_AT_A_TIME.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        ensure_com();
         // A name that cannot exist, so the shell has nothing to stat even if
         // the flag were ignored.
-        let name = HSTRING::from(format!("zerem-icon-probe.{extension}"));
+        ask(&format!("zerem-icon-probe.{extension}"), FILE_ATTRIBUTE_NORMAL)
+    }
+
+    pub fn for_folder() -> Option<Bitmap> {
+        // Same call, one attribute different. The name is equally imaginary:
+        // `SHGFI_USEFILEATTRIBUTES` means the shell answers from the attribute
+        // alone and never looks at the disk.
+        ask("zerem-icon-probe", FILE_ATTRIBUTE_DIRECTORY)
+    }
+
+    /// The shell's icon for something with these attributes and this name.
+    fn ask(name: &str, attributes: FILE_FLAGS_AND_ATTRIBUTES) -> Option<Bitmap> {
+        let _held = ONE_AT_A_TIME.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        ensure_com();
+        let name = HSTRING::from(name);
         let mut info = SHFILEINFOW::default();
         let ok = unsafe {
             SHGetFileInfoW(
                 &name,
-                FILE_ATTRIBUTE_NORMAL,
+                attributes,
                 Some(&raw mut info),
                 u32::try_from(size_of::<SHFILEINFOW>()).ok()?,
                 SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES,
@@ -101,7 +126,7 @@ mod imp {
 
         let bitmap = unpack(info.hIcon);
         // Ours to destroy the moment it is copied — an icon handle leaked once
-        // per extension is a handle leaked for the life of the process.
+        // per kind is a handle leaked for the life of the process.
         let _ = unsafe { DestroyIcon(info.hIcon) };
         bitmap
     }
@@ -199,11 +224,28 @@ mod imp {
     pub const fn for_extension(_extension: &str) -> Option<Bitmap> {
         None
     }
+
+    /// Nor this one, and for the same reason.
+    pub const fn for_folder() -> Option<Bitmap> {
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::for_extension;
+    use super::{for_extension, for_folder};
+
+    #[test]
+    #[cfg(windows)]
+    fn a_folder_has_the_desktops_own_icon_too() {
+        // Same call as a file's, one attribute different, and it has to come
+        // back with pixels in it — a folder row drawn with a glyph beside file
+        // rows drawn with real icons is the one that looks wrong.
+        let icon = for_folder().expect("Windows always has a folder icon");
+        assert!(icon.width > 0 && icon.height > 0);
+        assert_eq!(icon.rgba.len(), (icon.width * icon.height * 4) as usize);
+        assert!(icon.rgba.chunks_exact(4).any(|p| p[3] != 0), "every pixel is transparent");
+    }
 
     #[test]
     #[cfg(windows)]

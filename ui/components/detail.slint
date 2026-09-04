@@ -526,9 +526,15 @@ export component DetailDrawer inherits Rectangle {
                     }
                 }
 
+                // The desktop's own, the same as every file row below it.
                 VerticalLayout {
                     alignment: center;
-                    Icon { glyph: Lucide.folder-open; tint: Theme.warn; size: 16px; }
+                    Image {
+                        source: DetailState.folder-icon;
+                        width: 16px;
+                        height: 16px;
+                        image-fit: contain;
+                    }
                 }
                 Text {
                     text: DetailState.files-folder;

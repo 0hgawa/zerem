@@ -42,6 +42,10 @@ pub struct Models {
     /// per second. A miss that comes back empty is cached too: a platform with
     /// no answer should be asked once, not forty times.
     icons: RefCell<HashMap<String, Image>>,
+    /// The desktop's folder icon. Asked for once, on the first drawer that
+    /// opens, and never again: there is one folder icon and it does not change
+    /// while the app runs.
+    folder: RefCell<Option<Image>>,
     /// The flag for each country seen so far.
     ///
     /// Keyed by the country and not by the peer, which is what it was at first:
@@ -72,6 +76,7 @@ impl Models {
             sizes: RefCell::new(Vec::new()),
             pins: RefCell::new(Vec::new()),
             icons: RefCell::new(HashMap::new()),
+            folder: RefCell::new(None),
             flags: RefCell::new(HashMap::new()),
             shown: RefCell::new(None),
             guess: Cell::new(0),
@@ -145,6 +150,20 @@ impl Models {
             Image::from_rgba8_premultiplied(buffer)
         });
         self.icons.borrow_mut().insert(extension, image.clone());
+        image
+    }
+
+    /// The desktop's own folder icon.
+    fn folder_icon(&self) -> Image {
+        if let Some(cached) = self.folder.borrow().as_ref() {
+            return cached.clone();
+        }
+        let image = zerem_shell::folder_icon().map_or_else(Image::default, |bitmap| {
+            let mut buffer = SharedPixelBuffer::<Rgba8Pixel>::new(bitmap.width, bitmap.height);
+            buffer.make_mut_bytes().copy_from_slice(&bitmap.rgba);
+            Image::from_rgba8_premultiplied(buffer)
+        });
+        *self.folder.borrow_mut() = Some(image.clone());
         image
     }
 
@@ -493,6 +512,9 @@ fn show_choice(ui: &MainWindow, models: &Models) {
     // The folder the files sit in is the torrent's own name, which the title
     // already carries — read from there rather than derived a second time.
     push!(detail, get_files_folder, set_files_folder, detail.get_title());
+    if detail.get_folder_icon().size().width == 0 {
+        detail.set_folder_icon(models.folder_icon());
+    }
 }
 
 /// Replace a model's contents, reusing the rows that did not change.

@@ -158,6 +158,10 @@ export global DetailState {
     /// to. The header row of the list, the way a file manager shows a folder
     /// above what is inside it.
     in-out property <string> files-folder;
+    /// The desktop's own folder icon, so the row that stands for the torrent's
+    /// folder looks like a folder in the file manager beside it rather than a
+    /// drawing of one. Empty on a platform with no such notion.
+    in-out property <image> folder-icon;
     /// Why this torrent stopped, when it has. Empty means it has not.
     ///
     /// The state column carries it too, elided into whatever fits; here there
