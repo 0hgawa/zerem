@@ -34,6 +34,14 @@ export global Theme {
     out property <brush> bg: dark ? #16161a : #ffffff;
     out property <brush> surface: dark ? #21212a : #eff0f4;
     out property <brush> surface-hi: dark ? #2c2c36 : #e2e3ea;
+    // A panel raised on top of chrome, which is not the same direction in both
+    // themes and was drawn as though it were. `surface-hi` means "one step
+    // further from the window" — in the dark theme that is lighter, in the
+    // light theme it is darker, and a settings card painted with it came out
+    // as a grey block pressed into a grey dialog. A card rises: white on grey
+    // in the light theme, the way every settings screen on this desktop draws
+    // one, and the lighter grey in the dark theme where lighter is up.
+    out property <brush> card: dark ? #2c2c36 : #ffffff;
     out property <brush> row-alt: dark ? #ffffff06 : #00000004;
     out property <brush> hover: dark ? #ffffff0e : #0000000a;
     out property <brush> selected: dark ? #4c8dff2b : #4c8dff20;
@@ -43,7 +51,11 @@ export global Theme {
     // --- content ---
     out property <brush> text: dark ? #e7e7ee : #15151a;
     out property <brush> text-dim: dark ? #9696a4 : #6b6b78;
-    out property <brush> accent: dark ? #4c8dff : #0b57d0;
+    // Raised from #4c8dff, which the contrast test caught at 4.31:1 against a
+    // settings card - the lightest layer accent text is ever drawn on, and the
+    // one the chosen row of a dropdown uses. This is the smallest step that
+    // clears the 4.5:1 floor, so nothing else in the app shifts noticeably.
+    out property <brush> accent: dark ? #5a97ff : #0b57d0;
     out property <brush> seeding: dark ? #4ac68d : #0f7a48;
     out property <brush> warn: dark ? #efa23c : #8a5300;
     out property <brush> danger: dark ? #ff6b6b : #b3261e;

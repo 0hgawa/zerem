@@ -113,7 +113,7 @@ export component Check inherits Rectangle {
 /// have to be read. The panel is a raised surface rather than an outline —
 /// Fluent separates by layer, and this app draws no boxes.
 export component SettingsCard inherits Rectangle {
-    background: Theme.surface-hi;
+    background: Theme.card;
     border-radius: 10px;
     VerticalLayout {
         padding-left: 12px;
@@ -626,7 +626,7 @@ export component Dropdown inherits Rectangle {
         y: root.height + 4px;
         width: root.width;
         Rectangle {
-            background: Theme.surface-hi;
+            background: Theme.card;
             border-radius: 8px;
             drop-shadow-blur: 18px;
             drop-shadow-color: #00000059;

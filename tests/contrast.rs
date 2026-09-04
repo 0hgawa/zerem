@@ -89,16 +89,23 @@ fn every_pair_the_app_actually_draws_is_legible() {
         p.check(&mut bad, "text", "bg", AA_TEXT);
         p.check(&mut bad, "text", "surface", AA_TEXT);
         p.check(&mut bad, "text", "surface-hi", AA_TEXT);
+        // And on a settings card, which is the layer that rises out of the
+        // dialog rather than sinking into it. Every row in Preferences has its
+        // title, its explanation and often a number sitting on this.
+        p.check(&mut bad, "text", "card", AA_TEXT);
 
         // The dim text is a whole column of the table — sizes, peers, ETA,
         // ratio — so it is body text and gets the body threshold, not the
         // "it is only a hint" discount.
         p.check(&mut bad, "text-dim", "bg", AA_TEXT);
         p.check(&mut bad, "text-dim", "surface", AA_TEXT);
+        p.check(&mut bad, "text-dim", "card", AA_TEXT);
 
         // Coloured text: the state column, the speeds, the notice line.
         p.check(&mut bad, "accent", "bg", AA_TEXT);
         p.check(&mut bad, "accent", "surface", AA_TEXT);
+        // The chosen row in a dropdown, and the language it names.
+        p.check(&mut bad, "accent", "card", AA_TEXT);
         p.check(&mut bad, "seeding", "bg", AA_TEXT);
         p.check(&mut bad, "seeding", "surface", AA_TEXT);
         p.check(&mut bad, "danger", "bg", AA_TEXT);
