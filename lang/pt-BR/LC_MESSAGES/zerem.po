@@ -182,3 +182,29 @@ msgstr "Limite de upload"
 
 msgid "not downloading"
 msgstr "não está baixando"
+
+# Os cinco estados aparecem duas vezes no app: aqui, como rótulos da trilha
+# lateral, e em `text.rs`, como o texto da coluna de estado. É a costura entre
+# os dois catálogos ficando visível — o `.slint` não pode ler a tabela do Rust,
+# e a coluna não pode usar `@tr()` porque é montada por linha alterada.
+# Traduzidos iguais nos dois lugares, de propósito: são a mesma palavra.
+msgid "Downloading"
+msgstr "Baixando"
+
+msgid "Error"
+msgstr "Erro"
+
+msgid "Paused"
+msgstr "Pausado"
+
+msgid "Queued"
+msgstr "Na fila"
+
+msgid "Seeding"
+msgstr "Semeando"
+
+msgid "Hide the state list"
+msgstr "Ocultar a lista de estados"
+
+msgid "Show the state list"
+msgstr "Mostrar a lista de estados"

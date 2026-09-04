@@ -201,6 +201,12 @@ export global SessionState {
     /// Empty when there is nothing worth drawing.
     in-out property <string> spark-down;
     in-out property <string> spark-up;
+    /// How many torrents are in each state, for the rail. Strings, because
+    /// every number in this app is turned into one in Rust.
+    in-out property <string> downloading: "0";
+    in-out property <string> seeding: "0";
+    in-out property <string> queued: "0";
+    in-out property <string> failed: "0";
 }
 
 export global TorrentList {
@@ -216,6 +222,10 @@ export global TorrentList {
     /// what the field draws. Deliberately not persisted — a filter restored at
     /// launch hides torrents for a reason nobody remembers.
     in-out property <string> filter;
+    /// Which state the rail has the view narrowed to — mirrors Shown::index().
+    in-out property <int> shown;
+    /// Whether the rail is on screen. Persisted, like the drawer.
+    in-out property <bool> rail-open: true;
     in-out property <int> sort-col;
     in-out property <bool> sort-desc;
     in-out property <int> selected-count;
@@ -264,6 +274,14 @@ export global TorrentList {
     callback close-menu();
     /// Every keystroke in the filter box. Answered at once, not on the tick.
     callback filter-changed(string);
+    /// A click in the rail. Answered at once, not on the tick.
+    callback show-state(int);
+    callback toggle-rail();
+    /// Everything the view is showing — never a row it is hiding, which would
+    /// be a delete acting on something nobody could see.
+    callback select-all();
+    /// A double click on a row: the folder, the same as Enter.
+    callback open-row-folder(int);
     callback open-columns(length, length);
     callback close-columns();
     callback toggle-column(int);

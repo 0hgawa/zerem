@@ -189,6 +189,10 @@ export component TableRow inherits Rectangle {
             }
             TorrentList.select(root.index, e.modifiers.control, e.modifiers.shift);
         }
+        // The same thing Enter does, and what a double click means everywhere
+        // else: show me this. `clicked` fires first, so the row is selected by
+        // the time this runs.
+        double-clicked => { TorrentList.open-row-folder(root.index); }
     }
 
     // The row's own actions, on hover, at the right edge.

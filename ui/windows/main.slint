@@ -10,7 +10,7 @@ import { ColumnsMenu, ContextMenu } from "../components/menu.slint";
 import { AddDialog } from "../components/add.slint";
 import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind, IconButton } from "../components/button.slint";
-import { EmptyState, SearchField, Sparkline, Stat } from "../components/common.slint";
+import { EmptyState, RailItem, SearchField, Sparkline, Stat } from "../components/common.slint";
 import { ConfirmRemove, Preferences } from "dialogs.slint";
 
 component Toolbar inherits Rectangle {
@@ -92,6 +92,15 @@ component Toolbar inherits Rectangle {
 
         // Tertiary, so icons alone. Anything that is not about a torrent stays
         // out of the way of everything that is.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.panel-left;
+                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
+                clicked => { TorrentList.toggle-rail(); }
+            }
+        }
         VerticalLayout {
             alignment: center;
             IconButton {
@@ -261,6 +270,10 @@ export component MainWindow inherits Window {
                 TorrentList.open-folder();
                 return accept;
             }
+            if (e.text == "a" && e.modifiers.control) {
+                TorrentList.select-all();
+                return accept;
+            }
             if (e.text == "t") { TorrentList.toggle-theme(); return accept; }
             return reject;
         }
@@ -277,6 +290,65 @@ export component MainWindow inherits Window {
             // list keeps every row it had.
             HorizontalLayout {
                 spacing: 0px;
+
+                // The rail. Where a browser puts its sidebar and where every
+                // other client puts this, so it is where the hand goes looking.
+                // The counts are what earn it the width: they answer "is
+                // anything stuck?" without a click.
+                if TorrentList.rail-open: Rectangle {
+                    width: 158px;
+                    background: Theme.surface;
+                    VerticalLayout {
+                        padding: 6px;
+                        spacing: 2px;
+                        alignment: start;
+                        RailItem {
+                            label: @tr("All");
+                            glyph: Lucide.files;
+                            count: SessionState.total;
+                            active: TorrentList.shown == 0;
+                            chosen => { TorrentList.show-state(0); }
+                        }
+                        RailItem {
+                            label: @tr("Downloading");
+                            glyph: Lucide.arrow-down;
+                            count: SessionState.downloading;
+                            active: TorrentList.shown == 1;
+                            tint: Theme.accent;
+                            chosen => { TorrentList.show-state(1); }
+                        }
+                        RailItem {
+                            label: @tr("Seeding");
+                            glyph: Lucide.arrow-up;
+                            count: SessionState.seeding;
+                            active: TorrentList.shown == 2;
+                            tint: Theme.seeding;
+                            chosen => { TorrentList.show-state(2); }
+                        }
+                        RailItem {
+                            label: @tr("Queued");
+                            glyph: Lucide.loader;
+                            count: SessionState.queued;
+                            active: TorrentList.shown == 3;
+                            chosen => { TorrentList.show-state(3); }
+                        }
+                        RailItem {
+                            label: @tr("Paused");
+                            glyph: Lucide.pause;
+                            count: SessionState.paused;
+                            active: TorrentList.shown == 4;
+                            chosen => { TorrentList.show-state(4); }
+                        }
+                        RailItem {
+                            label: @tr("Error");
+                            glyph: Lucide.triangle-alert;
+                            count: SessionState.failed;
+                            active: TorrentList.shown == 5;
+                            tint: Theme.danger;
+                            chosen => { TorrentList.show-state(5); }
+                        }
+                    }
+                }
 
                 // `min-width: 0` and `clip` are what make the panel possible at
                 // all. The columns are fixed widths, so this layout's natural

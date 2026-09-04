@@ -345,3 +345,60 @@ export component Sparkline inherits Rectangle {
         stroke-width: 1.5px;
     }
 }
+
+/// One state in the rail: what it is, and how many are in it.
+///
+/// The count is the reason the rail is worth its width — it answers "is
+/// anything stuck?" without a click, which a row of chips at the top could not
+/// do without stealing the room the names need.
+export component RailItem inherits Rectangle {
+    in property <string> label;
+    in property <string> glyph;
+    in property <string> count;
+    in property <bool> active;
+    in property <brush> tint: Theme.text-dim;
+    callback chosen();
+
+    height: 32px;
+    border-radius: Theme.radius;
+    background: active ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+    accessible-role: list-item;
+    accessible-label: root.label;
+    accessible-item-selected: root.active;
+    accessible-action-default => { root.chosen(); }
+
+    HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 9px;
+        spacing: 9px;
+
+        VerticalLayout {
+            alignment: center;
+            Icon { glyph: root.glyph; tint: root.active ? Theme.accent : root.tint; size: 14px; }
+        }
+        Text {
+            text: root.label;
+            color: root.active ? Theme.accent : Theme.text;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: root.active ? 600 : 400;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.count;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.chosen(); }
+    }
+}

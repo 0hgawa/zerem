@@ -46,6 +46,9 @@ pub struct Settings {
     pub dark: bool,
     pub sort_col: usize,
     pub sort_desc: bool,
+    /// Whether the state rail is on screen. Like the column widths, nobody
+    /// chooses this in a panel — they arrive at it by using the app.
+    pub rail_open: bool,
     /// Empty means "never resized"; the table falls back to its own defaults.
     pub column_widths: Vec<f32>,
     /// Empty means "never touched"; every column shows. Hand-editable like the
@@ -81,6 +84,7 @@ impl Default for Settings {
             dark: true,
             sort_col: 0,
             sort_desc: false,
+            rail_open: true,
             column_widths: Vec::new(),
             column_visible: Vec::new(),
             max_active: 0,

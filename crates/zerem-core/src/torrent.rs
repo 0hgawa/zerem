@@ -309,13 +309,22 @@ impl TorrentRow {
     }
 }
 
-/// The session totals shown in the status bar.
+/// The session totals shown in the status bar, and the counts beside each
+/// state in the rail.
+///
+/// Folded in one pass over the rows rather than counted per state on demand:
+/// six passes over two thousand rows once a second to answer six questions
+/// about the same rows is five passes too many.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 pub struct SessionStats {
     pub down_bps: u64,
     pub up_bps: u64,
     pub active: u32,
     pub paused: u32,
+    pub downloading: u32,
+    pub seeding: u32,
+    pub queued: u32,
+    pub failed: u32,
 }
 
 impl SessionStats {
@@ -329,6 +338,13 @@ impl SessionStats {
                 acc.active += 1;
             } else {
                 acc.paused += 1;
+            }
+            match t.state {
+                State::Downloading | State::Checking => acc.downloading += 1,
+                State::Seeding => acc.seeding += 1,
+                State::Queued => acc.queued += 1,
+                State::Error => acc.failed += 1,
+                State::Paused => {}
             }
             acc
         })

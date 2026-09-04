@@ -56,6 +56,51 @@ pub fn wire(
         }
     });
 
+    list.on_select_all({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            state.select_all();
+            super::detail::follow_selection(&ui, &state);
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
+    list.on_show_state({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            state.set_shown(zerem_core::Shown::from_index(index), &state.snapshot());
+            // Narrowing can cut the selection down, and the drawer has to stop
+            // showing a torrent the list no longer holds.
+            super::detail::follow_selection(&ui, &state);
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
+    list.on_toggle_rail({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let list = ui.global::<TorrentList>();
+            let open = !list.get_rail_open();
+            list.set_rail_open(open);
+            store.update(|s| s.rail_open = open);
+        }
+    });
+
+    list.on_open_row_folder({
+        let (state, ui) = (state.clone(), ui.as_weak());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            // The click that came first has already selected the row, so this
+            // acts on the same torrent the eye is on.
+            let _ = index;
+            ui.global::<TorrentList>().invoke_open_folder();
+            let _ = &state;
+        }
+    });
+
     list.on_resize_begin({
         let state = state.clone();
         move |col| state.begin_resize(col.max(0) as usize)

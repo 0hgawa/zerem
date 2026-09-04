@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use slint::{Model, VecModel};
-use zerem_core::{sort, Filter, Sort, TorrentId, TorrentRow};
+use zerem_core::{sort, Filter, Shown, Sort, TorrentId, TorrentRow};
 use zerem_engine::{Engine, Snapshot};
 
 use crate::model::{ApplyStats, TorrentModel};
@@ -73,6 +73,10 @@ pub struct UiState {
     order: RefCell<Vec<usize>>,
     /// What the view is narrowed to. Parsed once per keystroke, not per row.
     filter: RefCell<Filter>,
+    /// Which states the view is narrowed to. Its own cell rather than folded
+    /// into the text filter: they answer different questions, and one has to
+    /// survive the other being typed.
+    shown: Cell<Shown>,
     /// The row count the cached order was built against.
     ///
     /// Not `order.len()`: with a filter on, the order is shorter than the
@@ -114,6 +118,7 @@ impl UiState {
             drawer_width: Cell::new(DEFAULT_DRAWER_W),
             order: RefCell::new(Vec::new()),
             filter: RefCell::new(Filter::default()),
+            shown: Cell::new(Shown::default()),
             built_for: Cell::new(0),
             selected: RefCell::new(HashSet::new()),
             anchor: Cell::new(0),
@@ -228,11 +233,33 @@ impl UiState {
         selected.retain(|id| visible.contains(id));
     }
 
+    /// Narrow the view to one state, or widen it back.
+    ///
+    /// Rebuilt at once for the same reason typing is: a click that waits for
+    /// the next tick reads as a click that did not land.
+    pub fn set_shown(&self, shown: Shown, snapshot: &Snapshot) {
+        self.shown.set(shown);
+        self.rebuild_order(snapshot);
+    }
+
+    #[must_use]
+    pub fn shown(&self) -> Shown {
+        self.shown.get()
+    }
+
+    /// Select everything the view is showing — never a row it is hiding, which
+    /// would be Delete acting on something nobody can see.
+    pub fn select_all(&self) {
+        let mut selected = self.selected.borrow_mut();
+        selected.clear();
+        selected.extend((0..).map_while(|i| self.model.id_at(i)));
+    }
+
     /// Whether a filter is hiding anything, which is what decides between the
     /// plain total and the matched count.
     #[must_use]
     pub fn is_filtering(&self) -> bool {
-        !self.filter.borrow().is_empty()
+        !self.filter.borrow().is_empty() || self.shown.get() != Shown::All
     }
 
     /// Sort everything, then drop what the filter excludes.
@@ -243,6 +270,10 @@ impl UiState {
     fn rebuild_order(&self, snapshot: &Snapshot) {
         let mut order = self.order.borrow_mut();
         sort::order(&snapshot.torrents, self.sort.get(), &mut order);
+        let shown = self.shown.get();
+        if shown != Shown::All {
+            order.retain(|&i| shown.matches(snapshot.torrents[i].state));
+        }
         let filter = self.filter.borrow();
         if !filter.is_empty() {
             order.retain(|&i| filter.matches(&snapshot.torrents[i]));

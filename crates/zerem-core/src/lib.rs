@@ -26,7 +26,7 @@ pub use choice::{flags, is_narrowed, ticked, to_fetch};
 pub use content::Content;
 pub use detail::{Details, FileRow, PeerRow, Transport};
 pub use fault::explain;
-pub use filter::Filter;
+pub use filter::{Filter, Shown};
 pub use folder::subfolder;
 pub use history::{History, Spark};
 pub use language::SHIPPED as LANGUAGES;

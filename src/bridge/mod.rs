@@ -116,6 +116,7 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
     push!(list, get_selected_count, set_selected_count, selection.len() as i32);
     push!(list, get_selection_running, set_selection_running, state.model.all_running(&selection));
     push!(list, get_sort_col, set_sort_col, state.sort().col as i32);
+    push!(list, get_shown, set_shown, state.shown().index());
     push!(list, get_sort_desc, set_sort_desc, state.sort().desc);
     // Looked up fresh every refresh: a re-sort or a removal moves the row, and
     // the arrows have to stay on the torrent rather than on the position.
@@ -129,6 +130,10 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
     push!(session, get_active, set_active, totals.active.to_string().into());
     push!(session, get_paused, set_paused, totals.paused.to_string().into());
     push!(session, get_total, set_total, snapshot.torrents.len().to_string().into());
+    push!(session, get_downloading, set_downloading, totals.downloading.to_string().into());
+    push!(session, get_seeding, set_seeding, totals.seeding.to_string().into());
+    push!(session, get_queued, set_queued, totals.queued.to_string().into());
+    push!(session, get_failed, set_failed, totals.failed.to_string().into());
     // Empty unless a filter is on, and the status bar swaps the plain total for
     // it — the model already holds exactly the rows that survived.
     push!(

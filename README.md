@@ -154,9 +154,10 @@ runtime e o errado de se descobrir por captura de tela.
 | `Ctrl+O` | abre um `.torrent` |
 | `Ctrl+,` | preferências |
 | `Ctrl+F` | vai para o filtro; `Esc` volta para a lista |
+| `Ctrl+A` | seleciona tudo o que a lista está mostrando |
 | `Ctrl+I` | abre ou fecha o painel de detalhes — clicar numa linha também abre |
 | `Espaço` | pausa ou inicia a seleção |
-| `Enter` | abre a pasta da seleção |
+| `Enter` | abre a pasta da seleção — duplo clique também |
 | `Delete` | remove a seleção — **pergunta antes** |
 | `↑` `↓` | anda pela lista; com `Shift` estende a seleção |
 | `Home` `End` | topo e fim |
@@ -299,6 +300,21 @@ O nome do torrent vem de um estranho, então um nome que não seja **exatamente 
 componente de caminho** — `..\..\Windows`, `C:\`, qualquer barra — perde a
 subpasta em vez de derrubar o torrent: os arquivos caem soltos num lugar
 inofensivo em vez de num lugar escolhido por quem montou o torrent.
+
+## A lista de estados
+
+À esquerda, uma linha por estado com a contagem ao lado: **Todos**, **Baixando**,
+**Semeando**, **Na fila**, **Pausados**, **Com erro**. A contagem é o que paga a
+largura — ela responde "tem alguma coisa travada?" sem um clique, que é a
+pergunta pela qual alguém abre um cliente de torrent depois do almoço.
+
+Some com o botão na barra, e o estado disso sobrevive a fechar e reabrir. Ela
+combina com o filtro de texto em vez de brigar: as duas perguntas são
+diferentes, e uma tem de sobreviver à outra sendo digitada.
+
+`Ctrl+A` seleciona **o que a lista está mostrando** — nunca uma linha que ela
+está escondendo, o que faria o `Delete` agir sobre algo que ninguém vê. Duplo
+clique numa linha abre a pasta, igual ao `Enter`.
 
 ## Antes de encher o disco
 
