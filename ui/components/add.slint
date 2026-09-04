@@ -63,7 +63,7 @@ export component AddDialog inherits Modal {
             spacing: 14px;
 
             Text {
-                text: AddState.fetching ? "Reading torrent…" : "Add torrent";
+                text: AddState.fetching ? @tr("Reading torrent…") : @tr("Add torrent");
                 color: Theme.text;
                 font-size: Theme.fs-title;
                 font-family: Theme.font;
@@ -86,7 +86,7 @@ export component AddDialog inherits Modal {
                     alignment: center;
                     width: 66px;
                     Text {
-                        text: "Save to";
+                        text: @tr("Save to");
                         color: Theme.text-dim;
                         font-size: Theme.fs-body;
                         font-family: Theme.font;
@@ -106,7 +106,7 @@ export component AddDialog inherits Modal {
                 VerticalLayout {
                     alignment: center;
                     Button {
-                        label: "Change";
+                        label: @tr("Change");
                         glyph: Lucide.folder-open;
                         clicked => { AddState.change-destination(); }
                     }
@@ -149,7 +149,7 @@ export component AddDialog inherits Modal {
                     alignment: center;
                     spacing: 6px;
                     Text {
-                        text: "Fetching the file list from the swarm…";
+                        text: @tr("Fetching the file list from the swarm…");
                         color: Theme.text-dim;
                         font-size: Theme.fs-body;
                         font-family: Theme.font;
@@ -158,7 +158,7 @@ export component AddDialog inherits Modal {
                     // Said plainly, because this is the one wait in the app that
                     // can genuinely take a while and looks like a hang otherwise.
                     Text {
-                        text: "A magnet link carries no file list — it has to be asked for.";
+                        text: @tr("A magnet link carries no file list — it has to be asked for.");
                         color: Theme.idle;
                         font-size: Theme.fs-label;
                         font-family: Theme.font;
@@ -178,8 +178,8 @@ export component AddDialog inherits Modal {
                     vertical-alignment: center;
                     horizontal-stretch: 1;
                 }
-                Button { label: "All"; kind: ButtonKind.text; clicked => { AddState.set-all(true); } }
-                Button { label: "None"; kind: ButtonKind.text; clicked => { AddState.set-all(false); } }
+                Button { label: @tr("All"); kind: ButtonKind.text; clicked => { AddState.set-all(true); } }
+                Button { label: @tr("None"); kind: ButtonKind.text; clicked => { AddState.set-all(false); } }
             }
 
             if !AddState.fetching && AddState.files.length > 0: Rectangle {
@@ -196,9 +196,9 @@ export component AddDialog inherits Modal {
             HorizontalLayout {
                 spacing: 8px;
                 alignment: end;
-                Button { label: "Cancel"; kind: ButtonKind.text; clicked => { AddState.cancel(); } }
+                Button { label: @tr("Cancel"); kind: ButtonKind.text; clicked => { AddState.cancel(); } }
                 Button {
-                    label: "Add";
+                    label: @tr("Add");
                     glyph: Lucide.plus;
                     kind: ButtonKind.primary;
                     enabled: AddState.can-add;

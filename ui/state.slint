@@ -160,6 +160,8 @@ export global Prefs {
     /// Set from a hand-edited file to something that is not one of the presets,
     /// which the menus cannot step through.
     in-out property <bool> custom-limits;
+    /// What the language row shows — "System", or the language named in itself.
+    in-out property <string> language;
 
     callback close();
     callback pick-download-dir();
@@ -171,6 +173,10 @@ export global Prefs {
     /// Each advances to the next preset, wrapping through unlimited.
     callback cycle-down-limit();
     callback cycle-up-limit();
+    /// Steps to the next shipped language, wrapping through "System". The swap
+    /// is live: Slint's bundled translations are a property, so every string
+    /// redraws without a restart.
+    callback cycle-language();
 }
 
 export global SessionState {

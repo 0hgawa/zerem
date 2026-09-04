@@ -99,8 +99,8 @@ component FileLine inherits Rectangle {
     accessible-label: root.entry.path;
     accessible-checkable: true;
     accessible-checked: root.entry.wanted;
-    accessible-description: root.entry.first ? "Being fetched before the others"
-        : root.entry.complete ? "Finished"
+    accessible-description: root.entry.first ? @tr("Being fetched before the others")
+        : root.entry.complete ? @tr("Finished")
         : root.entry.pct;
     accessible-action-default => { DetailState.toggle-file(root.index); }
     background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
@@ -135,7 +135,7 @@ component FileLine inherits Rectangle {
                 DetailCell { text: entry.size; }
                 // Nothing to say about the progress of a file nobody asked for.
                 if !entry.wanted: DetailCell {
-                    text: "not downloading";
+                    text: @tr("not downloading");
                     color: Theme.idle;
                     horizontal-stretch: 1;
                 }
@@ -211,8 +211,8 @@ component FileLine inherits Rectangle {
         }
 
         accessible-role: button;
-        accessible-label: root.entry.first ? "Stop fetching this one first"
-            : "Fetch this one before the others";
+        accessible-label: root.entry.first ? @tr("Stop fetching this one first")
+            : @tr("Fetch this one before the others");
         accessible-enabled: !root.entry.complete && root.entry.wanted;
         accessible-action-default => { DetailState.toggle-first(root.index); }
 
@@ -328,7 +328,7 @@ export component DetailDrawer inherits Rectangle {
                     alignment: center;
                     IconButton {
                         glyph: Lucide.x;
-                        label: "Close the details panel";
+                        label: @tr("Close the details panel");
                         clicked => { DetailState.close(); }
                     }
                 }
@@ -367,7 +367,7 @@ export component DetailDrawer inherits Rectangle {
                 HorizontalLayout {
                     alignment: end;
                     Button {
-                        label: "Try again";
+                        label: @tr("Try again");
                         glyph: Lucide.play;
                         clicked => { DetailState.retry(); }
                     }
@@ -382,8 +382,8 @@ export component DetailDrawer inherits Rectangle {
                 padding-right: 8px;
                 padding-bottom: 6px;
                 spacing: 4px;
-                Tab { label: "Files"; id: "files"; glyph: Lucide.file; count: DetailState.files-summary; }
-                Tab { label: "Peers"; id: "peers"; glyph: Lucide.users; count: DetailState.peers-summary; }
+                Tab { label: @tr("Files"); id: "files"; glyph: Lucide.file; count: DetailState.files-summary; }
+                Tab { label: @tr("Peers"); id: "peers"; glyph: Lucide.users; count: DetailState.peers-summary; }
             }
             Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border; }
         }
@@ -391,8 +391,8 @@ export component DetailDrawer inherits Rectangle {
         if DetailState.tab == "files" && DetailState.files.length == 0:
             EmptyState {
                 glyph: Lucide.file;
-                title: "No file list yet";
-                detail: "A magnet has none until its metadata arrives.";
+                title: @tr("No file list yet");
+                detail: @tr("A magnet has none until its metadata arrives.");
             }
         // What is actually coming down, above the list rather than inside it.
         // The torrent's own size is not the number the reader wants once
@@ -409,7 +409,7 @@ export component DetailDrawer inherits Rectangle {
             // handful out of thousands is what the add dialog is for; this is
             // the way back from having unticked too much.
             if DetailState.files-partial: Button {
-                label: "All";
+                label: @tr("All");
                 kind: ButtonKind.text;
                 clicked => { DetailState.restore-all-files(); }
             }
@@ -422,8 +422,8 @@ export component DetailDrawer inherits Rectangle {
         if DetailState.tab == "peers" && DetailState.peers.length == 0:
             EmptyState {
                 glyph: Lucide.users;
-                title: "No peers connected";
-                detail: "A paused torrent has none.";
+                title: @tr("No peers connected");
+                detail: @tr("A paused torrent has none.");
             }
         if DetailState.tab == "peers" && DetailState.peers.length > 0: ListView {
             for p[i] in DetailState.peers: PeerLine { entry: p; index: i; }

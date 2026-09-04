@@ -22,7 +22,7 @@ export component Preferences inherits Modal {
         spacing: 16px;
 
         Text {
-            text: "Preferences";
+            text: @tr("Preferences");
             color: Theme.text;
             font-size: Theme.fs-title;
             font-family: Theme.font;
@@ -30,10 +30,10 @@ export component Preferences inherits Modal {
         }
 
         Field {
-            label: "Save to";
+            label: @tr("Save to");
             value: Prefs.download-dir;
-            hint: "Torrents already in the list keep their folder.";
-            action: "Change";
+            hint: @tr("Torrents already in the list keep their folder.");
+            action: @tr("Change");
             glyph: Lucide.folder-open;
             activated => { Prefs.pick-download-dir(); }
         }
@@ -41,25 +41,25 @@ export component Preferences inherits Modal {
         Rectangle { height: 1px; background: Theme.border; }
 
         Field {
-            label: "Download limit";
+            label: @tr("Download limit");
             value: Prefs.down-limit;
-            action: "Change";
+            action: @tr("Change");
             glyph: Lucide.arrow-down;
             activated => { Prefs.cycle-down-limit(); }
         }
 
         Field {
-            label: "Upload limit";
+            label: @tr("Upload limit");
             value: Prefs.up-limit;
             // The one that matters day to day, so it says why.
-            hint: "An unlimited upload fills the uplink and stalls everything else on the connection.";
-            action: "Change";
+            hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
+            action: @tr("Change");
             glyph: Lucide.arrow-up;
             activated => { Prefs.cycle-up-limit(); }
         }
 
         if Prefs.custom-limits: Text {
-            text: "A limit here was set by hand in settings.json. Changing it will step to the nearest preset.";
+            text: @tr("A limit here was set by hand in settings.json. Changing it will step to the nearest preset.");
             color: Theme.warn;
             font-size: Theme.fs-label;
             font-family: Theme.font;
@@ -69,7 +69,7 @@ export component Preferences inherits Modal {
         HorizontalLayout {
             alignment: end;
             Button {
-                label: "Done";
+                label: @tr("Done");
                 kind: ButtonKind.primary;
                 clicked => { Prefs.close(); }
             }
@@ -98,14 +98,14 @@ export component ConfirmRemove inherits Modal {
         }
 
         Check {
-            label: "Also move the data to the recycle bin";
+            label: @tr("Also move the data to the recycle bin");
             checked <=> TorrentList.confirm-delete-data;
         }
 
         Text {
             text: TorrentList.confirm-delete-data
-                ? "The files go to the recycle bin, so this can be undone."
-                : "The files stay where they are.";
+                ? @tr("The files go to the recycle bin, so this can be undone.")
+                : @tr("The files stay where they are.");
             color: Theme.text-dim;
             font-size: Theme.fs-label;
             font-family: Theme.font;
@@ -116,12 +116,12 @@ export component ConfirmRemove inherits Modal {
             spacing: 8px;
             alignment: end;
             Button {
-                label: "Cancel";
+                label: @tr("Cancel");
                 kind: ButtonKind.text;
                 clicked => { TorrentList.confirm-cancel(); }
             }
             Button {
-                label: "Remove";
+                label: @tr("Remove");
                 glyph: Lucide.trash;
                 kind: ButtonKind.danger;
                 clicked => { TorrentList.confirm-accept(); }

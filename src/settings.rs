@@ -46,6 +46,12 @@ pub struct Settings {
     /// Empty means "never touched"; every column shows. Hand-editable like the
     /// rest of the file, so the name column is forced back on when it is read.
     pub column_visible: Vec<bool>,
+    /// Which language the interface is in, as a folder name under `lang/`.
+    ///
+    /// Empty means "whatever the machine is set to", and is stored as empty
+    /// rather than resolved: a machine that changes its language should be
+    /// followed, not pinned to what it was the day the app was first opened.
+    pub language: String,
     /// How wide the details drawer is, in pixels. Set by dragging its edge, so
     /// it survives like the column widths do: nobody chose it in a panel, they
     /// arrived at it, and arriving at it twice is the annoyance.
@@ -67,6 +73,7 @@ impl Default for Settings {
             sort_desc: false,
             column_widths: Vec::new(),
             column_visible: Vec::new(),
+            language: zerem_core::language::SYSTEM.to_owned(),
             drawer_width: crate::state::DEFAULT_DRAWER_W,
         }
     }

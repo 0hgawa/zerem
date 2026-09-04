@@ -10,6 +10,8 @@ use std::rc::Rc;
 use slint::ComponentHandle;
 use zerem_engine::Command;
 
+use zerem_core::language;
+
 use crate::settings::{Settings, Store};
 use crate::{MainWindow, Prefs, Theme, TorrentList};
 
@@ -47,9 +49,34 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
         off_menu(settings.down_limit) || off_menu(settings.up_limit)
     );
 
+    push!(prefs, get_language, set_language, language::label(&settings.language).into());
+    apply_language(&settings.language);
+
     ui.global::<Theme>().set_dark(settings.dark);
     // The add dialog shows the same folder, because it is the same setting.
     super::add::show_destination(ui, &settings.download_dir.display().to_string());
+}
+
+/// Tell the renderer which bundled catalogue to draw from.
+///
+/// An empty preference means "follow the machine", so the tag is asked for
+/// every time rather than resolved once and stored — a machine that changes
+/// its language should be followed, not pinned to what it was on first launch.
+///
+/// Live: Slint holds the selection as a property, so every `@tr` in the window
+/// redraws on the spot. Nothing here waits for a restart.
+fn apply_language(stored: &str) {
+    let tag = if stored == language::SYSTEM {
+        zerem_shell::preferred_language().unwrap_or_default()
+    } else {
+        stored.to_owned()
+    };
+    let chosen = language::resolve(&tag);
+    if let Err(e) = slint::select_bundled_translation(chosen) {
+        // Not fatal and not silent: the window opens in the source language,
+        // which is a readable app rather than a missing one.
+        tracing::warn!(chosen, error = ?e, "could not select the translation");
+    }
 }
 
 pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store>, views: &Rc<super::Views>) {
@@ -60,6 +87,19 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
         move || {
             let Some(ui) = ui.upgrade() else { return };
             ui.global::<Prefs>().set_open(false);
+        }
+    });
+
+    prefs.on_cycle_language({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let next = language::next(&store.get().language).to_owned();
+            store.update(|s| s.language.clone_from(&next));
+            // Pushed and applied here rather than waiting for the next tick:
+            // the whole window changing language is the feedback for the click.
+            push!(ui.global::<Prefs>(), get_language, set_language, language::label(&next).into());
+            apply_language(&next);
         }
     });
 

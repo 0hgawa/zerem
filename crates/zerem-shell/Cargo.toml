@@ -18,6 +18,8 @@ dirs = "5"
 windows = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Storage_FileSystem",
+    # GetUserDefaultLocaleName, for the language the app opens in.
+    "Win32_Globalization",
     # CreateNamedPipeW takes SECURITY_ATTRIBUTES, ConnectNamedPipe takes OVERLAPPED.
     "Win32_Security",
     "Win32_System_IO",

@@ -33,7 +33,7 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             Button {
-                label: "Paste magnet";
+                label: @tr("Paste magnet");
                 glyph: Lucide.clipboard;
                 clicked => { TorrentList.add-magnet-from-clipboard(); }
             }
@@ -41,7 +41,7 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             Button {
-                label: "Add file";
+                label: @tr("Add file");
                 glyph: Lucide.plus;
                 clicked => { TorrentList.add-torrent-file(); }
             }
@@ -54,7 +54,7 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             Button {
-                label: TorrentList.selection-running ? "Pause" : "Start";
+                label: TorrentList.selection-running ? @tr("Pause") : @tr("Start");
                 glyph: TorrentList.selection-running ? Lucide.pause : Lucide.play;
                 enabled: root.has-selection;
                 clicked => {
@@ -69,7 +69,7 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             Button {
-                label: "Remove";
+                label: @tr("Remove");
                 glyph: Lucide.trash;
                 kind: ButtonKind.danger;
                 enabled: root.has-selection;
@@ -83,7 +83,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             search := SearchField {
                 text <=> TorrentList.filter;
-                placeholder: "Filter";
+                placeholder: @tr("Filter");
                 edited(text) => { TorrentList.filter-changed(text); }
                 dismissed => { root.dismissed(); }
             }
@@ -96,7 +96,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.panel-right;
-                label: DetailState.open ? "Hide the details panel" : "Show the details panel";
+                label: DetailState.open ? @tr("Hide the details panel") : @tr("Show the details panel");
                 tint: DetailState.open ? Theme.accent : Theme.text-dim;
                 clicked => { TorrentList.toggle-details(); }
             }
@@ -105,7 +105,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Theme.dark ? Lucide.sun : Lucide.moon;
-                label: Theme.dark ? "Switch to the light theme" : "Switch to the dark theme";
+                label: Theme.dark ? @tr("Switch to the light theme") : @tr("Switch to the dark theme");
                 clicked => { TorrentList.toggle-theme(); }
             }
         }
@@ -113,7 +113,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.sliders;
-                label: "Preferences";
+                label: @tr("Preferences");
                 clicked => { Prefs.open = true; }
             }
         }
@@ -305,19 +305,19 @@ export component MainWindow inherits Window {
 
                         if TorrentList.rows.length == 0 && TorrentList.filter == "": EmptyState {
                             glyph: Lucide.folder-open;
-                            title: "No torrents yet";
-                            detail: "Paste a magnet link with Ctrl+V, or add a .torrent file.";
+                            title: @tr("No torrents yet");
+                            detail: @tr("Paste a magnet link with Ctrl+V, or add a .torrent file.");
                             HorizontalLayout {
                                 alignment: center;
                                 spacing: 8px;
                                 Button {
-                                    label: "Paste magnet";
+                                    label: @tr("Paste magnet");
                                     glyph: Lucide.clipboard;
                                     kind: ButtonKind.primary;
                                     clicked => { TorrentList.add-magnet-from-clipboard(); }
                                 }
                                 Button {
-                                    label: "Add .torrent file";
+                                    label: @tr("Add .torrent file");
                                     glyph: Lucide.plus;
                                     clicked => { TorrentList.add-torrent-file(); }
                                 }
@@ -329,12 +329,12 @@ export component MainWindow inherits Window {
                         // three hundred torrents is the app not knowing where it is.
                         if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
                             glyph: Lucide.search;
-                            title: "Nothing matches";
-                            detail: "No torrent's name contains every word you typed.";
+                            title: @tr("Nothing matches");
+                            detail: @tr("No torrent's name contains every word you typed.");
                             HorizontalLayout {
                                 alignment: center;
                                 Button {
-                                    label: "Clear filter";
+                                    label: @tr("Clear filter");
                                     glyph: Lucide.x;
                                     kind: ButtonKind.primary;
                                     clicked => {

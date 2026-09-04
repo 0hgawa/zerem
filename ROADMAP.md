@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,35 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,37 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,35 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,37 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -465,7 +465,29 @@ filtro toma e devolve o teclado com `Ctrl+F` e `Esc`. Percorrer os botões com
 Tab exigiria um anel de foco desenhado em cada um, que é trabalho de UI e não de
 acessibilidade — e pela ação padrão do AccessKit um leitor já os aciona.
 
-⏳ **i18n** — 12 idiomas via `.po` empacotado, mesmo pipeline do Vayou.
+**i18n.** ✅ A mecânica inteira: `.po` compilados no binário — sem runtime
+gettext, que no Windows exigiria autotools sob MSVC — troca **ao vivo** por
+`select_bundled_translation`, idioma do sistema detectado no arranque, e a
+preferência guardada como vazio para seguir a máquina em vez de fixar o que ela
+era no primeiro lançamento. `pt-PT` cai em `pt-BR`: quem está em português está
+pedindo português.
+
+✅ **As 56 strings do `.slint`** estão marcadas e traduzidas para pt-BR à mão.
+Dois testes guardam isso lendo os arquivos de verdade, nos dois sentidos: um
+`()` sem `msgid` é buraco, um `msgid` sem `()` é linha traduzida à toa
+depois que a UI mudou. O Slint deixa passar tradução faltando *em silêncio*,
+desenhando o original — certo em runtime, errado de se descobrir por captura.
+
+⏳ **As ~54 strings que o Rust monta** — estados, causas de parada, frases de
+falha, unidades — precisam de um segundo catálogo. Elas estão em Rust porque o
+`.slint` nunca formata nada, e `()` com argumentos é avaliado por quadro
+dentro de um `for`: exatamente o custo que essa regra evita. Não dá para
+simplesmente mudá-las de lado.
+
+⏸ **Só pt-BR.** Traduzir 140 strings para 12 idiomas sem revisor seria publicar
+11 conjuntos de erros plausíveis. Idioma novo é uma pasta em `lang/` e uma linha
+em `language.rs` — não há terceiro passo, e esquecer a linha é o que um teste
+pega.
 
 **Encerramento desta fase:** a tabela de alvos de aceite lá em cima é medida e
 publicada em `docs/benchmarks.md`. Alvo não atingido vira bug bloqueante.

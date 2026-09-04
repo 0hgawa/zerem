@@ -109,9 +109,9 @@ export component ContextMenu inherits MenuSurface {
     dismissed => { TorrentList.close-menu(); }
 
     Item {
-        label: TorrentList.selection-running ? "Pause" : "Start";
+        label: TorrentList.selection-running ? @tr("Pause") : @tr("Start");
         glyph: TorrentList.selection-running ? Lucide.pause : Lucide.play;
-        shortcut: "Space";
+        shortcut: @tr("Space");
         chosen => {
             if (TorrentList.selection-running) {
                 TorrentList.pause-selected();
@@ -122,20 +122,20 @@ export component ContextMenu inherits MenuSurface {
     }
     Separator { }
     Item {
-        label: "Open folder";
+        label: @tr("Open folder");
         glyph: Lucide.folder-open;
         chosen => { TorrentList.open-folder(); }
     }
     Item {
-        label: "Copy magnet link";
+        label: @tr("Copy magnet link");
         glyph: Lucide.copy;
         chosen => { TorrentList.copy-magnet(); }
     }
     Separator { }
     Item {
-        label: "Remove…";
+        label: @tr("Remove…");
         glyph: Lucide.trash;
-        shortcut: "Del";
+        shortcut: @tr("Del");
         danger: true;
         chosen => { TorrentList.remove-selected(); }
     }

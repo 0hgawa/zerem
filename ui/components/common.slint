@@ -223,7 +223,7 @@ export component SearchField inherits Rectangle {
     // The `TextInput` inside announces itself as a text field, but not what
     // the field is for — the placeholder is drawn, not spoken.
     accessible-role: text-input;
-    accessible-label: "Filter the list by name";
+    accessible-label: @tr("Filter the list by name");
     accessible-value: root.text;
     accessible-placeholder-text: root.placeholder;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
@@ -293,7 +293,7 @@ export component SearchField inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.x;
-                label: "Clear the filter";
+                label: @tr("Clear the filter");
                 diameter: 20px;
                 clicked => {
                     root.text = "";

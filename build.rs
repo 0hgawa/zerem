@@ -1,3 +1,23 @@
+/// Where the translations live: `<lang>/LC_MESSAGES/<crate>.po`, which is the
+/// layout the Slint compiler expects.
+///
+/// Bundled rather than loaded. Slint's other option is gettext, and on Windows
+/// that means building the GNU library with autotools under MSVC — a toolchain
+/// nobody should need in order to run `cargo build`. Bundling costs a folder of
+/// `.po` files and no runtime dependency at all, and
+/// `slint::select_bundled_translation` swaps the language live, with no restart.
+const TRANSLATIONS: &str = "lang";
+
+fn compile_ui() {
+    let config = slint_build::CompilerConfiguration::new()
+        .with_bundled_translations(TRANSLATIONS)
+        // No context. The default is the component name, which would split the
+        // same word across two components into two entries to translate — and
+        // would silently drop a translation the day a component is renamed.
+        .with_default_translation_context(slint_build::DefaultTranslationContext::None);
+    slint_build::compile_with_config("ui/app.slint", config).expect("compile ui/app.slint");
+}
+
 /// How much stack the Slint compiler gets.
 ///
 /// Its passes recurse over the element tree, so the stack it needs grows with
@@ -11,7 +31,7 @@ const COMPILER_STACK: usize = 32 * 1024 * 1024;
 fn main() {
     std::thread::Builder::new()
         .stack_size(COMPILER_STACK)
-        .spawn(|| slint_build::compile("ui/app.slint").expect("compile ui/app.slint"))
+        .spawn(compile_ui)
         .expect("spawn the Slint compiler")
         .join()
         .expect("the Slint compiler panicked");

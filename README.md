@@ -47,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,35 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,37 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
@@ -97,6 +97,44 @@ Ou direto:
 cargo run --release
 $env:ZEREM_LOG = "debug"   # imprime o custo de cada tick
 ```
+
+## Idioma
+
+`Ctrl+,` → **Idioma**. Começa em **System**, que segue o que a máquina estiver
+configurada — guardado como vazio e não como uma etiqueta, para que trocar o
+idioma do Windows troque o do app em vez de deixá-lo preso ao que era no dia da
+primeira abertura. A troca é **ao vivo**: o Slint guarda a seleção como
+propriedade, então a janela inteira redesenha sem reiniciar.
+
+`pt-PT` cai em `pt-BR` de propósito. Uma máquina em português está pedindo
+português, e devolver inglês seria a resposta errada para uma pergunta que foi
+quase respondida.
+
+**Os `.po` são compilados dentro do binário**, não carregados. A outra opção do
+Slint é gettext, e no Windows isso significa compilar a biblioteca GNU com
+autotools sob MSVC — uma toolchain que ninguém deveria precisar para rodar
+`cargo build`. Empacotar custa uma pasta de `.po` e nenhuma dependência de
+runtime.
+
+**O que está traduzido, e o que não está.** As 56 strings do `.slint` — botões,
+diálogos, estados vazios, rótulos de acessibilidade — estão. As ~54 que o Rust
+monta — os estados da coluna, as causas de parada, as frases de falha, as
+unidades — **ainda não**: elas vivem em Rust porque a regra do projeto é que o
+`.slint` nunca formata nada, e o `@tr()` com argumentos é avaliado por quadro
+dentro de um `for`, que é exatamente o custo que essa regra existe para evitar.
+Elas precisam de um segundo catálogo, e é o próximo passo.
+
+**Só pt-BR por enquanto.** Traduzir 140 strings para 12 idiomas sem ninguém para
+revisar seria publicar 11 conjuntos de erros plausíveis. A mecânica está pronta:
+um idioma novo é uma pasta em `lang/` e uma linha em
+[`language.rs`](crates/zerem-core/src/language.rs) — não há terceiro passo, e
+esquecer a linha é o que um teste pega.
+
+Dois testes guardam isso, e ambos leem os arquivos de verdade em vez de uma
+cópia: [`tests/translations.rs`](tests/translations.rs) compara cada `@tr()`
+com cada `msgid` **nos dois sentidos** — o Slint deixa passar uma tradução
+faltando em silêncio, desenhando o original, que é o comportamento certo em
+runtime e o errado de se descobrir por captura de tela.
 
 ## Teclado
 
