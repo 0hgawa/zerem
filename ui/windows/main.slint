@@ -432,7 +432,13 @@ export component MainWindow inherits Window {
 
                         TableHeader { }
 
-                        if TorrentList.rows.length == 0 && TorrentList.filter == "": EmptyState {
+                        // Three sentences, because there are three different
+                        // things that leave the table empty and only one of
+                        // them is "you have not added anything". Offering to
+                        // paste a magnet link to somebody who narrowed to
+                        // Paused and has nothing paused is the app not knowing
+                        // where it is.
+                        if TorrentList.rows.length == 0 && !TorrentList.narrowed: EmptyState {
                             glyph: Lucide.folder-open;
                             title: @tr("No torrents yet");
                             detail: @tr("Paste a magnet link with Ctrl+V, or add a .torrent file.");
@@ -453,9 +459,10 @@ export component MainWindow inherits Window {
                             }
                         }
 
-                        // A filter that matches nothing is not an empty session,
-                        // and telling someone to paste a magnet link when they have
-                        // three hundred torrents is the app not knowing where it is.
+                        // Typed words that match nothing. The most specific of
+                        // the three, so it is tested first, and its button
+                        // clears only the search — if the rail is narrowed too
+                        // the next sentence takes over and offers the rest.
                         if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
                             glyph: Lucide.search;
                             title: @tr("Nothing matches");
@@ -470,6 +477,24 @@ export component MainWindow inherits Window {
                                         TorrentList.filter = "";
                                         TorrentList.filter-changed("");
                                     }
+                                }
+                            }
+                        }
+
+                        // Narrowed by the rail or a category, with nothing in
+                        // it. There are torrents; none of them are here.
+                        if TorrentList.rows.length == 0 && TorrentList.narrowed
+                            && TorrentList.filter == "": EmptyState {
+                            glyph: Lucide.folder-open;
+                            title: @tr("Nothing here");
+                            detail: @tr("You have torrents, just none in this part of the list.");
+                            HorizontalLayout {
+                                alignment: center;
+                                Button {
+                                    label: @tr("Show all");
+                                    glyph: Lucide.files;
+                                    kind: ButtonKind.primary;
+                                    clicked => { TorrentList.show-all(); }
                                 }
                             }
                         }

@@ -93,6 +93,20 @@ fn wire_rail(
 ) {
     let list = ui.global::<TorrentList>();
 
+    list.on_show_all({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let list = ui.global::<TorrentList>();
+            // The box is cleared here as well as in the state: it is a two-way
+            // binding, and leaving it holding text the filter no longer has is
+            // a search box that lies about what it is doing.
+            list.set_filter(slint::SharedString::default());
+            state.show_all(&state.snapshot());
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
     list.on_show_category({
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
         move |name| {

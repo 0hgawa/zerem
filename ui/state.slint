@@ -336,6 +336,14 @@ export global TorrentList {
     callback show-state(int);
     /// A click on a shelf. Empty widens back to all of them.
     callback show-category(string);
+    /// Whether anything at all is hiding rows — the search box, the state
+    /// rail, or a category. The empty state is a different sentence depending
+    /// on this, and it used to read only the search box: narrowing to Paused
+    /// with nothing paused said "No torrents yet" to somebody with three
+    /// hundred of them.
+    in-out property <bool> narrowed;
+    /// Widen back to everything, however it was narrowed.
+    callback show-all();
     callback toggle-rail();
     /// Everything the view is showing — never a row it is hiding, which would
     /// be a delete acting on something nobody could see.

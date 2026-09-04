@@ -241,6 +241,18 @@ impl UiState {
         selected.retain(|id| visible.contains(id));
     }
 
+    /// Widen the view back to everything, whichever way it was narrowed.
+    ///
+    /// One call rather than three, because it answers one question — "show me
+    /// what I actually have" — and because a caller that resets two of the
+    /// three leaves the list still empty and the offer still unfulfilled.
+    pub fn show_all(&self, snapshot: &Snapshot) {
+        *self.filter.borrow_mut() = Filter::new("");
+        self.shown.set(Shown::All);
+        *self.category.borrow_mut() = None;
+        self.rebuild_order(snapshot);
+    }
+
     /// Narrow the view to one shelf, or widen it back. `None` is all of them.
     pub fn set_category(&self, name: Option<String>, snapshot: &Snapshot) {
         *self.category.borrow_mut() = name;

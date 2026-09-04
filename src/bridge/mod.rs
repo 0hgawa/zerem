@@ -136,6 +136,9 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
     push!(session, get_seeding, set_seeding, totals.seeding.to_string().into());
     push!(session, get_queued, set_queued, totals.queued.to_string().into());
     push!(session, get_failed, set_failed, totals.failed.to_string().into());
+    // Whether anything at all is hiding rows. The empty state is a different
+    // sentence depending on it, and the `.slint` could only see the search box.
+    push!(ui.global::<TorrentList>(), get_narrowed, set_narrowed, state.is_filtering());
     // Empty unless a filter is on, and the status bar swaps the plain total for
     // it — the model already holds exactly the rows that survived.
     push!(

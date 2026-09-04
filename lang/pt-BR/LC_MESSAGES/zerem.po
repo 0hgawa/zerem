@@ -111,6 +111,15 @@ msgstr "Nenhum torrent ainda"
 msgid "None"
 msgstr "Nenhum"
 
+msgid "Nothing here"
+msgstr "Nada por aqui"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Você tem torrents, só nenhum nesta parte da lista."
+
+msgid "Show all"
+msgstr "Mostrar tudo"
+
 msgid "Nothing matches"
 msgstr "Nada corresponde"
 
