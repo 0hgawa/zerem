@@ -313,8 +313,14 @@ export component DetailDrawer inherits Rectangle {
     clip: true;
 
     sheet := Rectangle {
-    width: root.full-width;
-    background: Theme.surface;
+        width: root.full-width;
+        // And the full height of the panel. Without this it was as tall as
+        // whatever happened to be inside it, so folding the file list away left
+        // the panel's content sitting in a short strip at the top with the
+        // background below it — the panel looked like it had shrunk because the
+        // only part of it with anything in it had.
+        height: parent.height;
+        background: Theme.surface;
 
 
     // The grip, on the edge the drawer grows from. Same eight pixels and the
@@ -515,9 +521,19 @@ export component DetailDrawer inherits Rectangle {
             accessible-action-default => { DetailState.set-all-files(DetailState.files-partial); }
         }
 
+        // Takes whatever the header and the tabs did not, and scrolls inside
+        // it. A four-thousand-file torrent is a scroll, not a taller panel.
         if DetailState.tab == "files" && DetailState.files.length > 0
             && !DetailState.files-collapsed: ListView {
+            vertical-stretch: 1;
             for f[i] in DetailState.files: FileLine { entry: f; index: i; }
+        }
+
+        // Nothing to show, and something has to hold the height: without it the
+        // column has no stretching child and the layout packs everything into
+        // the top of the panel.
+        if DetailState.tab == "files" && DetailState.files-collapsed: Rectangle {
+            vertical-stretch: 1;
         }
 
         if DetailState.tab == "peers" && DetailState.peers.length == 0:
@@ -527,6 +543,7 @@ export component DetailDrawer inherits Rectangle {
                 detail: @tr("A paused torrent has none.");
             }
         if DetailState.tab == "peers" && DetailState.peers.length > 0: ListView {
+            vertical-stretch: 1;
             for p[i] in DetailState.peers: PeerLine { entry: p; index: i; }
         }
     }

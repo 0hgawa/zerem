@@ -26,9 +26,14 @@ export global Theme {
     // the list below it is a line drawing a line. `border` survives for the
     // one place a line still means something — the separator between groups
     // in a menu, where merging "pause" into "remove" would be dangerous.
-    out property <brush> bg: dark ? #121216 : #f7f7fa;
-    out property <brush> surface: dark ? #1a1a1f : #ffffff;
-    out property <brush> surface-hi: dark ? #22222a : #eeeef3;
+    // Content is paper, chrome is not. Which way round matters: they were a
+    // hair apart — #f7f7fa against #ffffff is a ratio of 1.04 — and that was
+    // invisible the moment the strokes came out. Separating by layer only works
+    // if the layers can be told apart, so the list is white and the bars are
+    // grey, the way a browser is grey around a white page.
+    out property <brush> bg: dark ? #16161a : #ffffff;
+    out property <brush> surface: dark ? #21212a : #eff0f4;
+    out property <brush> surface-hi: dark ? #2c2c36 : #e2e3ea;
     out property <brush> row-alt: dark ? #ffffff06 : #00000004;
     out property <brush> hover: dark ? #ffffff0e : #0000000a;
     out property <brush> selected: dark ? #4c8dff2b : #4c8dff20;
@@ -42,7 +47,7 @@ export global Theme {
     out property <brush> seeding: dark ? #4ac68d : #0f7a48;
     out property <brush> warn: dark ? #efa23c : #8a5300;
     out property <brush> danger: dark ? #ff6b6b : #b3261e;
-    out property <brush> idle: dark ? #6a6a78 : #75757f;
+    out property <brush> idle: dark ? #757583 : #75757f;
 
     // --- type ---
     //

@@ -150,11 +150,41 @@ fn main() -> Result<(), slint::PlatformError> {
     // the first frame, before the engine's first heartbeat.
     let _tray = tray::install(&ui);
     let _tick = bridge::start_tick(&ui, &state, &views);
-    ui.run()?;
+
+    // After the window exists, not before: asked any earlier it has no size to
+    // read and the preferred one is applied afterwards, over the top of the
+    // answer. Which is exactly how this looked fixed once and then was not.
+    ui.show()?;
+    fit_to_desktop(&ui);
+    slint::run_event_loop()?;
 
     // A setting changed a fraction of a second before the window closed is still
     // sitting on a timer the event loop will never run again.
     state.save_view(&store);
     store.flush();
     Ok(())
+}
+
+/// Bring the window inside the desktop it is opening on.
+///
+/// A preferred size is written in logical pixels and a logical pixel is not a
+/// pixel: 720 tall at 200 % is 1440 device pixels, which is the whole of a
+/// 1440p screen. Zerem opened exactly that way — 1511 px tall on a 1440 px
+/// display, with its status bar 169 px below the bottom edge and never once
+/// seen in a window that had not been maximised.
+///
+/// Only ever shrinks. A small desktop is a reason to be smaller; it is not a
+/// reason to be larger than asked for.
+fn fit_to_desktop(ui: &MainWindow) {
+    let window = ui.window();
+    let size = window.size();
+    let (width, height) = zerem_shell::fit((size.width, size.height), zerem_shell::work_area());
+    if (width, height) != (size.width, size.height) {
+        tracing::debug!(
+            from = ?(size.width, size.height),
+            to = ?(width, height),
+            "window brought inside the desktop"
+        );
+        window.set_size(slint::PhysicalSize::new(width, height));
+    }
 }

@@ -343,6 +343,13 @@ export component MainWindow inherits Window {
                 // Narrow a column or close the panel to get them back.
                 Rectangle {
                     horizontal-stretch: 1;
+                    // And vertically, unconditionally. It used to inherit the
+                    // height from whatever inside the band happened to stretch,
+                    // which was the panel's file list — so folding that list away
+                    // left nothing claiming the height and the whole band
+                    // collapsed to its preferred size, taking the table with it.
+                    // The list is the app; it claims the height on its own.
+                    vertical-stretch: 1;
                     min-width: 240px;
                     clip: true;
 
@@ -432,6 +439,9 @@ export component MainWindow inherits Window {
                 // width — the engine still stops building the lists inside, so
                 // what stays is an empty shell, not a hidden panel.
                 DetailDrawer {
+                    // Same reason, from the other side: the panel keeps the full
+                    // height whatever is or is not inside it.
+                    vertical-stretch: 1;
                     horizontal-stretch: 0;
                     min-width: root.reveal * 240px;
                     preferred-width: root.reveal * DetailState.width;

@@ -188,7 +188,11 @@ export component AddDialog inherits Modal {
                 // A filled well rather than an outlined box: Fluent separates
                 // by layer and not by stroke, and a rule drawn around a list
                 // that already has its own rows is a line drawing a line.
-                background: Theme.bg;
+                //
+                // `surface-hi` and not `bg`: the card behind it is `surface`,
+                // and a well the same colour as the paper it sits on is not a
+                // well at all — which is the mistake the whole palette had.
+                background: Theme.surface-hi;
                 clip: true;
                 ListView {
                     for f[i] in AddState.files: FileLine { entry: f; index: i; }
