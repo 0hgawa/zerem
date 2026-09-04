@@ -45,6 +45,10 @@ export struct FileEntry {
     pct: string,
     progress: float,
     complete: bool,
+    /// Whether this file is being fetched before the others. While any file in
+    /// a torrent is pinned it is the only one coming down — the summary line
+    /// above the list says so, because it is not a small thing to leave unsaid.
+    first: bool,
     /// Whether it is being fetched at all. A torrent added without a choice
     /// wants everything, so this is normally true on every line.
     wanted: bool,
@@ -118,6 +122,9 @@ export global DetailState {
     /// Fetch this file, or stop fetching it. Applies to the line at once; the
     /// engine's next snapshot is the truth, and puts the tick back if it said no.
     callback toggle-file(int);
+    /// Fetch this file before the others, or stop. Same rule: applied at once,
+    /// corrected by the next snapshot if the engine refused.
+    callback toggle-first(int);
     /// Put every file back. The way out of having unticked too much, and the
     /// only whole-list action worth a button: the other direction would leave
     /// the torrent fetching nothing, which is refused.

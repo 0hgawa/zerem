@@ -4,6 +4,7 @@
 //! the ordering and the arithmetic be tested in microseconds without a window
 //! or a network, and it is the boundary that keeps the engine swappable.
 
+pub mod choice;
 pub mod content;
 pub mod detail;
 pub mod filter;
@@ -15,8 +16,9 @@ pub mod rate;
 pub mod sort;
 pub mod torrent;
 
+pub use choice::{flags, is_narrowed, ticked, to_fetch};
 pub use content::Content;
-pub use detail::{select_files, Details, FileRow, PeerRow, Transport};
+pub use detail::{Details, FileRow, PeerRow, Transport};
 pub use filter::Filter;
 pub use history::{History, Spark};
 pub use pending::{Pending, PendingFile};

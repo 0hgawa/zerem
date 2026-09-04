@@ -118,6 +118,21 @@ pub fn shortfall(needed: u64, free: u64) -> Option<String> {
     Some(format!("Not enough room in this folder — {} short", bytes(short)))
 }
 
+/// What the line above the file list says while something is being fetched
+/// first.
+///
+/// Replaces the count rather than joining it. "3 of 12 files" stops being the
+/// interesting fact the moment the other nine have stopped, and two lines
+/// disagreeing about the same list is one line too many.
+#[must_use]
+pub fn fetching_first(pinned: usize, waiting: usize) -> String {
+    let files = if pinned == 1 { "file" } else { "files" };
+    if waiting == 0 {
+        return format!("{pinned} {files} first");
+    }
+    format!("{pinned} {files} first · {waiting} waiting")
+}
+
 /// How much of the list is showing, while a filter is on. Replaces the plain
 /// total rather than joining it: two counts side by side is one too many.
 #[must_use]
@@ -127,7 +142,22 @@ pub fn matched(shown: usize, total: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{bytes, eta, matched, percent, progress, ratio, shortfall, speed};
+    use super::{bytes, eta, fetching_first, matched, percent, progress, ratio, shortfall, speed};
+
+    #[test]
+    fn a_pinned_file_says_what_it_is_costing_the_rest() {
+        // The number that matters is not how many are pinned, it is how many
+        // stopped so that it could go first.
+        assert_eq!(fetching_first(1, 11), "1 file first · 11 waiting");
+        assert_eq!(fetching_first(3, 9), "3 files first · 9 waiting");
+    }
+
+    #[test]
+    fn nothing_waiting_is_not_mentioned() {
+        // Pinning every file left is not holding anything back, and saying
+        // "0 waiting" would suggest it was.
+        assert_eq!(fetching_first(2, 0), "2 files first");
+    }
 
     #[test]
     fn byte_precision_keeps_a_stable_width() {

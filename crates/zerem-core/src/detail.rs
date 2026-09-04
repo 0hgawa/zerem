@@ -23,6 +23,12 @@ pub struct FileRow {
     /// list of indices next to it, because two lists indexed against each other
     /// are two lists that eventually disagree.
     pub wanted: bool,
+    /// Whether this file is being fetched *before* the others.
+    ///
+    /// While any file in a torrent is pinned, it is the only thing coming down
+    /// — see [`crate::choice`] for why that is the honest shape of "priority"
+    /// on top of the one lever librqbit offers.
+    pub first: bool,
 }
 
 impl FileRow {
@@ -85,54 +91,13 @@ pub struct Details {
     pub peers: Vec<PeerRow>,
 }
 
-/// The file selection that turning files on or off would produce.
-///
-/// `current` is what is being fetched now, `None` meaning everything — which is
-/// how a torrent added without a choice is recorded, and not the same as a list
-/// that happens to name every file. `file` names one, or is `None` for all of
-/// them at once, which is the only thing that makes a torrent of four thousand
-/// files editable by hand.
-///
-/// Returns `None` when the change would leave nothing to fetch. Refused rather
-/// than obeyed: it is the rule the add dialog already enforces with a disabled
-/// button, and a torrent that downloads no files is not a state anyone reaches
-/// for on purpose. An index at or past `count` is refused the same way — the
-/// caller knows the file count and has no business sending one.
-#[must_use]
-pub fn select_files(
-    current: Option<&[usize]>,
-    count: usize,
-    file: Option<usize>,
-    wanted: bool,
-) -> Option<Vec<usize>> {
-    let mut chosen = current.map_or_else(
-        || vec![true; count],
-        |list| {
-            let mut flags = vec![false; count];
-            for &i in list.iter().filter(|&&i| i < count) {
-                flags[i] = true;
-            }
-            flags
-        },
-    );
-
-    match file {
-        Some(i) if i < count => chosen[i] = wanted,
-        Some(_) => return None,
-        None => chosen.fill(wanted),
-    }
-
-    let kept: Vec<usize> = chosen.iter().enumerate().filter(|(_, w)| **w).map(|(i, _)| i).collect();
-    (!kept.is_empty()).then_some(kept)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{select_files, FileRow, Transport};
+    use super::{FileRow, Transport};
     use std::sync::Arc;
 
     fn file(size: u64, done: u64) -> FileRow {
-        FileRow { path: Arc::from("a/b.mkv"), size, done, wanted: true }
+        FileRow { path: Arc::from("a/b.mkv"), size, done, wanted: true, first: false }
     }
 
     #[test]
@@ -155,50 +120,5 @@ mod tests {
         // cell that looks like a bug.
         assert_eq!(Transport::Utp.label(), "uTP");
         assert_eq!(Transport::Unknown.label(), "—");
-    }
-
-    #[test]
-    fn no_restriction_is_every_file_rather_than_none() {
-        // librqbit records a torrent added without a choice as `None`, which
-        // reads as "no list" and means the opposite of an empty one.
-        assert_eq!(select_files(None, 3, Some(1), false), Some(vec![0, 2]));
-    }
-
-    #[test]
-    fn turning_one_on_keeps_the_rest_where_they_were() {
-        assert_eq!(select_files(Some(&[0]), 3, Some(2), true), Some(vec![0, 2]));
-        assert_eq!(select_files(Some(&[0, 2]), 3, Some(0), false), Some(vec![2]));
-    }
-
-    #[test]
-    fn all_at_once_is_the_only_way_a_four_thousand_file_torrent_is_editable() {
-        assert_eq!(select_files(Some(&[1]), 3, None, true), Some(vec![0, 1, 2]));
-    }
-
-    #[test]
-    fn a_change_that_would_leave_nothing_is_refused() {
-        // Both routes to it: the last tick, and "None" over the whole list.
-        assert_eq!(select_files(Some(&[1]), 3, Some(1), false), None);
-        assert_eq!(select_files(None, 3, None, false), None);
-    }
-
-    #[test]
-    fn turning_off_a_file_that_is_already_off_changes_nothing() {
-        // Two clicks racing a tick must not produce a different answer than one.
-        assert_eq!(select_files(Some(&[0, 2]), 3, Some(1), false), Some(vec![0, 2]));
-    }
-
-    #[test]
-    fn an_index_the_torrent_does_not_have_is_refused() {
-        // It can only come from a stale view of a torrent whose metadata moved,
-        // and guessing what was meant is worse than doing nothing.
-        assert_eq!(select_files(None, 3, Some(3), true), None);
-    }
-
-    #[test]
-    fn a_stale_index_in_the_current_list_is_dropped_rather_than_panicking() {
-        // Defensive: the list comes back from librqbit, and indexing a shorter
-        // file list with it would be the crash.
-        assert_eq!(select_files(Some(&[0, 9]), 2, Some(1), true), Some(vec![0, 1]));
     }
 }

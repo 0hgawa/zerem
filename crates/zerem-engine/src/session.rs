@@ -11,6 +11,7 @@ use librqbit::{AddTorrent, AddTorrentOptions, AddTorrentResponse, ManagedTorrent
 use zerem_core::{Content, History, Pending, PendingFile, TorrentId, TorrentRow};
 
 use crate::config::EngineConfig;
+use crate::journal::Journal;
 use crate::map;
 use crate::snapshot::Snapshot;
 
@@ -39,6 +40,15 @@ struct Entry {
     /// long it has been standing still. State that spans ticks lives with the
     /// torrent rather than on the row it produces.
     trend: map::Trend,
+    /// The user's ticks. Empty until the metadata arrives, and the truth after
+    /// that: while a file is pinned the handle's own `only_files` is narrower
+    /// than what was asked for, so it can no longer be read back as the answer.
+    wanted: Vec<bool>,
+    /// Which files to fetch before the others. Held here and nowhere else —
+    /// a pin is an instruction given in a moment, not a setting, so it does not
+    /// survive a restart. What does survive is the selection it narrowed, which
+    /// is what [`crate::journal`] is for.
+    first: Vec<bool>,
 }
 
 impl Entry {
@@ -51,7 +61,40 @@ impl Entry {
             name_key: None,
             content: None,
             trend: map::Trend::default(),
+            wanted: Vec::new(),
+            first: Vec::new(),
         }
+    }
+
+    /// Size the two per-file lists once there is a file list, seeding the ticks
+    /// from whatever the session was already fetching.
+    ///
+    /// Returns the file count, or zero while a magnet is still without its
+    /// metadata — which is the one state in which there is nothing to choose.
+    fn resolve_files(&mut self) -> usize {
+        if !self.wanted.is_empty() {
+            return self.wanted.len();
+        }
+        let count = self.handle.with_metadata(|meta| meta.file_infos.len()).unwrap_or(0);
+        if count == 0 {
+            return 0;
+        }
+        self.wanted = zerem_core::flags(self.handle.only_files().as_deref(), count);
+        self.first = vec![false; count];
+        count
+    }
+
+    /// Which files are already on disk, which is what ends a pin.
+    fn complete(&self, stats: &librqbit::TorrentStats) -> Vec<bool> {
+        self.handle
+            .with_metadata(|meta| {
+                meta.file_infos
+                    .iter()
+                    .enumerate()
+                    .map(|(i, info)| stats.file_progress.get(i).copied().unwrap_or(0) >= info.len)
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     /// Resolve the name and its folded sort key if they have arrived. Returns
@@ -122,6 +165,8 @@ pub struct TorrentSession {
     pending_bytes: Option<Vec<u8>>,
     /// The last minute of session throughput, for the footer.
     history: History,
+    /// Selections narrowed by a pin, so an interrupted run can put them back.
+    journal: Journal,
 }
 
 impl TorrentSession {
@@ -166,7 +211,9 @@ impl TorrentSession {
             pending: None,
             pending_bytes: None,
             history: History::default(),
+            journal: Journal::open(&config.state_dir),
         };
+        this.restore_narrowed().await;
         if let Some(protocol) = port_conflict {
             // Both places: the status bar so the user knows, and the log so it
             // is still diagnosable from a bug report with no screenshot.
@@ -337,43 +384,151 @@ impl TorrentSession {
         Ok(())
     }
 
+    /// Put back selections a previous run narrowed and did not live to restore.
+    ///
+    /// The pins themselves are gone on purpose: "fetch this one first" is an
+    /// instruction given in a moment. Coming back days later to a torrent still
+    /// holding the rest of itself back would be the app remembering the wrong
+    /// half of what happened.
+    async fn restore_narrowed(&mut self) {
+        if self.journal.is_empty() {
+            return;
+        }
+        // Bound first because the loop mutates `self`, which the iterator's
+        // borrow of `entries` would otherwise still be holding.
+        let ids: Vec<TorrentId> = self.entries.keys().copied().collect();
+        for id in ids {
+            let Some(info_hash) = self.entries.get(&id).map(|e| e.info_hash.clone()) else {
+                continue;
+            };
+            let Some(wanted) = self.journal.take(&info_hash) else { continue };
+            let Some(entry) = self.entries.get_mut(&id) else { continue };
+            let count = entry.resolve_files();
+            if count == 0 {
+                continue;
+            }
+            entry.wanted = zerem_core::flags(Some(&wanted), count);
+            entry.first = vec![false; count];
+            tracing::info!(id = id.0, files = wanted.len(), "restoring a narrowed selection");
+            if let Err(e) = self.apply_choice(id).await {
+                tracing::warn!(id = id.0, error = %format!("{e:#}"), "could not restore it");
+            }
+        }
+        self.journal.flush();
+    }
+
+    /// Ask the session for whatever the ticks and the pins currently add up to.
+    ///
+    /// The only place `update_only_files` is called, so the journal and the
+    /// session can never end up disagreeing about what was narrowed.
+    async fn apply_choice(&mut self, id: TorrentId) -> anyhow::Result<()> {
+        let Some(entry) = self.entries.get(&id) else { return Ok(()) };
+        let count = entry.wanted.len();
+        let complete = entry.complete(&entry.handle.stats());
+        let narrowed = zerem_core::is_narrowed(&entry.wanted, &entry.first, &complete);
+        // `None` is "no restriction", which librqbit's setter has no way to say
+        // — it takes a set, so the whole torrent is spelled out.
+        let target: Vec<usize> = zerem_core::to_fetch(&entry.wanted, &entry.first, &complete)
+            .unwrap_or_else(|| (0..count).collect());
+        let handle = entry.handle.clone();
+        let info_hash = entry.info_hash.clone();
+
+        // Already the answer. Saying so costs a comparison; not saying so costs
+        // a chunk-tracker rebuild, and on a finished torrent a pause/unpause.
+        // Sorted first because librqbit stores the set through a `HashSet` and
+        // hands it back in whatever order that produced.
+        let mut current = handle.only_files().unwrap_or_else(|| (0..count).collect());
+        current.sort_unstable();
+        if current == target {
+            return Ok(());
+        }
+
+        // Written before the change, not after: the window this survives is a
+        // process that dies between the two.
+        let ticked: Vec<usize> =
+            (0..count).filter(|&i| entry.wanted.get(i).copied().unwrap_or(false)).collect();
+        self.journal.set(&info_hash, narrowed.then_some(ticked));
+
+        self.session
+            .update_only_files(&handle, &target.iter().copied().collect())
+            .await
+            .context("changing which files are downloaded")?;
+        tracing::info!(id = id.0, picked = target.len(), of = count, narrowed, "file selection changed");
+        Ok(())
+    }
+
+    /// Release what a finished pin was holding, and forget the pin.
+    ///
+    /// Costs a `stats()` call per *pinned* torrent, which is normally none of
+    /// them — the whole list is never walked.
+    pub async fn reconcile(&mut self) {
+        let pinned: Vec<TorrentId> =
+            self.entries.iter().filter(|(_, e)| e.first.iter().any(|&f| f)).map(|(id, _)| *id).collect();
+        for id in pinned {
+            if let Some(entry) = self.entries.get_mut(&id) {
+                // A pin that has landed has done its job; leaving it set would
+                // show a file as still being hurried after it arrived.
+                let complete = entry.complete(&entry.handle.stats());
+                for (pin, done) in entry.first.iter_mut().zip(&complete) {
+                    *pin &= !*done;
+                }
+            }
+            if let Err(e) = self.apply_choice(id).await {
+                tracing::warn!(id = id.0, error = %format!("{e:#}"), "could not widen the selection");
+            }
+        }
+    }
+
     /// Fetch a file, or stop fetching it, on a torrent already in the list.
     ///
-    /// The current selection is read from the handle rather than taken from the
+    /// The current selection is read from our own record rather than from the
     /// caller, so a click made against a second-old panel cannot undo anything
     /// that happened since. `file` of `None` is every file at once.
+    ///
+    /// It cannot be read from the handle any more either: while a pin is live
+    /// the session is fetching one file, which is not what the user ticked.
     ///
     /// The refusals are deliberate and both reach the status bar as a sentence:
     /// a change that would leave the torrent fetching nothing, and a torrent
     /// whose metadata has not arrived — there is nothing to choose from yet, and
     /// librqbit refuses it as well.
     pub async fn set_file_wanted(
-        &self,
+        &mut self,
         id: TorrentId,
         file: Option<usize>,
         wanted: bool,
     ) -> anyhow::Result<()> {
-        let handle = self.entries.get(&id).context("no such torrent")?.handle.clone();
-        let count = handle.with_metadata(|meta| meta.file_infos.len()).unwrap_or(0);
+        let entry = self.entries.get_mut(&id).context("no such torrent")?;
+        let count = entry.resolve_files();
         anyhow::ensure!(count > 0, "this torrent's file list has not arrived yet");
 
-        let current = handle.only_files();
-        let chosen = zerem_core::select_files(current.as_deref(), count, file, wanted)
+        entry.wanted = zerem_core::ticked(&entry.wanted, file, wanted)
             .context("at least one file has to be downloaded")?;
-
-        // Already the answer. Saying so costs a comparison; not saying so costs
-        // a chunk-tracker rebuild, and on a finished torrent a pause/unpause.
-        if current.as_deref() == Some(chosen.as_slice()) {
-            return Ok(());
+        // Un-ticking a file drops its pin with it: a file nobody is fetching
+        // cannot be the one being fetched first.
+        for (pin, want) in entry.first.iter_mut().zip(&entry.wanted) {
+            *pin &= *want;
         }
-
-        let picked = chosen.len();
-        self.session
-            .update_only_files(&handle, &chosen.into_iter().collect())
-            .await
-            .context("changing which files are downloaded")?;
-        tracing::info!(id = id.0, picked, of = count, "file selection changed");
+        self.apply_choice(id).await?;
         Ok(())
+    }
+
+    /// Fetch this file before the others, or stop doing that.
+    ///
+    /// While anything is pinned it is the *only* thing coming down. That is not
+    /// a queue position like qBittorrent's — librqbit has no such thing to
+    /// offer — and for the case people reach for priority in, it is the better
+    /// bargain: the whole line goes to the file that was asked for.
+    pub async fn set_file_first(&mut self, id: TorrentId, file: usize, first: bool) -> anyhow::Result<()> {
+        let entry = self.entries.get_mut(&id).context("no such torrent")?;
+        let count = entry.resolve_files();
+        anyhow::ensure!(count > 0, "this torrent's file list has not arrived yet");
+        anyhow::ensure!(
+            !first || entry.wanted.get(file).copied().unwrap_or(false),
+            "that file is not being downloaded"
+        );
+        *entry.first.get_mut(file).context("no such file")? = first;
+        self.apply_choice(id).await
     }
 
     pub async fn set_running(&self, id: TorrentId, running: bool) -> anyhow::Result<()> {
@@ -449,7 +604,7 @@ impl TorrentSession {
         let details = self
             .watching
             .and_then(|id| Some((id, self.entries.get(&id)?)))
-            .map(|(id, entry)| map::to_details(id, &entry.handle));
+            .map(|(id, entry)| map::to_details(id, &entry.handle, &entry.wanted, &entry.first));
 
         let notice = self.notice.as_mut().and_then(|n| {
             n.ticks_left = n.ticks_left.saturating_sub(1);

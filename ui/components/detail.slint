@@ -159,6 +159,49 @@ component FileLine inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { DetailState.toggle-file(root.index); }
     }
+
+    // Declared after the line's own touch area so it wins its own clicks — the
+    // same trick the table's per-row button uses.
+    //
+    // Hidden until the line is under the cursor, and only on a file that is
+    // still coming down: a second control on every line of a four-thousand file
+    // list is four thousand more things to look past. A pin that is *set* stays
+    // visible, because it is the reason the rest of the torrent stopped.
+    Rectangle {
+        x: parent.width - self.width - 8px;
+        y: (parent.height - self.height) / 2;
+        width: 24px;
+        height: 24px;
+        border-radius: Theme.radius;
+        // Faded rather than conditional, and not for the animation: an element
+        // cannot be referred to from the condition that creates it, and this one
+        // has to stay up while the cursor is on it — the pin sits over the
+        // line's own touch area and takes the hover away from it.
+        opacity: (root.entry.complete || !root.entry.wanted) ? 0
+            : (root.entry.first || ta.has-hover || pin.has-hover) ? 1
+            : 0;
+        animate opacity { duration: Theme.quick; easing: Theme.ease-standard(); }
+        background: root.entry.first ? Theme.accent
+            : pin.has-hover ? Theme.surface-hi
+            : transparent;
+        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+        Icon {
+            glyph: Lucide.arrow-up-to-line;
+            tint: root.entry.first ? #ffffff : Theme.text-dim;
+            size: 14px;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+        }
+
+        pin := TouchArea {
+            // Off on a line that has no pin to offer, so an invisible control
+            // cannot be clicked and the hover falls through to the line.
+            enabled: !root.entry.complete && root.entry.wanted;
+            mouse-cursor: pointer;
+            clicked => { DetailState.toggle-first(root.index); }
+        }
+    }
 }
 
 // Two lines: who it is, then what it is doing.

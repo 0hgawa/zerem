@@ -47,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,07 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,09 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
@@ -191,6 +191,40 @@ como um cliente queima um núcleo sem mover um byte.
 A coluna de transporte é o único lugar onde o uTP aparece. Trackers ainda não
 têm aba: o librqbit expõe as URLs e nada mais — sem estado de anúncio, seeds ou
 leechers — e uma aba que lista URLs não se sustenta.
+
+**Baixar um arquivo antes dos outros** — o tique liga e desliga; a **seta ao lado**
+manda o arquivo para a frente. Aparece ao passar o cursor na linha, e fica acesa
+depois de marcada, porque ela é o motivo de o resto do torrent ter parado.
+
+E parou mesmo: **enquanto um arquivo está na frente, ele é a única coisa
+vindo**. A linha acima da lista troca a contagem por `1 file first · 11 waiting`
+— o número que importa não é quantos foram priorizados, é quantos pararam para
+isso. Quando o arquivo chega, os outros voltam sozinhos, no tique seguinte, sem
+ninguém apertar nada.
+
+**Não são os quatro níveis do qBittorrent, e não dá para serem.** O librqbit tem
+uma alavanca só, `only_files`; a ordenação interna dele é `pub(crate)`, por nome
+de arquivo, com um `// TODO: make it configurable` em cima. Um controle de
+quatro posições em que três fazem a mesma coisa mentiria sobre o que a engine
+faz. Então "primeiro" foi construído com a alavanca que existe — e para o caso
+em que alguém de fato pede prioridade (*quero este episódio agora*) é o negócio
+melhor, porque a banda inteira vai para ele em vez de uma fatia.
+
+Estreitar é seguro, e isso foi verificado antes de escrever a feature: o
+`update_only_files` do librqbit troca quais peças estão *selecionadas* e não
+toca em quais estão *baixadas*, então voltar atrás devolve exatamente o
+progresso que estava lá.
+
+Marcar um arquivo que está desligado é recusado — os dois controles não discutem
+sobre o mesmo arquivo. Desligar um arquivo marcado tira a marca junto.
+
+**A marca não sobrevive a reiniciar**, de propósito: "baixe este primeiro" é uma
+instrução dada num momento, não uma configuração. Voltar dias depois com o
+torrent ainda segurando o resto de si mesmo seria o app lembrando a metade
+errada. O que sobrevive é a *seleção* que a marca estreitou — anotada em
+`%LOCALAPPDATA%\Zerem\narrowed.txt` antes de estreitar e apagada depois de
+devolver, para que um processo morto no meio não volte com onze de doze arquivos
+desligados e nenhuma explicação.
 
 ## Antes de encher o disco
 

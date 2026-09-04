@@ -60,6 +60,16 @@ pub enum Command {
         file: Option<usize>,
         wanted: bool,
     },
+    /// Fetch this file before the others, or stop doing that.
+    ///
+    /// While anything in a torrent is pinned it is the only thing coming down.
+    /// Not a queue position like qBittorrent's — librqbit has none to offer,
+    /// and [`zerem_core::choice`] says what was done instead and why.
+    SetFileFirst {
+        id: TorrentId,
+        file: usize,
+        first: bool,
+    },
     /// Build the inside of this torrent — files and peers — into each snapshot.
     ///
     /// `None` stops. The panel being closed has to mean the work is not done,

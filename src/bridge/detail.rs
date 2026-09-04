@@ -28,6 +28,10 @@ pub struct Models {
     /// carries sizes as finished strings, and because a tick has to move now
     /// rather than on the next tick, summary included.
     sizes: RefCell<Vec<(u64, bool)>>,
+    /// Which lines are pinned, under the same in-flight rule as the ticks: a
+    /// snapshot already on its way when the pin was clicked knows nothing about
+    /// it and would un-light it for a quarter of a second.
+    pins: RefCell<Vec<bool>>,
     /// Whose files these are. Taken from the details the drawer last drew
     /// rather than from the selection: a click acts on the torrent whose lines
     /// are on screen, which for one tick after the selection moves is not yet
@@ -44,6 +48,7 @@ impl Models {
             files: Rc::new(VecModel::default()),
             peers: Rc::new(VecModel::default()),
             sizes: RefCell::new(Vec::new()),
+            pins: RefCell::new(Vec::new()),
             shown: RefCell::new(None),
             guess: Cell::new(0),
         };
@@ -72,6 +77,7 @@ impl Models {
         if !in_flight {
             self.guess.set(0);
             *sizes = details.files.iter().map(|f| (f.size, f.wanted)).collect();
+            *self.pins.borrow_mut() = details.files.iter().map(|f| f.first).collect();
         }
     }
 
@@ -96,6 +102,23 @@ impl Models {
         }
     }
 
+    /// Light or unlight one pin without waiting for the engine. Same optimistic
+    /// rule the ticks follow.
+    fn set_first(&self, index: usize, first: bool) {
+        let mut pins = self.pins.borrow_mut();
+        let Some(slot) = pins.get_mut(index) else { return };
+        *slot = first;
+        if let Some(mut row) = self.files.row_data(index) {
+            row.first = first;
+            self.files.set_row_data(index, row);
+        }
+    }
+
+    /// Whether the line at `index` is being fetched before the others.
+    fn is_first(&self, index: usize) -> bool {
+        self.pins.borrow().get(index).copied().unwrap_or(false)
+    }
+
     /// Record which snapshot a file edit was made against, so the one already
     /// in flight when it happened does not undraw it.
     fn expect(&self, seq: u64) {
@@ -109,8 +132,18 @@ impl Models {
 
     /// "12 files · 3.72 GB", or "3 of 12 files · 1.44 GB of 3.72 GB" once
     /// something has been left out — and whether anything has.
+    ///
+    /// A live pin replaces both: while one file is being fetched first, what
+    /// matters is not the count, it is that the rest have stopped.
     fn choice(&self) -> (String, bool) {
         let sizes = self.sizes.borrow();
+        let pins = self.pins.borrow();
+        let pinned = (0..sizes.len()).filter(|&i| pins.get(i).copied().unwrap_or(false)).count();
+        if pinned > 0 {
+            let waiting =
+                (0..sizes.len()).filter(|&i| sizes[i].1 && !pins.get(i).copied().unwrap_or(false)).count();
+            return (fmt::fetching_first(pinned, waiting), true);
+        }
         let total: u64 = sizes.iter().map(|&(size, _)| size).sum();
         let (count, bytes) = sizes
             .iter()
@@ -182,6 +215,21 @@ pub fn wire(
             show_choice(&ui, &views.detail);
             if let Some(id) = *views.detail.shown.borrow() {
                 state.engine.send(Command::SetFileWanted { id, file: Some(index), wanted });
+            }
+        }
+    });
+
+    detail.on_toggle_first({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            let Ok(index) = usize::try_from(index) else { return };
+            let first = !views.detail.is_first(index);
+            views.detail.expect(state.snapshot().seq);
+            views.detail.set_first(index, first);
+            show_choice(&ui, &views.detail);
+            if let Some(id) = *views.detail.shown.borrow() {
+                state.engine.send(Command::SetFileFirst { id, file: index, first });
             }
         }
     });
@@ -260,7 +308,7 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
     push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
 
     models.adopt(snapshot.seq, details);
-    apply(&models.files, build_files(details, &models.sizes.borrow()));
+    apply(&models.files, build_files(details, &models.sizes.borrow(), &models.pins.borrow()));
     apply(&models.peers, build_peers(details));
     show_choice(ui, models);
 }
@@ -292,7 +340,7 @@ fn apply<T: Clone + PartialEq + 'static>(model: &Rc<VecModel<T>>, next: Vec<T>) 
 
 /// `chosen` is what the drawer believes, which is the snapshot's answer except
 /// while a click is still in flight — see [`Models::adopt`].
-fn build_files(details: &Details, chosen: &[(u64, bool)]) -> Vec<FileEntry> {
+fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool]) -> Vec<FileEntry> {
     details
         .files
         .iter()
@@ -304,6 +352,7 @@ fn build_files(details: &Details, chosen: &[(u64, bool)]) -> Vec<FileEntry> {
             progress: f.progress_bp() as f32 / 10_000.0,
             complete: f.is_complete(),
             wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
+            first: pins.get(i).copied().unwrap_or(f.first),
         })
         .collect()
 }

@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,07 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,09 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,07 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,09 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -229,9 +229,23 @@ deixaria o torrent sem nada para baixar é **recusada** — a mesma regra que o
 diálogo de adição já aplica desabilitando o botão. Por isso não há "Nenhum" ao
 lado de "Todos": seria um botão cujo único desfecho possível é a recusa.
 
-Prioridade em três níveis (alta/normal/baixa) não entra: o librqbit tem
-`only_files` e nada entre isso e desligar, e um controle de três posições em que
-duas fazem a mesma coisa mente sobre o que a engine faz.
+✅ **Baixar um arquivo antes dos outros**, pela seta na linha. Enquanto ele está
+na frente é a única coisa vindo, e a linha acima da lista diz
+`1 file first · 11 waiting`; quando chega, os outros voltam sozinhos no tique
+seguinte.
+
+Não são os quatro níveis do qBittorrent, e não dá para serem: o librqbit tem uma
+alavanca só, `only_files` — a ordenação interna dele é `pub(crate)`, por nome de
+arquivo, com um `// TODO: make it configurable` em cima. Um controle de quatro
+posições em que três fazem a mesma coisa mentiria sobre o que a engine faz. Foi
+construído com a alavanca que existe, e para o caso em que alguém de fato pede
+prioridade é o negócio melhor: a banda inteira vai para o arquivo pedido.
+
+Estreitar é seguro, verificado antes de escrever a feature: o
+`update_only_files` troca quais peças estão *selecionadas* e não toca em quais
+estão *baixadas*. A marca não sobrevive a reiniciar, de propósito; a seleção que
+ela estreitou sobrevive, anotada em `narrowed.txt` antes de estreitar e apagada
+depois de devolver.
 
 - ⏸ **Trackers** — o librqbit só expõe as URLs (`ManagedTorrentShared::trackers`),
   sem estado de anúncio, seeds ou leechers. Uma aba que lista URLs e nada mais

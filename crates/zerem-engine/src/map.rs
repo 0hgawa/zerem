@@ -140,35 +140,27 @@ pub fn to_row(
 ///
 /// Built only for the torrent whose panel is open, which is what keeps this off
 /// the per-tick bill for every other row.
+///
+/// `wanted` and `first` come from the caller rather than from the handle. While
+/// a file is pinned the session is fetching that one alone, so the handle can
+/// no longer say what the user actually ticked — and the panel has to draw the
+/// intention, not the consequence.
 // clippy asks for `PeerStatsFilter::default()`. That type cannot be named from
 // outside librqbit, so inference through `Default::default()` is not a style
 // choice here — it is the only way to call the method at all.
 #[allow(clippy::default_trait_access)]
-pub fn to_details(id: TorrentId, handle: &librqbit::ManagedTorrent) -> Details {
+pub fn to_details(
+    id: TorrentId,
+    handle: &librqbit::ManagedTorrent,
+    wanted: &[bool],
+    first: &[bool],
+) -> Details {
     let stats = handle.stats();
-    // `None` is librqbit's "no restriction", which means every file — not none
-    // of them. Read the other way round, a torrent downloading normally would
-    // be drawn with everything switched off.
-    let only = handle.only_files();
 
     // `file_progress` is positional against the metadata's file list, so the two
     // are read together or not at all.
     let files = handle
         .with_metadata(|meta| {
-            // A lookup, not a search: this runs once a second while the panel is
-            // open, and `contains` inside the loop is quadratic in the file
-            // count — which torrents do reach four figures of.
-            let count = meta.file_infos.len();
-            let wanted = only.as_deref().map_or_else(
-                || vec![true; count],
-                |list| {
-                    let mut flags = vec![false; count];
-                    for &i in list.iter().filter(|&&i| i < count) {
-                        flags[i] = true;
-                    }
-                    flags
-                },
-            );
             meta.file_infos
                 .iter()
                 .enumerate()
@@ -176,7 +168,11 @@ pub fn to_details(id: TorrentId, handle: &librqbit::ManagedTorrent) -> Details {
                     path: Arc::from(info.relative_filename.to_string_lossy().as_ref()),
                     size: info.len,
                     done: stats.file_progress.get(i).copied().unwrap_or(0),
-                    wanted: wanted[i],
+                    // Defaulting to fetched: the lists are sized the moment the
+                    // metadata lands, and a panel opened in that same tick must
+                    // not draw every file as switched off.
+                    wanted: wanted.get(i).copied().unwrap_or(true),
+                    first: first.get(i).copied().unwrap_or(false),
                 })
                 .collect()
         })

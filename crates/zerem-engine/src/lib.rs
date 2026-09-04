@@ -11,6 +11,7 @@
 
 mod command;
 mod config;
+mod journal;
 mod map;
 mod session;
 mod snapshot;
@@ -142,6 +143,10 @@ async fn run(
             }
         };
 
+        // Releases what a finished pin was holding. Cheap: it looks only at
+        // torrents that have a pin at all, which is normally none of them.
+        session.reconcile().await;
+
         // A command still publishes while the view is paused: a tray action has
         // to show its result the moment the window comes back.
         let is_paused = paused.load(Ordering::Relaxed);
@@ -179,6 +184,7 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             Ok(())
         }
         Command::SetFileWanted { id, file, wanted } => session.set_file_wanted(id, file, wanted).await,
+        Command::SetFileFirst { id, file, first } => session.set_file_first(id, file, first).await,
         Command::Start(id) => session.set_running(id, true).await,
         Command::Pause(id) => session.set_running(id, false).await,
         Command::Remove { id, delete_data } => session.remove(id, delete_data).await,
