@@ -195,10 +195,17 @@ impl TorrentSession {
         let owns_folder = zerem_core::subfolder(&name, paths.len()).is_some();
         let plan = zerem_core::move_plan(&from, &paths, keep, owns_folder)?;
 
+        // Through the same function the add dialog and the file list use, not a
+        // second copy of the rule — the first version of this was one, and a
+        // worse one: it did not know that a pin narrows what is fetched.
+        //
+        // Every file is complete, which is what "arrived" means, and saying so
+        // is what makes `to_fetch` drop the pins. A pin on a finished file is
+        // not a reason to fetch only that one.
+        let complete = vec![true; entry.wanted.len()];
         Some(Keepsake {
             bytes,
-            only_files: (!entry.wanted.iter().all(|w| *w))
-                .then(|| entry.wanted.iter().enumerate().filter(|(_, w)| **w).map(|(i, _)| i).collect()),
+            only_files: zerem_core::to_fetch(&entry.wanted, &entry.first, &complete),
             plan,
             output: keep.to_string_lossy().into_owned(),
             was_running: entry.wanted_running,

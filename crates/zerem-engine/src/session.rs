@@ -48,7 +48,7 @@ pub struct Entry {
     /// a pin is an instruction given in a moment, not a setting, so it does not
     /// survive a restart. What does survive is the selection it narrowed, which
     /// is what [`crate::journal`] is for.
-    first: Vec<bool>,
+    pub first: Vec<bool>,
     /// Whether the user wants this running — which is not whether it *is*.
     ///
     /// The queue owns librqbit's paused flag, so that flag stopped being the
