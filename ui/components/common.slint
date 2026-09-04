@@ -37,7 +37,7 @@ export component Stat inherits HorizontalLayout {
         color: root.tint;
         font-size: Theme.fs-label;
         font-family: Theme.font;
-        font-weight: 600;
+        font-weight: Theme.semibold;
         vertical-alignment: center;
     }
 }
@@ -52,11 +52,11 @@ export component Tick inherits Rectangle {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    background: on ? Theme.accent : Theme.surface-hi;
+    background: on ? Theme.accent-fill : Theme.surface-hi;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
     if on: Icon {
         glyph: Lucide.check;
-        tint: #ffffff;
+        tint: Theme.on-accent;
         size: 12px;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
@@ -114,7 +114,7 @@ export component Check inherits Rectangle {
 /// Fluent separates by layer, and this app draws no boxes.
 export component SettingsCard inherits Rectangle {
     background: Theme.card;
-    border-radius: 10px;
+    border-radius: 12px;
     VerticalLayout {
         padding-left: 12px;
         padding-right: 12px;
@@ -542,7 +542,7 @@ export component Toggle inherits Rectangle {
     width: 40px;
     height: 20px;
     border-radius: 10px;
-    background: root.on ? Theme.accent : transparent;
+    background: root.on ? Theme.accent-fill : transparent;
     border-width: 1px;
     border-color: root.on ? transparent : Theme.text-dim;
     animate background, border-color { duration: Theme.quick; easing: Theme.ease-standard(); }
@@ -562,7 +562,7 @@ export component Toggle inherits Rectangle {
         width: root.on ? 14px : 12px;
         height: self.width;
         border-radius: self.width / 2;
-        background: root.on ? #ffffff : Theme.text-dim;
+        background: root.on ? Theme.on-accent : Theme.text-dim;
         x: root.on ? parent.width - self.width - 3px : 4px;
         y: (parent.height - self.height) / 2;
         animate x, width, background { duration: Theme.quick; easing: Theme.ease-standard(); }
@@ -674,5 +674,5 @@ export component SettingsGroup inherits Text {
     color: Theme.text-dim;
     font-size: Theme.fs-label;
     font-family: Theme.font;
-    font-weight: 600;
+    font-weight: Theme.semibold;
 }

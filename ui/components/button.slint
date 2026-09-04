@@ -39,7 +39,7 @@ export component Button inherits Rectangle {
 
     property <bool> filled: kind == ButtonKind.primary;
     property <brush> ink: !enabled ? Theme.idle
-        : kind == ButtonKind.primary ? #ffffff
+        : kind == ButtonKind.primary ? Theme.on-accent
         : kind == ButtonKind.danger ? Theme.danger
         : Theme.text;
 
@@ -47,7 +47,7 @@ export component Button inherits Rectangle {
     width: row.preferred-width + 26px;
     border-radius: 16px;
     background: !enabled ? transparent
-        : filled ? (ta.pressed ? Theme.accent.darker(15%) : Theme.accent)
+        : filled ? (ta.pressed ? Theme.accent-fill.darker(15%) : Theme.accent-fill)
         : ta.pressed ? Theme.selected
         : ta.has-hover ? Theme.hover
         : kind == ButtonKind.text ? transparent

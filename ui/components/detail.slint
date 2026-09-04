@@ -54,7 +54,7 @@ component Tab inherits Rectangle {
             color: active ? Theme.accent : Theme.text-dim;
             font-size: Theme.fs-label;
             font-family: Theme.font;
-            font-weight: 600;
+            font-weight: Theme.semibold;
             vertical-alignment: center;
         }
         Text {
@@ -174,7 +174,7 @@ component FileLine inherits Rectangle {
                             width: parent.width * entry.progress;
                             height: parent.height;
                             border-radius: parent.border-radius;
-                            background: Theme.accent;
+                            background: Theme.accent-fill;
                         }
                     }
                 }
@@ -230,7 +230,7 @@ component FileLine inherits Rectangle {
             : (root.entry.first || ta.has-hover || pin.has-hover) ? 1
             : 0;
         animate opacity { duration: Theme.quick; easing: Theme.ease-standard(); }
-        background: root.entry.first ? Theme.accent
+        background: root.entry.first ? Theme.accent-fill
             : pin.has-hover ? Theme.surface-hi
             : transparent;
         animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
@@ -515,7 +515,7 @@ export component DetailDrawer inherits Rectangle {
                     color: Theme.text;
                     font-size: Theme.fs-body;
                     font-family: Theme.font;
-                    font-weight: 600;
+                    font-weight: Theme.semibold;
                     vertical-alignment: center;
                     overflow: elide;
                     horizontal-stretch: 1;

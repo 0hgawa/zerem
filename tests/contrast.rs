@@ -106,6 +106,10 @@ fn every_pair_the_app_actually_draws_is_legible() {
         p.check(&mut bad, "accent", "surface", AA_TEXT);
         // The chosen row in a dropdown, and the language it names.
         p.check(&mut bad, "accent", "card", AA_TEXT);
+        // And the label on a filled button, which is the pair that is easiest
+        // to get wrong: a blue bright enough to look like a button is bright
+        // enough to lose white text on it.
+        p.check(&mut bad, "on-accent", "accent-fill", AA_TEXT);
         p.check(&mut bad, "seeding", "bg", AA_TEXT);
         p.check(&mut bad, "seeding", "surface", AA_TEXT);
         p.check(&mut bad, "danger", "bg", AA_TEXT);
