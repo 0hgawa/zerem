@@ -84,9 +84,26 @@ impl EngineConfig {
                 }),
                 ..Default::default()
             }),
+            // What the runtime actually has, rather than librqbit's guess of
+            // eight. This number caps the concurrent blocking work — every
+            // piece written and every SHA-1 check runs under it — and the
+            // runtime this session lives on is built with tokio's default,
+            // which is one worker per core. Telling it eight on a sixteen-core
+            // machine halves the verification that can happen at once, and
+            // verification is what a finished piece waits on.
+            runtime_worker_threads: Some(workers()),
             ..Default::default()
         }
     }
+}
+
+/// How many worker threads the engine's runtime has.
+///
+/// Tokio's own default, computed the same way, because that is the runtime
+/// `Engine::start` builds. A machine that will not say how many cores it has
+/// gets one, which is what tokio falls back to as well.
+fn workers() -> usize {
+    std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get)
 }
 
 /// The system Downloads folder, falling back to the home directory and then to
@@ -105,7 +122,7 @@ fn default_state_dir() -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use super::{EngineConfig, DEFAULT_PORT};
+    use super::{workers, EngineConfig, DEFAULT_PORT};
     use librqbit::ListenerMode;
     use librqbit::SessionPersistenceConfig;
     use std::path::PathBuf;
@@ -155,5 +172,14 @@ mod tests {
         // Off by default, and off means re-hashing every complete torrent on
         // every launch — minutes of disk churn for data already verified.
         assert!(EngineConfig::default().to_session_options().fastresume);
+    }
+    #[test]
+    fn the_blocking_limit_matches_the_runtime_we_actually_build() {
+        // librqbit uses this to cap concurrent disk writes and SHA-1 checks.
+        // Left unset it assumes eight, which on a machine with more cores is
+        // half the verification that could be running.
+        let opts = EngineConfig::default().to_session_options();
+        assert_eq!(opts.runtime_worker_threads, Some(workers()));
+        assert!(workers() >= 1, "never zero, or nothing blocking may run at all");
     }
 }
