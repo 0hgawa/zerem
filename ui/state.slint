@@ -214,6 +214,15 @@ export global DetailState {
 // Joins now because there is finally something to hold. Speeds arrive already
 // formatted — "Unlimited", "500 kB/s" — because the alternative is the `.slint`
 // deciding how a number reads, which is Rust's job everywhere else.
+/// The app's own mark, for the window to wear.
+///
+/// The same drawing as the taskbar icon and the `.ico`, from the same function
+/// — so the thing in the corner of the window and the thing in the taskbar
+/// cannot drift apart, which is the usual way an app ends up with two logos.
+export global Brand {
+    in-out property <image> mark;
+}
+
 /// What the window is being asked to explain, and where.
 ///
 /// A global because a tooltip has to be drawn by the *window* rather than by

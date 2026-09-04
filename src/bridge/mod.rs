@@ -40,6 +40,7 @@ impl Views {
 
 /// Register every domain's callbacks.
 pub fn wire(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings::Store>, views: &Rc<Views>) {
+    show_mark(ui);
     torrents::wire(ui, state, store, views);
     prefs::wire(ui, state, store, views);
     detail::wire(ui, state, store, views);
@@ -185,6 +186,20 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
 
     detail::refresh(ui, snapshot, &views.detail);
     add::refresh(ui, snapshot, &views.add);
+}
+
+/// Draw the app's mark into the window, once.
+///
+/// From the same function the taskbar icon and the `.ico` come from, so the
+/// mark in the corner and the mark in the taskbar cannot drift apart.
+///
+/// Rendered larger than it is shown: it is a procedural drawing with a feathered
+/// corner, and downscaling a clean 64px square beats aliasing a 20px one.
+fn show_mark(ui: &MainWindow) {
+    const SIZE: u32 = 64;
+    let mut buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(SIZE, SIZE);
+    buffer.make_mut_bytes().copy_from_slice(&zerem_core::icon::rgba(SIZE));
+    ui.global::<crate::Brand>().set_mark(slint::Image::from_rgba8(buffer));
 }
 
 /// The shelves in the rail, with how many are on each.

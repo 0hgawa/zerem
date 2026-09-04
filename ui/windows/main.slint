@@ -3,7 +3,7 @@
 
 import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
-import { AddState, DetailState, Hint, Prefs, Row, SessionState, TorrentList } from "../state.slint";
+import { AddState, Brand, DetailState, Hint, Prefs, Row, SessionState, TorrentList } from "../state.slint";
 import { TableHeader, TableRow } from "../components/table.slint";
 import { DetailDrawer } from "../components/detail.slint";
 import { ColumnsMenu, ContextMenu, FileMenu } from "../components/menu.slint";
@@ -29,11 +29,30 @@ component Toolbar inherits Rectangle {
         spacing: 6px;
         alignment: start;
 
-        // First, and hard against the left edge, because that is where the
-        // thing it opens is. It used to sit at the far right among the
-        // preferences and the theme switch, a control for the left of the
-        // window living on the right of the toolbar — every application on
-        // this desktop puts this button over the panel it reveals.
+        // The app's mark, and the first thing in the window. It exists — it is
+        // in the taskbar and the `.ico` — and the window never wore it, which
+        // is most of why the header could have belonged to anything.
+        //
+        // No wordmark beside it: the title bar directly above already says
+        // Zerem, and saying it twice in forty pixels is not identity.
+        VerticalLayout {
+            alignment: center;
+            Image {
+                source: Brand.mark;
+                width: 20px;
+                height: 20px;
+                image-fit: contain;
+                accessible-role: image;
+                accessible-label: "Zerem";
+            }
+        }
+        Rectangle { width: 4px; }
+
+        // Then the fold, hard against the left, because that is where the thing
+        // it opens is. It used to sit at the far right among the preferences
+        // and the theme switch, a control for the left of the window living on
+        // the right of the toolbar — every application on this desktop puts
+        // this button over the panel it reveals.
         VerticalLayout {
             alignment: center;
             IconButton {

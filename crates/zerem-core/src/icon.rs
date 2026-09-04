@@ -13,7 +13,14 @@
 /// wants and the one the ICO writer converts from.
 #[must_use]
 pub fn rgba(size: u32) -> Vec<u8> {
-    const ACCENT: [u8; 3] = [0x4c, 0x8d, 0xff];
+    // One fixed blue, and the same one the app fills its buttons with. It was
+    // #4c8dff, which the palette left behind — so the mark in the taskbar was a
+    // different blue from every accent inside the window, and an identity split
+    // in two is not an identity.
+    //
+    // Fixed and not themed on purpose: this is drawn into the taskbar, the
+    // `.ico` and the file associations, where there is no theme to read.
+    const ACCENT: [u8; 3] = [0x08, 0x90, 0xff];
 
     let n = size as f32;
     let radius = n * 0.22;
