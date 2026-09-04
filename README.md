@@ -22,17 +22,31 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 > instância única, limites de banda e painel de detalhes. O diálogo de adição
 > escolhe os arquivos antes de começar, e a aba de Arquivos os troca depois. O
 > filtro responde a cada tecla, o diálogo avisa quando não vai caber no disco,
-> um torrent que empaca diz por quê e um arquivo pode furar a fila. **A Fase 3
-> fechou** — números estáveis, sparkline, movimento, contraste aferido, leitor de
-> tela e a interface em português — e os alvos estão medidos em
-> [docs/benchmarks.md](docs/benchmarks.md). O que falta é o segundo catálogo da
-> i18n e a Fase 4 inteira: instalador, auto-update e benchmarks de regressão no
-> CI. A ordem está no [roadmap](ROADMAP.md).
+> um torrent que empaca diz por quê e um arquivo pode furar a fila. Há fila com
+> máximo de ativos, categorias com pasta automática, bandeira do país ao lado de
+> cada peer, menu de botão direito nos arquivos e **mover ao completar**. **A
+> Fase 3 fechou** — números estáveis, sparkline, movimento, contraste aferido,
+> leitor de tela e a interface inteira em português, dos dois lados: o `.slint`
+> e o Rust, cada um com teste nas duas direções. Os alvos estão medidos em
+> [docs/benchmarks.md](docs/benchmarks.md), agora com criterion por trás.
+>
+> **O que falta é a Fase 4**: instalador NSIS (o script existe, falta compilar),
+> registro de `magnet:` e `.torrent` — que depende do instalador — e auto-update
+> com minisign. E **a licença do Slint** precisa ser escolhida antes de qualquer
+> release: GPLv3, royalty-free desktop ou comercial. A ordem está no
+> [roadmap](ROADMAP.md).
 
 ## Preferências
 
-`Ctrl+,` ou o botão na barra. Quatro grupos: **Downloads**, **Velocidade**,
-**Conexão** e **Aparência**.
+`Ctrl+,` ou o botão na barra. Quatro salas — **Downloads**, **Velocidade**,
+**Conexão** e **Aparência** — num trilho à esquerda, com o painel à direita. Era
+um scroll só com quatro títulos dentro, o que fazia o caminho até a porta de
+escuta passar por cima dos limites de banda.
+
+Dentro de uma sala as linhas ficam em cards, e cada linha diz o que é à esquerda
+e carrega o que a muda à direita. É a forma de toda tela de configuração deste
+desktop, e substituiu uma coluna fixa de rótulo que fazia cada linha parecer
+campo de formulário em vez de escolha.
 
 Os números são **digitados**, não escolhidos numa lista. Os presets que vieram
 antes eram mais rápidos de trocar e impossíveis de errar, e esse argumento só
@@ -54,12 +68,15 @@ voltar, e um par só significa redigitar os números de verdade de memória toda
 vez. E fica a um clique de distância de propósito — o momento em que alguém quer
 a linha de volta não é um momento em que essa pessoa quer abrir um painel.
 
+**Porta de escuta, uTP e UPnP estão no painel** e dizem, uma vez para os três,
+que valem a partir do próximo lançamento. Isso reverte uma decisão anterior de
+escondê-los: a objeção estava certa — um controle que *silenciosamente* não faz
+nada até reabrir é pior que controle nenhum — e ela era um argumento contra o
+silêncio, não contra o controle.
+
 Tudo vive em `%LOCALAPPDATA%\Zerem\settings.json`, escrito atomicamente e com
-debounce. **Porta de escuta, uTP e UPnP estão no arquivo mas não no painel**:
-são fixados quando a sessão é construída, e um controle que silenciosamente não
-faz nada até o próximo lançamento é pior que controle nenhum. Editar o arquivo à
-mão funciona, inclusive salvo pelo Bloco de Notas — o BOM que ele escreve é
-tolerado.
+debounce. Editar o arquivo à mão funciona, inclusive salvo pelo Bloco de Notas —
+o BOM que ele escreve é tolerado.
 
 ## Medido, não prometido
 
@@ -231,6 +248,60 @@ barra continuam alternando, e o × do painel fecha.
 Só o clique simples abre. `Ctrl` e `Shift` estão montando uma seleção de
 vários, e um painel só mostra um: abri-lo ali seria escolher um torrent do
 grupo no lugar de quem clicou.
+
+O botão da barra que alternava esse painel foi removido, e o `Ctrl+I` ficou. Ele
+não é uma visão da janela, é uma visão de **um torrent**: um interruptor global
+para algo sempre *sobre uma linha selecionada* é um interruptor que não faz nada
+em metade das vezes que é apertado.
+
+### Botão direito num arquivo
+
+**Abrir**, **abrir a pasta do arquivo**, e as três prioridades que existem. O
+duplo clique faz o mesmo que a primeira linha.
+
+O qBittorrent oferece prioridade em quatro níveis. Três deles não existem neste
+motor: o librqbit sabe se um arquivo é desejado e se **um** arquivo está sendo
+buscado à frente dos outros, e nada entre isso. Oferecer "Alta" e "Máxima" como
+linhas separadas seriam dois controles fazendo a mesma coisa — pior que um menu
+mais curto.
+
+**Abrir** fica desligado até o arquivo terminar; um vídeo pela metade abre como
+alguns segundos e um erro de codec. No menu ele apaga; no duplo clique, que não
+tem estado apagado para mostrar, a barra de status diz por quê.
+
+### Bandeira do país
+
+Ao lado do endereço de cada peer, onde é lido primeiro e responde "quem é este?"
+antes de o número ter de responder.
+
+A tabela vem dos arquivos de delegação dos cinco RIRs — o registro em si, não um
+palpite sobre ele, livre para redistribuir, e sem contrato de licença entre o
+Zerem e quem o usa por causa de uma bandeira. São 504 KiB e **nada é
+arredondado**: um piso de /22 economizaria 114 KiB e essa economia é feita
+inteiramente de erros, porque as únicas faixas que um piso remove são as de país
+diferente do vizinho que as engole. O `1.1.1.0/24` saía como Tailândia.
+
+Emoji seria de graça e não funciona: a Segoe UI Emoji não traz os pares de
+indicador regional, de propósito, então 🇧🇷 no Windows sai como as letras B e R.
+As 239 bandeiras são imagens, empacotadas em 104 KiB com paleta e comprimentos
+de corrida.
+
+Espaço que ninguém recebeu não desenha bandeira nenhuma, em vez do país que
+calhou de vir antes.
+
+### Categorias
+
+Não existe gerenciador de categorias, e isso é de propósito. Uma é criada
+digitando o nome no diálogo de adição e escolhendo para onde aquele download
+vai; daí em diante o nome **significa** aquela pasta. Uma tela separada para
+criar algo cuja definição inteira são dois campos já na tela seria um segundo
+lugar para fazer a mesma coisa.
+
+Digitar um nome que o app já conhece move o destino para a pasta daquela
+categoria. Digitar o mesmo nome com outra pasta **move a categoria**, não cria
+uma segunda: duas "Séries" apontando para lugares diferentes é um sistema que
+ninguém consegue prever. "TV Shows", "tv shows" e "TV  Shows" são uma só, e o
+que o trilho mostra é a grafia digitada primeiro.
 
 À direita e não embaixo: um painel sob a tabela custa linhas, que é a única
 coisa para que a janela serve; um painel ao lado custa colunas, das quais as
@@ -476,6 +547,39 @@ ser lido.
 e um atalho no menu Iniciar para ser atribuído, o que significa uma cópia
 instalada — ele entra com o instalador.
 
+### Mover para outra pasta ao terminar
+
+Desligado até alguém nomear uma pasta, em **Downloads → Mover para cá ao
+terminar**. Baixar num disco rápido e guardar num grande é a razão inteira de a
+opção existir.
+
+O librqbit não tem `move_storage`. A libtorrent tem — é assim que o qBittorrent
+move um torrent pronto sem ler um byte: avisa a biblioteca que os arquivos estão
+em outro lugar e ela continua semeando. Aqui o único jeito de mudar onde um
+torrent vive é deixar de ser aquele torrent e virar um novo apontando para o
+lugar novo. Então é uma sequência, e a ordem é o projeto inteiro:
+
+1. Guardar o que a reconstrução precisa — os bytes do `.torrent`, quais arquivos
+   eram desejados, onde estão e para onde vão.
+2. Pausar, para nada estar escrevendo enquanto os arquivos se movem.
+3. Mover, **fora da thread do motor**. É a parte lenta e a única que pode perder
+   dados, então é a que se desfaz sozinha: mesmo volume é um `rename` por
+   arquivo; entre volumes, cada arquivo é copiado e conferido no tamanho antes
+   de qualquer coisa ser apagada.
+4. **Só depois de o movimento passar**, largar o torrent sem tocar nos arquivos
+   e adicioná-lo de novo na pasta nova.
+
+Toda falha antes do passo quatro deixa um torrent que continua na lista,
+continua sabendo onde estão seus arquivos, e simplesmente não se moveu. Nada é
+largado antes de o dado já estar do outro lado.
+
+**O preço, dito com todas as letras:** o torrent é reverificado. `overwrite` é o
+que permite ao librqbit retomar ou semear um torrent cujas peças já estão
+escritas, e ele confere para descobrir. Um torrent de cinquenta gigabytes lê
+cinquenta gigabytes de volta depois de se mover, e aparece como **Verificando**
+até terminar. Não há como contornar isso de fora da biblioteca. Paga-se uma vez,
+depois de o download já ter acabado, sem ninguém esperando pelo conteúdo.
+
 ## Bandeja
 
 **Fechar a janela esconde, não encerra.** Um cliente que para de semear porque a
@@ -510,12 +614,29 @@ cada versão nova do Rust deixa o CI vermelho em código que ninguém tocou.
 | **Slint** (toolkit de UI) | Licenciamento próprio — GPLv3, royalty-free desktop, ou comercial. Um binário distribuído tem de estar coberto por uma delas; ver [slint.dev](https://slint.dev). **A escolha para o Zerem é decisão da Fase 4, antes do primeiro release.** |
 | **librqbit** (engine BitTorrent) | Apache-2.0. Fonte em [github.com/ikatson/rqbit](https://github.com/ikatson/rqbit). |
 
-## Limitação conhecida
+## Limitações conhecidas
 
 **Trackers privados filtram por `peer_id`**, e um cliente próprio não passa no
 whitelist deles. Isso é uma limitação do projeto, não um bug — se você usa
 tracker privado, o Zerem não substitui o seu cliente atual.
 
+**Não há criptografia de protocolo (MSE/PE).** O librqbit não a implementa — não
+há RC4 nem Diffie-Hellman em lugar nenhum da árvore de dependências. A
+consequência é direta: todo peer configurado como *require encryption*, que é um
+ajuste comum em qBittorrent e Deluge, **recusa a conexão**. E onde o provedor faz
+DPI em BitTorrent, o tráfego é moldado. É a maior diferença de velocidade em
+relação ao qBittorrent e não é corrigível no código do Zerem.
+
+Duas outras ficam no mesmo lugar, também dentro do motor: a escolha de peças é
+por ordem de arquivo e **não rarest-first**, e não há *fast extension*. Nenhuma
+das três é uma decisão deste projeto; são o que o librqbit cobre hoje.
+
 ## Licença
 
-MIT © Ohgawa
+MIT © Ohgawa.
+
+**Ainda não resolvido, e bloqueia o primeiro release:** o Slint é distribuído sob
+GPLv3, sob uma licença royalty-free para desktop, ou comercial. Um binário
+publicado precisa estar coberto por uma delas, e a escolha muda o que o MIT acima
+significa na prática. Está registrada como risco conhecido no
+[roadmap](ROADMAP.md).
