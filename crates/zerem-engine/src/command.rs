@@ -39,6 +39,11 @@ pub enum Command {
         /// mis-click must stay recoverable.
         delete_data: bool,
     },
+    /// How many torrents may download at once. Zero is no limit.
+    ///
+    /// Seeding is never counted and never queued: a finished torrent costs no
+    /// download bandwidth, which is the thing being rationed.
+    SetMaxActive(u32),
     /// Global transfer caps in bytes per second. `None` is unlimited.
     ///
     /// Takes effect at once — librqbit's rate limiters are settable while the

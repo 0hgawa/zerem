@@ -23,6 +23,11 @@ const QUIET: std::time::Duration = std::time::Duration::from_millis(400);
 /// may hold any value, and the menu will show it.
 pub const SPEED_PRESETS: [u32; 8] = [0, 50, 100, 250, 500, 1_000, 2_500, 5_000];
 
+/// How many download at once. Zero is no limit, and it is first because it is
+/// the default: a queue is what somebody reaches for after they have twenty
+/// torrents, not something to impose on somebody who has three.
+pub const ACTIVE_PRESETS: [u32; 6] = [0, 1, 2, 3, 5, 8];
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -46,6 +51,11 @@ pub struct Settings {
     /// Empty means "never touched"; every column shows. Hand-editable like the
     /// rest of the file, so the name column is forced back on when it is read.
     pub column_visible: Vec<bool>,
+    /// How many torrents may download at once. `0` is no limit.
+    ///
+    /// Seeding is never counted: a finished torrent costs no download
+    /// bandwidth, which is the thing this rations.
+    pub max_active: u32,
     /// Which language the interface is in, as a folder name under `lang/`.
     ///
     /// Empty means "whatever the machine is set to", and is stored as empty
@@ -73,6 +83,7 @@ impl Default for Settings {
             sort_desc: false,
             column_widths: Vec::new(),
             column_visible: Vec::new(),
+            max_active: 0,
             language: zerem_core::language::SYSTEM.to_owned(),
             drawer_width: crate::state::DEFAULT_DRAWER_W,
         }
@@ -129,10 +140,17 @@ impl Settings {
         SPEED_PRESETS.iter().copied().find(|&p| p > current).unwrap_or(SPEED_PRESETS[0])
     }
 
+    /// The next preset for how many download at once, wrapping through no limit.
+    #[must_use]
+    pub fn next_active(current: u32) -> u32 {
+        ACTIVE_PRESETS.iter().copied().find(|&p| p > current).unwrap_or(ACTIVE_PRESETS[0])
+    }
+
     #[must_use]
     pub fn to_engine_config(&self) -> zerem_engine::EngineConfig {
         zerem_engine::EngineConfig {
             download_dir: self.download_dir.clone(),
+            max_active: self.max_active,
             port: self.port,
             utp: self.utp,
             upnp: self.upnp,

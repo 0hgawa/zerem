@@ -162,6 +162,8 @@ export global Prefs {
     in-out property <bool> custom-limits;
     /// What the language row shows — "System", or the language named in itself.
     in-out property <string> language;
+    /// "No limit", or how many download at once.
+    in-out property <string> max-active;
 
     callback close();
     callback pick-download-dir();
@@ -177,6 +179,8 @@ export global Prefs {
     /// is live: Slint's bundled translations are a property, so every string
     /// redraws without a restart.
     callback cycle-language();
+    /// Steps to the next preset for how many download at once.
+    callback cycle-max-active();
 }
 
 export global SessionState {

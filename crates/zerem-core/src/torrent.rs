@@ -71,6 +71,14 @@ pub enum State {
     /// output folder, a file it cannot write. Always carries a message in
     /// [`TorrentRow::error`]; a state with no explanation is a dead end.
     Error,
+    /// Waiting its turn: wanted, incomplete, and past the limit on how many
+    /// download at once.
+    ///
+    /// Its own state and not `Paused`, because the difference is the whole
+    /// point — a paused torrent is stopped because somebody stopped it, and a
+    /// queued one is stopped because something else is ahead of it. Showing
+    /// both as "Paused" is how a queue reads as an app that ignored the click.
+    Queued,
 }
 
 impl State {
@@ -82,6 +90,7 @@ impl State {
             Self::Downloading => "Downloading",
             Self::Seeding => "Seeding",
             Self::Error => "Error",
+            Self::Queued => "Queued",
         })
     }
 
@@ -95,6 +104,7 @@ impl State {
             Self::Seeding => 2,
             Self::Checking => 3,
             Self::Error => 4,
+            Self::Queued => 6,
         }
     }
 
@@ -102,7 +112,7 @@ impl State {
     /// nothing and will not move until someone intervenes.
     #[must_use]
     pub const fn is_active(self) -> bool {
-        !matches!(self, Self::Paused | Self::Error)
+        !matches!(self, Self::Paused | Self::Error | Self::Queued)
     }
 }
 

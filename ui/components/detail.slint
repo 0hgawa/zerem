@@ -171,7 +171,25 @@ component FileLine inherits Rectangle {
         }
     }
 
-    ta := TouchArea {
+    // Hover only. It is what lifts the row and brings the pin out, and it must
+    // not also be the switch.
+    ta := TouchArea { }
+
+    // The gutter the tick sits in — 38 px wide and the full height of the row,
+    // which is still more than twice the square itself.
+    //
+    // It used to be the whole line, on the reasoning that a 16 px box is a
+    // small thing to ask somebody to hit fifty times in a row. That was right
+    // about the target and wrong about the line: once the line grew a second
+    // action, a click on the path, the size or the progress bar silently
+    // switched the file off.
+    //
+    // Declared after the hover area so it takes its own clicks, the same order
+    // the pin below relies on.
+    TouchArea {
+        x: 0;
+        width: 38px;
+        height: parent.height;
         mouse-cursor: pointer;
         clicked => { DetailState.toggle-file(root.index); }
     }
@@ -283,7 +301,6 @@ export component DetailDrawer inherits Rectangle {
     width: root.full-width;
     background: Theme.surface;
 
-    Rectangle { x: 0; width: 1px; height: parent.height; background: Theme.border; }
 
     // The grip, on the edge the drawer grows from. Same eight pixels and the
     // same cursor the column handles use, because it is the same gesture — and
@@ -385,7 +402,6 @@ export component DetailDrawer inherits Rectangle {
                 Tab { label: @tr("Files"); id: "files"; glyph: Lucide.file; count: DetailState.files-summary; }
                 Tab { label: @tr("Peers"); id: "peers"; glyph: Lucide.users; count: DetailState.peers-summary; }
             }
-            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border; }
         }
 
         if DetailState.tab == "files" && DetailState.files.length == 0:

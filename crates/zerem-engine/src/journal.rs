@@ -15,7 +15,7 @@
 //! still holding the rest of itself hostage, days later, would be the app
 //! remembering the wrong half.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
@@ -156,5 +156,102 @@ mod tests {
         assert_eq!(entries.get("ccc"), Some(&vec![4]));
         assert_eq!(entries.get("bbb"), None, "a hash with no selection says nothing");
         assert_eq!(entries.get("ddd"), None);
+    }
+}
+
+/// A plain set of infohashes, written one per line.
+///
+/// The queue pauses torrents on the user's behalf, which means librqbit's own
+/// paused flag stops being the answer to "did somebody stop this?" — the same
+/// lesson `only_files` taught above. So what the queue paused is written down,
+/// and a run that comes back finds its own work rather than mistaking it for
+/// the user's.
+///
+/// Absent almost always: it holds a line only while more torrents are wanted
+/// than the limit allows.
+#[derive(Default, Debug)]
+pub struct Roster {
+    path: PathBuf,
+    hashes: HashSet<String>,
+}
+
+impl Roster {
+    #[must_use]
+    pub fn open(state_dir: &Path, name: &str) -> Self {
+        let path = state_dir.join(name);
+        let hashes = std::fs::read_to_string(&path)
+            .map(|text| text.lines().map(str::trim).filter(|l| !l.is_empty()).map(str::to_owned).collect())
+            .unwrap_or_default();
+        Self { path, hashes }
+    }
+
+    #[must_use]
+    pub fn holds(&self, info_hash: &str) -> bool {
+        self.hashes.contains(info_hash)
+    }
+
+    /// Whether it is holding anything, which is what lets the caller skip the
+    /// whole pass when there is no limit and nothing to undo.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.hashes.is_empty()
+    }
+
+    /// Replace the whole set, writing only when it actually changed.
+    ///
+    /// Called every tick, which is why it compares first: the steady state is
+    /// no change at all, and rewriting a file once a second for nothing is the
+    /// kind of thing that shows up in somebody's disk activity graph.
+    pub fn keep(&mut self, hashes: HashSet<String>) {
+        if hashes == self.hashes {
+            return;
+        }
+        self.hashes = hashes;
+        if self.hashes.is_empty() {
+            let _ = std::fs::remove_file(&self.path);
+            return;
+        }
+        let mut text = String::new();
+        for hash in &self.hashes {
+            let _ = writeln!(text, "{hash}");
+        }
+        if let Err(e) = write_atomically(&self.path, &text) {
+            tracing::warn!(error = %e, "could not record what the queue paused");
+        }
+    }
+}
+
+#[cfg(test)]
+mod roster_tests {
+    use super::Roster;
+
+    #[test]
+    fn what_the_queue_paused_survives_the_process_that_paused_it() {
+        let dir = std::env::temp_dir().join("zerem-roster");
+        std::fs::create_dir_all(&dir).expect("scratch");
+        let _ = std::fs::remove_file(dir.join("queued.txt"));
+
+        let mut roster = Roster::open(&dir, "queued.txt");
+        roster.keep(["aaa".to_owned(), "bbb".to_owned()].into_iter().collect());
+
+        let reopened = Roster::open(&dir, "queued.txt");
+        assert!(reopened.holds("aaa"));
+        assert!(reopened.holds("bbb"));
+        assert!(!reopened.holds("ccc"));
+    }
+
+    #[test]
+    fn an_empty_queue_leaves_no_file_behind() {
+        // The steady state for most people is no queue at all, and a file that
+        // is there says something is being held back.
+        let dir = std::env::temp_dir().join("zerem-roster-empty");
+        std::fs::create_dir_all(&dir).expect("scratch");
+
+        let mut roster = Roster::open(&dir, "queued.txt");
+        roster.keep(std::iter::once("aaa".to_owned()).collect());
+        roster.keep(std::collections::HashSet::new());
+
+        assert!(!dir.join("queued.txt").exists());
+        assert!(!Roster::open(&dir, "queued.txt").holds("aaa"));
     }
 }

@@ -146,6 +146,9 @@ async fn run(
         // Releases what a finished pin was holding. Cheap: it looks only at
         // torrents that have a pin at all, which is normally none of them.
         session.reconcile().await;
+        // And gives the next torrent its turn when one finishes or is stopped.
+        // Free when no limit is set, which is the default.
+        session.enforce_queue().await;
 
         // A command still publishes while the view is paused: a tray action has
         // to show its result the moment the window comes back.
@@ -192,6 +195,10 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.set_limits(down, up);
             Ok(())
         }
+        Command::SetMaxActive(limit) => {
+            session.set_max_active(limit).await;
+            Ok(())
+        }
         // By reference so `command` survives for the error log below. The
         // clone is one PathBuf per preference change.
         Command::SetDownloadDir(ref dir) => session.set_output_dir(dir.clone()),
@@ -232,6 +239,7 @@ mod tests {
             // Port 0 is wrong for a client and right for a test: two test
             // binaries must not fight over 6881.
             port: 0,
+            max_active: 0,
             utp: false,
             upnp: false,
         }

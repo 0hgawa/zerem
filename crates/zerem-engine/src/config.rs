@@ -29,6 +29,8 @@ pub struct EngineConfig {
     /// be sharing with us.
     pub state_dir: PathBuf,
     pub port: u16,
+    /// How many torrents may download at once. Zero is no limit.
+    pub max_active: u32,
     /// uTP alongside TCP. On by default here, off by default in librqbit.
     pub utp: bool,
     pub upnp: bool,
@@ -40,6 +42,9 @@ impl Default for EngineConfig {
             download_dir: default_download_dir(),
             state_dir: default_state_dir(),
             port: DEFAULT_PORT,
+            // No limit by default, so nothing changes for somebody with three
+            // torrents. A queue is what you reach for when you have twenty.
+            max_active: 0,
             utp: true,
             upnp: true,
         }

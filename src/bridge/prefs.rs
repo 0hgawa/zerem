@@ -31,6 +31,15 @@ fn speed_label(kb: u32) -> String {
     }
 }
 
+/// "No limit", or how many download at once.
+fn active_label(limit: u32) -> String {
+    if limit == 0 {
+        zerem_core::tr("No limit").to_owned()
+    } else {
+        limit.to_string()
+    }
+}
+
 /// Push the settings into the window. Also the startup path: the theme, the
 /// sort and the column widths are restored by calling this once.
 pub fn show(ui: &MainWindow, settings: &Settings) {
@@ -49,6 +58,7 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
         off_menu(settings.down_limit) || off_menu(settings.up_limit)
     );
 
+    push!(prefs, get_max_active, set_max_active, active_label(settings.max_active).into());
     push!(prefs, get_language, set_language, language::label(&settings.language).into());
     apply_language(&settings.language);
 
@@ -91,6 +101,17 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
         move || {
             let Some(ui) = ui.upgrade() else { return };
             ui.global::<Prefs>().set_open(false);
+        }
+    });
+
+    prefs.on_cycle_max_active({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let next = Settings::next_active(store.get().max_active);
+            store.update(|s| s.max_active = next);
+            state.engine.send(Command::SetMaxActive(next));
+            push!(ui.global::<Prefs>(), get_max_active, set_max_active, active_label(next).into());
         }
     });
 

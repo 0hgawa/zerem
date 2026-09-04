@@ -1,6 +1,6 @@
 //! The librqbit session, wrapped so the rest of the program never sees it.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -8,10 +8,10 @@ use std::sync::Arc;
 use anyhow::Context as _;
 use librqbit::api::TorrentIdOrHash;
 use librqbit::{AddTorrent, AddTorrentOptions, AddTorrentResponse, ManagedTorrent, Session};
-use zerem_core::{Content, History, Pending, PendingFile, TorrentId, TorrentRow};
+use zerem_core::{Content, History, Pending, PendingFile, State, TorrentId, TorrentRow, Waiting};
 
 use crate::config::EngineConfig;
-use crate::journal::Journal;
+use crate::journal::{Journal, Roster};
 use crate::map;
 use crate::snapshot::Snapshot;
 
@@ -49,6 +49,15 @@ struct Entry {
     /// survive a restart. What does survive is the selection it narrowed, which
     /// is what [`crate::journal`] is for.
     first: Vec<bool>,
+    /// Whether the user wants this running — which is not whether it *is*.
+    ///
+    /// The queue owns librqbit's paused flag, so that flag stopped being the
+    /// answer to "did somebody stop this?". This is the intent the queue works
+    /// from, and what it paused is written down so a restart can tell the two
+    /// apart again.
+    wanted_running: bool,
+    /// Its turn. Lower goes first; pressing Start moves it below everything.
+    position: i64,
 }
 
 impl Entry {
@@ -63,6 +72,8 @@ impl Entry {
             trend: map::Trend::default(),
             wanted: Vec::new(),
             first: Vec::new(),
+            wanted_running: true,
+            position: 0,
         }
     }
 
@@ -167,6 +178,17 @@ pub struct TorrentSession {
     history: History,
     /// Selections narrowed by a pin, so an interrupted run can put them back.
     journal: Journal,
+    /// How many torrents may download at once. Zero is no limit, the same
+    /// convention the transfer caps use.
+    limit: u32,
+    /// The next position handed to a torrent added, and to one sent to the
+    /// head of the queue. Signed and open at both ends, so neither move has to
+    /// renumber anything else.
+    next_back: i64,
+    next_front: i64,
+    /// What the queue paused, so a restart can tell its own work from the
+    /// user's.
+    queued: Roster,
 }
 
 impl TorrentSession {
@@ -212,7 +234,12 @@ impl TorrentSession {
             pending_bytes: None,
             history: History::default(),
             journal: Journal::open(&config.state_dir),
+            limit: config.max_active,
+            next_back: 0,
+            next_front: 0,
+            queued: Roster::open(&config.state_dir, "queued.txt"),
         };
+        this.adopt_queue();
         this.restore_narrowed().await;
         if let Some(protocol) = port_conflict {
             // Both places: the status bar so the user knows, and the log so it
@@ -425,6 +452,27 @@ impl TorrentSession {
         Ok(())
     }
 
+    /// Give every restored torrent a place in line, and work out which of them
+    /// the queue stopped rather than the user.
+    ///
+    /// Order is by id, which is the order they were added — librqbit hands the
+    /// ids out in sequence and keeps them across restarts. A jump to the head
+    /// of the queue is deliberately not persisted: it is an instruction given
+    /// in a moment, the same as pinning a file.
+    fn adopt_queue(&mut self) {
+        let mut ids: Vec<TorrentId> = self.entries.keys().copied().collect();
+        ids.sort_unstable();
+        for (place, id) in ids.into_iter().enumerate() {
+            let Some(entry) = self.entries.get_mut(&id) else { continue };
+            entry.position = place as i64;
+            // A torrent that is stopped is the user's doing — unless this is
+            // where we wrote down that it was ours.
+            let paused = matches!(entry.handle.stats().state, librqbit::TorrentStatsState::Paused);
+            entry.wanted_running = !paused || self.queued.holds(&entry.info_hash);
+        }
+        self.next_back = self.entries.len() as i64;
+    }
+
     /// Put back selections a previous run narrowed and did not live to restore.
     ///
     /// The pins themselves are gone on purpose: "fetch this one first" is an
@@ -572,13 +620,101 @@ impl TorrentSession {
         self.apply_choice(id).await
     }
 
-    pub async fn set_running(&self, id: TorrentId, running: bool) -> anyhow::Result<()> {
-        let handle = self.entries.get(&id).context("no such torrent")?.handle.clone();
+    /// Start or stop a torrent, on the user's say-so.
+    ///
+    /// Start also means *now*: it goes to the head of the queue, which is the
+    /// only thing an explicit click can mean while something else is holding
+    /// the slots. Without that, pressing Start on a queued torrent would look
+    /// like the app ignoring the click.
+    ///
+    /// Applied straight away rather than left to the queue, so the ordinary
+    /// case — no limit set at all — behaves exactly as it did before there was
+    /// a queue, and pays nothing for it.
+    pub async fn set_running(&mut self, id: TorrentId, running: bool) -> anyhow::Result<()> {
+        let front = self.next_front;
+        let entry = self.entries.get_mut(&id).context("no such torrent")?;
+        entry.wanted_running = running;
         if running {
-            self.session.unpause(&handle).await.context("starting")
-        } else {
-            self.session.pause(&handle).await.context("pausing")
+            entry.position = front;
         }
+        let handle = entry.handle.clone();
+
+        if running {
+            self.next_front -= 1;
+            self.session.unpause(&handle).await.context("starting")?;
+        } else {
+            self.session.pause(&handle).await.context("pausing")?;
+        }
+        self.enforce_queue().await;
+        Ok(())
+    }
+
+    /// How many torrents may download at once. Zero is no limit.
+    pub async fn set_max_active(&mut self, limit: u32) {
+        self.limit = limit;
+        tracing::info!(limit, "how many download at once changed");
+        self.enforce_queue().await;
+    }
+
+    /// Make what is running match what the queue says should be.
+    ///
+    /// Called every tick. The first line is what keeps that free for somebody
+    /// who never set a limit: with no limit and nothing held back there is
+    /// nothing to decide, and this is the pass that would otherwise ask every
+    /// torrent for its stats once a second to reach that conclusion.
+    ///
+    /// Seeding is never queued — see [`zerem_core::queue`] for why.
+    pub async fn enforce_queue(&mut self) {
+        if self.limit == 0 && self.queued.is_empty() {
+            return;
+        }
+
+        // One pass for the stats, because asking twice costs twice.
+        let mut waiting = Vec::with_capacity(self.entries.len());
+        let mut state_of = HashMap::with_capacity(self.entries.len());
+        for (id, entry) in &self.entries {
+            let stats = entry.handle.stats();
+            waiting.push(Waiting {
+                id: *id,
+                position: entry.position,
+                wanted: entry.wanted_running,
+                complete: stats.finished,
+            });
+            let paused = matches!(stats.state, librqbit::TorrentStatsState::Paused);
+            // A failed torrent is left alone in both directions: librqbit
+            // refuses to pause one, and starting it is a retry the user asks
+            // for rather than something a queue should do behind their back.
+            let failed = matches!(stats.state, librqbit::TorrentStatsState::Error);
+            state_of.insert(*id, (paused, failed));
+        }
+
+        let admitted: HashSet<TorrentId> = zerem_core::admit(&waiting, self.limit).into_iter().collect();
+
+        let mut held = HashSet::new();
+        for w in &waiting {
+            let Some(&(paused, failed)) = state_of.get(&w.id) else { continue };
+            let Some(handle) = self.entries.get(&w.id).map(|e| e.handle.clone()) else { continue };
+            let should_run = admitted.contains(&w.id);
+
+            if w.wanted && !should_run {
+                if let Some(entry) = self.entries.get(&w.id) {
+                    held.insert(entry.info_hash.to_string());
+                }
+            }
+            if failed {
+                continue;
+            }
+            if should_run && paused {
+                if let Err(e) = self.session.unpause(&handle).await {
+                    tracing::warn!(id = w.id.0, error = %e, "could not start a torrent's turn");
+                }
+            } else if !should_run && !paused && w.wanted {
+                if let Err(e) = self.session.pause(&handle).await {
+                    tracing::warn!(id = w.id.0, error = %e, "could not hold a torrent back");
+                }
+            }
+        }
+        self.queued.keep(held);
     }
 
     /// Remove a torrent, optionally sending its data to the recycle bin.
@@ -638,6 +774,12 @@ impl TorrentSession {
             row.folder = entry.folder.clone();
             row.info_hash = entry.info_hash.clone();
             row.content = content;
+            // Stopped because something else is ahead of it, not because
+            // somebody stopped it. Showing both as "Paused" is how a queue
+            // reads as an app that ignored the click.
+            if row.state == State::Paused && entry.wanted_running && self.queued.holds(&entry.info_hash) {
+                row.state = State::Queued;
+            }
             torrents.push(row);
         }
 
