@@ -191,6 +191,9 @@ pub struct TorrentSession {
     /// Recorded in `publish`, which is synchronous, and acted on afterwards by
     /// the tick — moving files is neither quick nor synchronous.
     arrived: Vec<TorrentId>,
+    /// The one move in flight, if any. One at a time: two large copies at
+    /// once turn a sequential read into a seeking one.
+    pub moving: Option<crate::arrival::Move>,
     /// The last minute of session throughput, for the footer.
     history: History,
     /// Selections narrowed by a pin, so an interrupted run can put them back.
@@ -244,6 +247,7 @@ impl TorrentSession {
         let mut this = Self {
             keep_dir: config.keep_dir.clone(),
             arrived: Vec::new(),
+            moving: None,
             session,
             entries,
             seq: 0,
@@ -276,9 +280,14 @@ impl TorrentSession {
         Ok(this)
     }
 
-    /// Take what finished, leaving the list empty.
-    pub(crate) fn take_arrived(&mut self) -> Vec<TorrentId> {
-        std::mem::take(&mut self.arrived)
+    /// The oldest torrent that finished and has not been dealt with.
+    pub fn next_arrived(&mut self) -> Option<TorrentId> {
+        (!self.arrived.is_empty()).then(|| self.arrived.remove(0))
+    }
+
+    /// Drop the whole list, for when nothing is going to be done with it.
+    pub fn forget_arrived(&mut self) {
+        self.arrived.clear();
     }
 
     /// Say something in the status bar. Named apart from `notify` so the intent
@@ -332,6 +341,12 @@ impl TorrentSession {
             entry.was_complete = Some(true);
         }
         self.entries.insert(id, entry);
+        // The drawer follows an id, and the id has just changed. Without this
+        // a panel open on the torrent that moved would empty itself and stay
+        // empty: `publish` looks the watched id up and finds nothing.
+        if self.watching == Some(was) {
+            self.watching = Some(id);
+        }
         self.generation += 1;
     }
 

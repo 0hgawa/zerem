@@ -24,6 +24,22 @@
 //! that is still in the list, still knows where its files are, and has simply
 //! not moved. Nothing is dropped until the data is already at the far end.
 //!
+//! # Step three does not happen on the engine's thread
+//!
+//! It cannot. A cross-volume copy of a fifty-gigabyte torrent is minutes of
+//! disk, and the engine's loop is what publishes the snapshot the window draws
+//! and what reads the commands the window sends. Awaiting the copy inside that
+//! loop freezes the entire application for the length of the move: no speeds,
+//! no buttons, nothing. The first version of this did exactly that.
+//!
+//! So the copy is spawned and *looked in on* by later ticks. The loop keeps
+//! turning, every other torrent keeps running, and the rebuild happens on
+//! whichever tick finds the task finished.
+//!
+//! One at a time, and not only because it is simpler: two large copies at once
+//! turn a sequential read into a seeking one, and on a spinning disk that is
+//! most of the throughput gone.
+//!
 //! # The cost, said plainly
 //!
 //! The torrent is re-checked. `overwrite` is what lets librqbit resume or seed
@@ -40,6 +56,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
 use librqbit::{AddTorrent, AddTorrentOptions};
+use tokio::task::JoinHandle;
 use zerem_core::TorrentId;
 
 use crate::relocate;
@@ -49,63 +66,109 @@ use crate::session::TorrentSession;
 ///
 /// Gathered before anything is paused or moved, because after step four the
 /// torrent this describes no longer exists.
-struct Keepsake {
+pub struct Keepsake {
     bytes: Vec<u8>,
     only_files: Option<Vec<usize>>,
     plan: Vec<zerem_core::Step>,
     /// Where the rebuilt torrent is told to write.
     ///
-    /// The destination root for a torrent with a folder of its own — librqbit
-    /// adds the folder back itself — and the folder the files landed in for one
-    /// that has none.
+    /// The destination root, not the torrent's own folder inside it: librqbit
+    /// puts that folder back itself, and naming it here would nest it twice.
     output: String,
     was_running: bool,
 }
 
+/// A move in flight: what is moving, and the thread moving it.
+pub struct Move {
+    id: TorrentId,
+    keepsake: Keepsake,
+    task: JoinHandle<Result<(), relocate::Fault>>,
+}
+
 impl TorrentSession {
-    /// Move whatever finished on this tick, if there is anywhere to move it.
+    /// Look in on the move that is running, and start one if none is.
+    ///
+    /// Called every tick and free on almost all of them: nothing has finished,
+    /// nothing is in flight, and this returns after two comparisons.
     pub async fn relocate_arrived(&mut self) {
-        let Some(keep) = self.keep_dir.clone() else {
+        self.finish_move().await;
+        if self.keep_dir.is_none() {
             // Nothing is configured, so nothing is owed. Cleared rather than
-            // left to grow: a session that runs for a week with this switched
-            // off would otherwise remember every torrent that ever finished.
-            self.take_arrived();
+            // left to grow: a session running for a week with this switched off
+            // would otherwise remember every torrent that ever finished.
+            self.forget_arrived();
             return;
-        };
-        for id in self.take_arrived() {
-            if let Err(why) = self.relocate_one(id, &keep).await {
-                tracing::warn!(id = id.0, "could not move a finished torrent: {why:#}");
-                self.report(&zerem_core::text::move_failed(&why.to_string()));
-            }
+        }
+        if self.moving.is_none() {
+            self.start_move().await;
         }
     }
 
-    async fn relocate_one(&mut self, id: TorrentId, keep: &Path) -> anyhow::Result<()> {
-        let Some(keepsake) = self.gather(id, keep) else {
-            // Nothing to do, and not a failure: the torrent may already be
-            // where it belongs, or be gone, or have no files.
-            return Ok(());
-        };
-
-        self.pause_for_move(id).await?;
-
-        // Blocking, and minutes of it on a large torrent across volumes. The
-        // engine's whole runtime would stop here otherwise, and with it every
-        // other torrent in the session.
-        let plan = keepsake.plan.clone();
-        let carried = tokio::task::spawn_blocking(move || relocate::carry(&plan))
-            .await
-            .context("the move task was cancelled")?;
-
-        if let Err(fault) = carried {
-            // Nothing moved. Put it back the way it was and say so.
-            if keepsake.was_running {
-                let _ = self.set_running(id, true).await;
+    /// Take the next torrent that finished and set its files moving.
+    async fn start_move(&mut self) {
+        let Some(keep) = self.keep_dir.clone() else { return };
+        while let Some(id) = self.next_arrived() {
+            let Some(keepsake) = self.gather(id, &keep) else {
+                // Nothing to do, and not a failure: it may already be where it
+                // belongs, or be gone, or have no files. Try the next one.
+                continue;
+            };
+            if let Err(why) = self.pause_for_move(id).await {
+                tracing::warn!(id = id.0, "could not pause before moving: {why:#}");
+                continue;
             }
-            anyhow::bail!("{fault}");
+            let plan = keepsake.plan.clone();
+            let task = tokio::task::spawn_blocking(move || relocate::carry(&plan));
+            self.moving = Some(Move { id, keepsake, task });
+            return;
+        }
+    }
+
+    /// Finish the move in flight, if there is one and it is done.
+    async fn finish_move(&mut self) {
+        let Some(moving) = self.moving.take() else { return };
+        if !moving.task.is_finished() {
+            // Still copying. Put it back and let the loop carry on — this is
+            // the whole reason the move is not awaited where it is started.
+            self.moving = Some(moving);
+            return;
         }
 
-        self.rebuild(id, keepsake).await
+        let Move { id, keepsake, task } = moving;
+        let carried = match task.await {
+            Ok(carried) => carried,
+            Err(why) => {
+                tracing::warn!(id = id.0, "the move task did not finish: {why}");
+                self.after_failure(id, &keepsake);
+                return;
+            }
+        };
+
+        if let Err(fault) = carried {
+            tracing::warn!(id = id.0, "could not move a finished torrent: {fault}");
+            self.report(&zerem_core::text::move_failed(&fault.to_string()));
+            self.after_failure(id, &keepsake);
+            return;
+        }
+
+        if let Err(why) = self.rebuild(id, keepsake).await {
+            // The files are at the destination and the torrent could not be
+            // added back to point at them. Loud, because this is the one state
+            // the app cannot put right by itself.
+            tracing::error!(id = id.0, "the files moved but the torrent did not: {why:#}");
+            self.report(&zerem_core::text::move_failed(&why.to_string()));
+        }
+    }
+
+    /// A move that did not happen. Nothing was touched, so only the pause has
+    /// to be undone — and by wanting it running rather than starting it, so the
+    /// queue decides when, as it does for everything else.
+    fn after_failure(&mut self, id: TorrentId, keepsake: &Keepsake) {
+        if keepsake.was_running {
+            if let Some(entry) = self.entries.get_mut(&id) {
+                entry.wanted_running = true;
+            }
+        }
     }
 
     /// Everything the rebuild will need, or `None` when there is nothing to do.
@@ -132,17 +195,12 @@ impl TorrentSession {
         let owns_folder = zerem_core::subfolder(&name, paths.len()).is_some();
         let plan = zerem_core::move_plan(&from, &paths, keep, owns_folder)?;
 
-        // librqbit adds the torrent's own folder back when it is told a plain
-        // output folder, so it is told the root — being told the folder as well
-        // would nest it twice.
-        let output = keep.to_string_lossy().into_owned();
-
         Some(Keepsake {
             bytes,
             only_files: (!entry.wanted.iter().all(|w| *w))
                 .then(|| entry.wanted.iter().enumerate().filter(|(_, w)| **w).map(|(i, _)| i).collect()),
             plan,
-            output,
+            output: keep.to_string_lossy().into_owned(),
             was_running: entry.wanted_running,
         })
     }
