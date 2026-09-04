@@ -1,0 +1,249 @@
+// Shared UI state, kept out of the window composition so any panel can read and
+// write it without threading dozens of properties through component interfaces.
+//
+// Split by domain from the start. Vayou's single `PlayerState` reached ~90
+// properties and stopped saying who owns what; here each surface gets its own
+// global and joins when it has something to hold. Two exist today because two
+// carry data — `DetailState` and `Prefs` arrive with the panels that need them,
+// not before.
+
+/// One formatted row. Every field is a finished string: Rust builds this only
+/// for rows that actually changed, and the `.slint` never formats anything.
+export struct Row {
+    id: int,
+    name: string,
+    // What the torrent mostly holds — mirrors Content::kind(), and the number
+    // Lucide.content-glyph() turns into an icon.
+    content: int,
+    progress: float,
+    // "491 MB / 1.92 GB · 26%", or just the size once it is complete. One
+    // string where there used to be a Size column and a percentage.
+    progress-text: string,
+    state: string,
+    // 0 paused · 1 downloading · 2 seeding · 3 checking · 4 error — mirrors State::kind()
+    kind: int,
+    // Whether it is transferring, which is what the hover action offers to
+    // change. Carried rather than derived from `kind` here, because deciding it
+    // is domain logic and the .slint decides nothing.
+    active: bool,
+    down: string,
+    up: string,
+    peers: string,
+    eta: string,
+    ratio: string,
+    selected: bool,
+}
+
+// Strings, not numbers: Rust does every conversion, here as everywhere. A count
+// interpolated in the UI would be one more place formatting could drift from
+// the rest of the app.
+export struct FileEntry {
+    path: string,
+    size: string,
+    pct: string,
+    progress: float,
+    complete: bool,
+    /// Whether it is being fetched at all. A torrent added without a choice
+    /// wants everything, so this is normally true on every line.
+    wanted: bool,
+}
+
+export struct PeerEntry {
+    addr: string,
+    client: string,
+    transport: string,
+    state: string,
+    down: string,
+    up: string,
+}
+
+export struct PendingFileEntry {
+    path: string,
+    size: string,
+    wanted: bool,
+}
+
+/// The add dialog: what is in the torrent, and where it will go.
+///
+/// Adding is two steps — inspect, then confirm — because the two decisions that
+/// matter are made here, and every client buries them in a cramped modal.
+export global AddState {
+    in-out property <bool> open;
+    in-out property <string> name;
+    in-out property <[PendingFileEntry]> files;
+    /// "3 of 12 files · 1.4 GB of 3.7 GB", built in Rust like every other
+    /// number in this app.
+    in-out property <string> summary;
+    in-out property <string> destination;
+    /// Waiting on a magnet's metadata to come back from the swarm.
+    in-out property <bool> fetching;
+    in-out property <string> error;
+    in-out property <bool> can-add;
+
+    callback confirm();
+    callback cancel();
+    callback toggle-file(int);
+    callback set-all(bool);
+    callback change-destination();
+}
+
+/// The inside of one torrent. Empty and idle unless the drawer is open — the
+/// engine is not even asked for this until then.
+export global DetailState {
+    in-out property <bool> open;
+    in-out property <string> title;
+    in-out property <string> tab: "files";
+    in-out property <[FileEntry]> files;
+    in-out property <[PeerEntry]> peers;
+    in-out property <string> files-summary;
+    in-out property <string> peers-summary;
+    /// "12 files · 3.72 GB", or "3 of 12 files · 1.44 GB of 3.72 GB" once
+    /// something has been left out. Built in Rust like every other number here.
+    in-out property <string> files-choice;
+    /// Whether anything has been left out, which is the only state in which
+    /// there is a way back worth offering.
+    in-out property <bool> files-partial;
+
+    callback close();
+    callback pick-tab(string);
+    /// Fetch this file, or stop fetching it. Applies to the line at once; the
+    /// engine's next snapshot is the truth, and puts the tick back if it said no.
+    callback toggle-file(int);
+    /// Put every file back. The way out of having unticked too much, and the
+    /// only whole-list action worth a button: the other direction would leave
+    /// the torrent fetching nothing, which is refused.
+    callback restore-all-files();
+}
+
+// Joins now because there is finally something to hold. Speeds arrive already
+// formatted — "Unlimited", "500 kB/s" — because the alternative is the `.slint`
+// deciding how a number reads, which is Rust's job everywhere else.
+export global Prefs {
+    in-out property <bool> open;
+    in-out property <string> download-dir;
+    in-out property <string> down-limit;
+    in-out property <string> up-limit;
+    /// Set from a hand-edited file to something that is not one of the presets,
+    /// which the menus cannot step through.
+    in-out property <bool> custom-limits;
+
+    callback close();
+    callback pick-download-dir();
+    /// Raised by the picker thread once the user has chosen, not by anything in
+    /// the UI. It is how that thread gets back onto this one carrying a value:
+    /// invoking a callback is the only handoff Slint offers that arrives with
+    /// the handler's own context intact.
+    callback download-dir-picked(string);
+    /// Each advances to the next preset, wrapping through unlimited.
+    callback cycle-down-limit();
+    callback cycle-up-limit();
+}
+
+export global SessionState {
+    in-out property <string> down: "—";
+    in-out property <string> up: "—";
+    in-out property <string> active: "0";
+    in-out property <string> paused: "0";
+    in-out property <string> total: "0";
+    /// "12 of 300" while a filter is on, empty otherwise. It replaces the plain
+    /// total rather than joining it: two counts side by side is one too many.
+    in-out property <string> matched;
+    /// Something the user needs to be told that belongs to no single row — a
+    /// magnet that would not parse, a port already taken. Empty means silence.
+    in-out property <string> notice;
+    /// The last minute of throughput as SVG path commands, drawn in the
+    /// footer. Built in Rust, like every other string here: a `for` loop in
+    /// the `.slint` would run once per frame instead of once per second.
+    /// Empty when there is nothing worth drawing.
+    in-out property <string> spark-down;
+    in-out property <string> spark-up;
+}
+
+export global TorrentList {
+    // --- pushed from Rust ---
+    in-out property <[Row]> rows;
+    in-out property <[length]> col-w: [300px, 200px, 108px, 96px, 96px, 84px, 84px, 66px];
+    /// Which columns are drawn. Index 0 — the name — is never turned off.
+    in-out property <[bool]> col-visible: [true, true, true, true, true, true, true, true];
+    /// The headings, pushed from Rust so the header and the column menu name
+    /// the same eight things.
+    in-out property <[string]> col-title;
+    /// What the filter box holds. The parsed form lives in Rust; this is only
+    /// what the field draws. Deliberately not persisted — a filter restored at
+    /// launch hides torrents for a reason nobody remembers.
+    in-out property <string> filter;
+    in-out property <int> sort-col;
+    in-out property <bool> sort-desc;
+    in-out property <int> selected-count;
+    /// Whether every selected torrent is already running, which is what decides
+    /// between offering Start and offering Pause.
+    in-out property <bool> selection-running;
+
+    // --- the remove confirmation ---
+    //
+    // Removing is the one destructive thing this app does, so it is the one
+    // action that asks first. The dialog owns whether the data goes too; the
+    // default is no, because the recoverable choice should be the easy one.
+    in-out property <bool> confirming;
+    in-out property <string> confirm-what;
+    in-out property <bool> confirm-delete-data;
+
+    // --- context menu ---
+    in-out property <bool> menu-open;
+    in-out property <length> menu-x;
+    in-out property <length> menu-y;
+
+    // --- the column menu, on a right-click in the header ---
+    in-out property <bool> columns-open;
+    in-out property <length> columns-x;
+    in-out property <length> columns-y;
+
+    // --- keyboard navigation ---
+    //
+    // The row the arrows are on. Rust owns it, because moving it is a selection
+    // change and selection is held as ids there. The list scrolls to keep it
+    // visible; `focus-tick` changes on every move so the scroll fires again even
+    // when the row itself did not.
+    in-out property <int> focus-row: -1;
+    in-out property <int> focus-tick;
+
+    // --- events up ---
+    callback sort(int);
+    callback resize-begin(int);
+    callback resize-move(int, length);
+    callback select(int, bool, bool);
+    /// Moves the focused row by `delta`, extending the selection when asked.
+    callback move-focus(int, bool);
+    /// `-1` is the end of the list.
+    callback focus-edge(int, bool);
+    callback open-menu(int, length, length);
+    callback close-menu();
+    /// Every keystroke in the filter box. Answered at once, not on the tick.
+    callback filter-changed(string);
+    callback open-columns(length, length);
+    callback close-columns();
+    callback toggle-column(int);
+    callback open-folder();
+    callback copy-magnet();
+    callback start-selected();
+    callback pause-selected();
+    /// Act on the row under the pointer, leaving the selection alone.
+    ///
+    /// The point of the hover button: no selecting first, and no chance of
+    /// hitting a torrent the cursor is not on.
+    callback start-row(int);
+    callback pause-row(int);
+    /// Opens the confirmation. Nothing is removed until `confirm-accept`.
+    callback remove-selected();
+    /// Remove the row under the pointer, leaving the selection alone. Asks
+    /// first, like every other route to removing.
+    callback remove-row(int);
+    callback confirm-accept();
+    callback confirm-cancel();
+    callback add-magnet-from-clipboard();
+    callback add-torrent-file();
+    callback toggle-theme();
+    /// Opens or closes the drawer. Closing it also stops the engine building
+    /// what it shows.
+    callback toggle-details();
+}

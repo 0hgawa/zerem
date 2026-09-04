@@ -1,0 +1,97 @@
+// Lucide, as path data.
+//
+// One family throughout — mixing icon sets is the fastest way to make an
+// interface look assembled rather than designed. Lucide is ISC-licensed, drawn
+// on a 24×24 grid with a 2-unit stroke, round caps and joins.
+//
+// Stored as commands rather than fetched at runtime: an icon that arrives over
+// the network is an icon that is missing when it matters.
+//
+// https://lucide.dev — the `d` attributes below are the upstream ones verbatim.
+
+import { Theme } from "../theme.slint";
+
+export global Lucide {
+    // Several of these are one string holding several subpaths. SVG path data
+    // allows that — each `M` starts a new one — so a multi-path Lucide icon
+    // concatenates without changing shape.
+    out property <string> play: "M6 3 20 12 6 21Z";
+    out property <string> pause: "M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z M6 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z";
+    out property <string> trash: "M10 11v6 M14 11v6 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6 M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2";
+    out property <string> folder-open: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2";
+    out property <string> sliders: "M10 5H3 M12 19H3 M14 3v4 M16 17v4 M21 12h-9 M21 19h-5 M21 5h-7 M8 10v4 M8 12H3";
+    out property <string> copy: "M14 8h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2";
+    out property <string> clipboard: "M9 2h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2";
+    out property <string> plus: "M5 12h14 M12 5v14";
+    out property <string> panel-right: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M15 3v18";
+    out property <string> sun: "M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 m4.93 4.93 1.41 1.41 m17.66 17.66 1.41 1.41 m19.07 4.93-1.41 1.41 m6.34 17.66-1.41 1.41";
+    out property <string> moon: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z";
+    out property <string> x: "M18 6 6 18 M6 6l12 12";
+    out property <string> check: "M20 6 9 17l-5-5";
+    out property <string> chevron-up: "m18 15-6-6-6 6";
+    out property <string> chevron-down: "m6 9 6 6 6-6";
+    out property <string> arrow-down: "M12 5v14 m19 12-7 7-7-7";
+    out property <string> arrow-up: "M12 19V5 m5 12 7-7 7 7";
+    out property <string> file: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z M14 2v4a2 2 0 0 0 2 2h4";
+    out property <string> users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75";
+    out property <string> loader: "M12 2v4 M12 18v4 M4.93 4.93l2.83 2.83 M16.24 16.24l2.83 2.83 M2 12h4 M18 12h4 M4.93 19.07l2.83-2.83 M16.24 7.76l2.83-2.83";
+    out property <string> search: "M11 3a8 8 0 1 0 0 16 8 8 0 1 0 0-16z m21 21-4.34-4.34";
+
+    // --- what a torrent holds ---
+    //
+    // Upstream draws several of these with <rect> and <circle> elements, which
+    // `commands` cannot take. They are written out as the equivalent arcs and
+    // corner curves — the same conversion `sun`, `users` and `pause` above
+    // already carry, so the family still matches itself.
+    out property <string> film: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M7 3v18 M3 7.5h4 M3 12h18 M3 16.5h4 M17 3v18 M17 7.5h4 M17 16.5h4";
+    out property <string> music: "M9 18V5l12-2v13 M6 15a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M18 13a3 3 0 1 0 0 6 3 3 0 1 0 0-6z";
+    out property <string> image: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4z m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21";
+    out property <string> file-archive: "M13.659 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v11.5 M14 2v5a1 1 0 0 0 1 1h5 M8 12v-1 M8 18v-2 M8 7V6 M8 18a2 2 0 1 0 0 4 2 2 0 1 0 0-4z";
+    out property <string> disc: "M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4z";
+    out property <string> file-text: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z M14 2v5a1 1 0 0 0 1 1h5 M10 9H8 M16 13H8 M16 17H8";
+    out property <string> files: "M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8 M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706z M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1";
+
+    /// The icon for a `Content` kind.
+    ///
+    /// The numbers are `Content::kind()` in the order that enum declares its
+    /// variants — a contract the core has a test for. `0` is metadata that has
+    /// not arrived yet, which gets the neutral file rather than a guess.
+    public pure function content-glyph(kind: int) -> string {
+        return kind == 1 ? film
+            : kind == 2 ? music
+            : kind == 3 ? image
+            : kind == 4 ? file-archive
+            : kind == 5 ? disc
+            : kind == 6 ? file-text
+            : kind == 7 ? files
+            : file;
+    }
+}
+
+/// One icon.
+///
+/// The stroke is derived from the size rather than fixed: Lucide draws on a 24
+/// grid with a 2-unit stroke, and Slint applies `stroke-width` in screen pixels
+/// after the viewbox is scaled — so a literal 2px would come out half again too
+/// heavy at 16px. `size / 12` is that same 2-in-24 ratio.
+export component Icon inherits Rectangle {
+    in property <string> glyph;
+    in property <brush> tint: Theme.text-dim;
+    in property <length> size: 15px;
+
+    width: size;
+    height: size;
+
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        commands: root.glyph;
+        stroke: root.tint;
+        stroke-width: root.size / 12;
+        // Lucide is a stroked family. Filling it would turn every open shape
+        // into a blob.
+        fill: transparent;
+    }
+}

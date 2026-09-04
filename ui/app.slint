@@ -1,0 +1,9 @@
+// Root of the UI. Nothing is composed here — it imports the window and
+// re-exports the globals, because a global is only reachable from Rust when the
+// root file exports it.
+
+import { MainWindow } from "windows/main.slint";
+import { Theme } from "theme.slint";
+import { AddState, DetailState, Prefs, Row, SessionState, TorrentList } from "state.slint";
+
+export { MainWindow, Theme, Row, SessionState, TorrentList, Prefs, DetailState, AddState }

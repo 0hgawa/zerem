@@ -1,0 +1,114 @@
+# Zerem — native BitTorrent client.
+#
+# Three crates, and the dependency arrow only ever points down:
+#
+#   zerem (this package)  Slint + bridge/ — knows engine and core
+#   zerem-engine          session, ticker — knows core, never Slint
+#   zerem-core            types, formatting, ordering — no async, no I/O, no UI
+#
+# That boundary is what keeps core testable without a runtime or a window, and
+# what will make the headless mode in Phase 5 almost free: it is the same
+# engine with a different consumer of Snapshot.
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+# `spikes/` is absent on purpose. Each spike declares its own empty `[workspace]`
+# and is therefore its own root, with its own lockfile and dependency tree — so
+# librqbit's does not reach the app until it is proven, and a new spike needs no
+# change here.
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+authors = ["Ohgawa"]
+
+[workspace.dependencies]
+zerem-core = { path = "crates/zerem-core" }
+zerem-engine = { path = "crates/zerem-engine" }
+zerem-shell = { path = "crates/zerem-shell" }
+tracing = "0.1"
+
+# Pedantic + nursery, with only the cast family waived. Every value crossing into
+# Slint changes width by necessity — byte counts are u64 and the progress bar
+# takes f32, ids are u32 and Slint's `int` is i32 — so those casts are the
+# interface, not a smell. Nothing else is dispensed with; a new allow needs its
+# reason written beside it.
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+# Proper nouns are not code: BitTorrent, Zerem and librqbit read worse in
+# backticks than without them.
+doc_markdown = "allow"
+# The tray icon is drawn pixel by pixel, and x/y/r/g/b are the names that maths
+# has. Same allowance Clipo carries, for the same reason.
+many_single_char_names = "allow"
+# A settings struct is bool-heavy by its nature; splitting it to satisfy a lint
+# would be inventing types nobody asked for. Same allowance Clipo carries.
+struct_excessive_bools = "allow"
+
+[package]
+name = "zerem"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Zerem — native BitTorrent client (Slint). One process, no WebView."
+
+[dependencies]
+zerem-core.workspace = true
+zerem-engine.workspace = true
+zerem-shell.workspace = true
+tracing.workspace = true
+tracing-subscriber = "0.3"
+# Ctrl+V pastes a magnet link. Same crate Clipo uses.
+arboard = "3"
+# Native "add .torrent file" dialog. Never opened on the UI thread — a blocking
+# dialog there stalls the event loop, which is the lesson Vayou already paid for.
+rfd = "0.15"
+# Tray icon and its menu. Same crate and version Clipo uses.
+tray-icon = "0.20"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The software renderer, measured in Phase 0 at 17 MB of private memory against
+# 120 MB for femtovg and a fifth of the CPU under repaint load. A table of text
+# and rectangles is exactly what partial rendering is good at.
+slint = { version = "1.17", default-features = false, features = [
+    "compat-1-2",
+    "backend-winit",
+    "renderer-software",
+    "std",
+] }
+
+[build-dependencies]
+slint-build = "1.17"
+# The icon is generated from the same code the tray uses, so core is a build
+# dependency as well as a normal one.
+zerem-core.workspace = true
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3"
+
+[lints]
+workspace = true
+
+[profile.dev]
+debug = "line-tables-only"
+
+# Dependencies optimised even in dev: a torrent engine compiled unoptimised does
+# not saturate a link, and every measurement taken against it would be a lie.
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

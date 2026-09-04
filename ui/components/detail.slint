@@ -1,0 +1,295 @@
+// The panel beside the table: what is inside the selected torrent.
+//
+// Beside and not beneath. A panel under the table costs rows — the one thing
+// the window is for — while a panel at the side costs columns, of which the
+// last few are the least urgent. It is also what M3 asks for: bottom sheets are
+// the mobile pattern, side sheets the desktop one.
+//
+// The room it buys is vertical, so every line here is two lines: a path or an
+// address, and its numbers underneath. That reads better in 330 px than a
+// four-column table ever did in 1180.
+//
+// Closed by default, as before. The list is the app; everything else stays out
+// of the way until it is asked for.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { DetailState, FileEntry, PeerEntry } from "../state.slint";
+import { Icon, Lucide } from "icons.slint";
+import { Button, ButtonKind, IconButton } from "button.slint";
+import { EmptyState, Tick } from "common.slint";
+
+component Tab inherits Rectangle {
+    in property <string> label;
+    in property <string> id;
+    in property <string> glyph;
+    in property <string> count;
+    property <bool> active: DetailState.tab == id;
+
+    height: 26px;
+    border-radius: Theme.radius;
+    background: active ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+
+    HorizontalLayout {
+        spacing: 7px;
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                tint: active ? Theme.accent : Theme.text-dim;
+                size: 14px;
+            }
+        }
+        Text {
+            text: root.label;
+            color: active ? Theme.accent : Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.count;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { DetailState.pick-tab(root.id); }
+    }
+}
+
+component DetailCell inherits Text {
+    color: Theme.text-dim;
+    font-size: Theme.fs-label;
+    font-family: Theme.font;
+    vertical-alignment: center;
+    overflow: elide;
+}
+
+// Two lines: what the file is, then how far along it is. The tick on the left
+// says whether it is coming down at all, and clicking anywhere on the line
+// changes that — a 16 px square is a small thing to ask someone to hit fifty
+// times in a row.
+//
+// A finished file shows its size and a tick — no bar, no "100%". The same rule
+// the main table follows, for the same reason: most of a list is finished, and
+// a full bar on every line of it is decoration.
+component FileLine inherits Rectangle {
+    in property <FileEntry> entry;
+    in property <int> index;
+    height: 42px;
+    background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        spacing: 10px;
+
+        VerticalLayout {
+            alignment: center;
+            Tick { on: entry.wanted; }
+        }
+
+        VerticalLayout {
+            spacing: 3px;
+            horizontal-stretch: 1;
+
+            DetailCell {
+                text: entry.path;
+                font-size: Theme.fs-body;
+                // A file that is not coming down dims rather than disappears:
+                // it is still in the torrent, it is just not being fetched. A
+                // finished one stops competing with the ones still moving.
+                color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                DetailCell { text: entry.size; }
+                // Nothing to say about the progress of a file nobody asked for.
+                if !entry.wanted: DetailCell {
+                    text: "not downloading";
+                    color: Theme.idle;
+                    horizontal-stretch: 1;
+                }
+                if entry.wanted && entry.complete: VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    HorizontalLayout {
+                        alignment: start;
+                        Icon { glyph: Lucide.check; tint: Theme.seeding; size: 12px; }
+                    }
+                }
+                if entry.wanted && !entry.complete: VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Rectangle {
+                        height: 4px;
+                        border-radius: 2px;
+                        background: Theme.track;
+                        Rectangle {
+                            x: 0;
+                            width: parent.width * entry.progress;
+                            height: parent.height;
+                            border-radius: parent.border-radius;
+                            background: Theme.accent;
+                        }
+                    }
+                }
+                if entry.wanted && !entry.complete: DetailCell {
+                    text: entry.pct;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { DetailState.toggle-file(root.index); }
+    }
+}
+
+// Two lines: who it is, then what it is doing.
+component PeerLine inherits Rectangle {
+    in property <PeerEntry> entry;
+    in property <int> index;
+    height: 42px;
+    background: mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    VerticalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        spacing: 3px;
+
+        HorizontalLayout {
+            spacing: 8px;
+            DetailCell {
+                text: entry.addr;
+                font-size: Theme.fs-body;
+                color: Theme.text;
+            }
+            DetailCell { text: entry.client; horizontal-stretch: 1; }
+            // The one place uTP is visible at all, which is why it keeps its own
+            // slot and takes the accent when it is what the peer is using.
+            DetailCell {
+                text: entry.transport;
+                color: entry.transport == "uTP" ? Theme.accent : Theme.text-dim;
+                horizontal-alignment: right;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            DetailCell { text: entry.state; horizontal-stretch: 1; }
+            Icon { glyph: Lucide.arrow-down; tint: Theme.accent; size: 11px; }
+            DetailCell { text: entry.down; }
+            Icon { glyph: Lucide.arrow-up; tint: Theme.seeding; size: 11px; }
+            DetailCell { text: entry.up; }
+        }
+    }
+}
+
+export component DetailDrawer inherits Rectangle {
+    background: Theme.surface;
+
+    Rectangle { x: 0; width: 1px; height: parent.height; background: Theme.border; }
+
+    VerticalLayout {
+        spacing: 0px;
+
+        // The title gets a line of its own, which the drawer under the table
+        // never had room for: it used to be dim, right-aligned and elided into
+        // whatever the tabs left over.
+        Rectangle {
+            height: 38px;
+            HorizontalLayout {
+                padding-left: 13px;
+                padding-right: 8px;
+                spacing: 6px;
+                Text {
+                    text: DetailState.title;
+                    color: Theme.text;
+                    font-size: Theme.fs-title;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    IconButton {
+                        glyph: Lucide.x;
+                        clicked => { DetailState.close(); }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 34px;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                padding-bottom: 6px;
+                spacing: 4px;
+                Tab { label: "Files"; id: "files"; glyph: Lucide.file; count: DetailState.files-summary; }
+                Tab { label: "Peers"; id: "peers"; glyph: Lucide.users; count: DetailState.peers-summary; }
+            }
+            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border; }
+        }
+
+        if DetailState.tab == "files" && DetailState.files.length == 0:
+            EmptyState {
+                glyph: Lucide.file;
+                title: "No file list yet";
+                detail: "A magnet has none until its metadata arrives.";
+            }
+        // What is actually coming down, above the list rather than inside it.
+        // The torrent's own size is not the number the reader wants once
+        // something has been left out.
+        if DetailState.tab == "files" && DetailState.files.length > 0: HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 8px;
+            padding-top: 5px;
+            spacing: 4px;
+            DetailCell { text: DetailState.files-choice; horizontal-stretch: 1; }
+            // No "None" beside it, deliberately. It applies to a running
+            // torrent, so it would be a button whose only possible outcome is
+            // the refusal that a torrent has to fetch something. Choosing a
+            // handful out of thousands is what the add dialog is for; this is
+            // the way back from having unticked too much.
+            if DetailState.files-partial: Button {
+                label: "All";
+                kind: ButtonKind.text;
+                clicked => { DetailState.restore-all-files(); }
+            }
+        }
+
+        if DetailState.tab == "files" && DetailState.files.length > 0: ListView {
+            for f[i] in DetailState.files: FileLine { entry: f; index: i; }
+        }
+
+        if DetailState.tab == "peers" && DetailState.peers.length == 0:
+            EmptyState {
+                glyph: Lucide.users;
+                title: "No peers connected";
+                detail: "A paused torrent has none.";
+            }
+        if DetailState.tab == "peers" && DetailState.peers.length > 0: ListView {
+            for p[i] in DetailState.peers: PeerLine { entry: p; index: i; }
+        }
+    }
+}

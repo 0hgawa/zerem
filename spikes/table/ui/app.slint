@@ -1,0 +1,379 @@
+// Zerem spike S0.1 + S0.3 — the virtualised table under a 1 Hz snapshot tick.
+//
+// Rule under test, and the one this file obeys strictly: THE .SLINT HAS NO
+// LOGIC. Every string arrives formatted, the rows arrive already sorted and
+// filtered, and sorting/selection/resizing are callbacks into Rust. If the
+// frame rate holds here, it holds in the real app.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+// Re-exported so Rust can reach the palette: a global is only visible to the
+// native side when the root file exports it.
+export { Theme }
+
+// One formatted row. Rebuilt in Rust only when the domain row actually
+// changed — see model.rs.
+export struct Row {
+    id: int,
+    name: string,
+    size: string,
+    progress: float,
+    pct: string,
+    state: string,
+    // 0 paused · 1 downloading · 2 seeding · 3 checking
+    kind: int,
+    down: string,
+    up: string,
+    peers: string,
+    eta: string,
+    ratio: string,
+    selected: bool,
+}
+
+export global TableState {
+    // --- pushed from Rust ---
+    in-out property <[Row]> rows;
+    in-out property <[length]> cw: [300px, 88px, 132px, 104px, 96px, 96px, 84px, 84px, 66px];
+    in-out property <int> sort-col: 0;
+    in-out property <bool> sort-desc: false;
+    in-out property <string> total-count;
+    in-out property <string> active-count;
+    in-out property <string> sel-count;
+
+    // --- instrumentation ---
+    in-out property <string> fps;
+    in-out property <string> sort-us;
+    in-out property <string> diff-us;
+    in-out property <string> changed;
+    in-out property <bool> stress;
+    in-out property <bool> churn;
+
+    // --- events up ---
+    callback sort(int);
+    callback resize-begin(int);
+    callback resize-move(int, length);
+    callback select(int, bool, bool);
+    callback toggle-stress();
+    callback toggle-churn();
+    callback toggle-theme();
+    callback set-count(int);
+}
+
+// `fg` rather than `color`: every element already carries a deprecated `color`
+// property, and shadowing it is an error. Same reason `TableRow` below calls
+// its payload `data` — `row` and `col` belong to GridLayout placement.
+component Cell inherits Rectangle {
+    in property <string> text;
+    in property <bool> right;
+    in property <brush> fg: Theme.text;
+    clip: true;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: root.right ? end : start;
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// Progress column: a bar plus its percentage. The bar is two rectangles, which
+// is the cheapest thing that can be drawn per row.
+component ProgressCell inherits Rectangle {
+    in property <float> progress;
+    in property <string> pct;
+    in property <int> kind;
+    clip: true;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 8px;
+        alignment: center;
+        Rectangle {
+            width: parent.width - 58px;
+            height: 5px;
+            border-radius: 2.5px;
+            background: Theme.track;
+            Rectangle {
+                x: 0;
+                width: parent.width * root.progress;
+                height: parent.height;
+                border-radius: parent.border-radius;
+                background: root.kind == 2 ? Theme.seeding
+                    : root.kind == 1 ? Theme.accent
+                    : root.kind == 3 ? Theme.warn
+                    : Theme.idle;
+            }
+        }
+        Text {
+            text: root.pct;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            width: 34px;
+            horizontal-alignment: right;
+        }
+    }
+}
+
+component TableRow inherits Rectangle {
+    in property <Row> data;
+    in property <int> index;
+    height: Theme.row-h;
+    background: data.selected ? Theme.selected
+        : ta.has-hover ? Theme.hover
+        : mod(index, 2) == 1 ? Theme.row-alt
+        : transparent;
+
+    // Selection marker: a rail, not a border — it never shifts the layout.
+    Rectangle {
+        x: 0;
+        width: 2px;
+        height: parent.height;
+        background: data.selected ? Theme.accent : transparent;
+    }
+
+    HorizontalLayout {
+        spacing: 0px;
+        Cell { width: TableState.cw[0]; text: data.name; }
+        Cell { width: TableState.cw[1]; text: data.size; right: true; fg: Theme.text-dim; }
+        ProgressCell { width: TableState.cw[2]; progress: data.progress; pct: data.pct; kind: data.kind; }
+        Cell {
+            width: TableState.cw[3];
+            text: data.state;
+            fg: data.kind == 2 ? Theme.seeding : data.kind == 1 ? Theme.accent : Theme.text-dim;
+        }
+        Cell { width: TableState.cw[4]; text: data.down; right: true; fg: data.kind == 1 ? Theme.text : Theme.text-dim; }
+        Cell { width: TableState.cw[5]; text: data.up; right: true; fg: data.kind == 2 ? Theme.text : Theme.text-dim; }
+        Cell { width: TableState.cw[6]; text: data.peers; right: true; fg: Theme.text-dim; }
+        Cell { width: TableState.cw[7]; text: data.eta; right: true; fg: Theme.text-dim; }
+        Cell { width: TableState.cw[8]; text: data.ratio; right: true; fg: Theme.text-dim; }
+    }
+
+    ta := TouchArea {
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                TableState.select(root.index, e.modifiers.control, e.modifiers.shift);
+            }
+        }
+    }
+}
+
+component HeaderCell inherits Rectangle {
+    in property <string> title;
+    in property <bool> right;
+    in property <int> idx;
+    property <bool> active: TableState.sort-col == idx;
+    clip: true;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 3px;
+        alignment: root.right ? end : start;
+        Text {
+            text: root.title;
+            color: active ? Theme.accent : Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: active ? (TableState.sort-desc ? "▾" : "▴") : "";
+            color: Theme.accent;
+            font-size: Theme.fs-label;
+            vertical-alignment: center;
+        }
+    }
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { TableState.sort(root.idx); }
+    }
+
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        height: parent.height;
+        background: Theme.border;
+    }
+
+    // Declared last so it sits above the sort TouchArea and wins the grip strip.
+    TouchArea {
+        x: parent.width - 4px;
+        width: 8px;
+        mouse-cursor: col-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { TableState.resize-begin(root.idx); }
+        }
+        moved => {
+            if (self.pressed) { TableState.resize-move(root.idx, self.mouse-x - self.pressed-x); }
+        }
+    }
+}
+
+component Chip inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    callback clicked;
+    height: 22px;
+    width: t.preferred-width + 20px;
+    border-radius: 11px;
+    background: on ? Theme.accent : Theme.surface-hi;
+    border-width: 1px;
+    border-color: on ? Theme.accent : Theme.border;
+    animate background { duration: 120ms; easing: ease-out; }
+    t := Text {
+        text: root.label;
+        color: on ? #ffffff : Theme.text-dim;
+        font-size: Theme.fs-label;
+        font-family: Theme.font;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width;
+        height: parent.height;
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component Stat inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <brush> value-color: Theme.text;
+    spacing: 5px;
+    Text {
+        text: root.label;
+        color: Theme.text-dim;
+        font-size: Theme.fs-label;
+        font-family: Theme.font;
+        vertical-alignment: center;
+    }
+    Text {
+        text: root.value;
+        color: root.value-color;
+        font-size: Theme.fs-label;
+        font-family: Theme.font;
+        font-weight: 600;
+        vertical-alignment: center;
+    }
+}
+
+export component MainWindow inherits Window {
+    title: "Zerem — spike S0.1 / S0.3";
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    preferred-width: 1180px;
+    preferred-height: 720px;
+    min-width: 720px;
+    min-height: 420px;
+
+    forward-focus: keys;
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.text == "s") { TableState.toggle-stress(); return accept; }
+            if (e.text == "c") { TableState.toggle-churn(); return accept; }
+            if (e.text == "t") { TableState.toggle-theme(); return accept; }
+            if (e.text == "1") { TableState.set-count(200); return accept; }
+            if (e.text == "2") { TableState.set-count(2000); return accept; }
+            if (e.text == "3") { TableState.set-count(10000); return accept; }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 0px;
+
+            // --- header row ---
+            Rectangle {
+                height: Theme.header-h;
+                background: Theme.surface;
+                HorizontalLayout {
+                    spacing: 0px;
+                    HeaderCell { width: TableState.cw[0]; title: "Name"; idx: 0; }
+                    HeaderCell { width: TableState.cw[1]; title: "Size"; idx: 1; right: true; }
+                    HeaderCell { width: TableState.cw[2]; title: "Progress"; idx: 2; }
+                    HeaderCell { width: TableState.cw[3]; title: "State"; idx: 3; }
+                    HeaderCell { width: TableState.cw[4]; title: "Down"; idx: 4; right: true; }
+                    HeaderCell { width: TableState.cw[5]; title: "Up"; idx: 5; right: true; }
+                    HeaderCell { width: TableState.cw[6]; title: "Peers"; idx: 6; right: true; }
+                    HeaderCell { width: TableState.cw[7]; title: "ETA"; idx: 7; right: true; }
+                    HeaderCell { width: TableState.cw[8]; title: "Ratio"; idx: 8; right: true; }
+                    Rectangle { }
+                }
+                Rectangle {
+                    y: parent.height - 1px;
+                    height: 1px;
+                    background: Theme.border;
+                }
+            }
+
+            // --- the virtualised list ---
+            ListView {
+                for r[i] in TableState.rows: TableRow {
+                    data: r;
+                    index: i;
+                }
+            }
+
+            // --- instrumentation bar ---
+            Rectangle {
+                height: 40px;
+                background: Theme.surface;
+                Rectangle {
+                    y: 0;
+                    height: 1px;
+                    background: Theme.border;
+                }
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 16px;
+                    alignment: start;
+
+                    Stat {
+                        label: "fps";
+                        value: TableState.fps;
+                        value-color: Theme.accent;
+                    }
+                    Stat { label: "sort"; value: TableState.sort-us; }
+                    Stat { label: "diff"; value: TableState.diff-us; }
+                    Stat { label: "changed"; value: TableState.changed; }
+                    Rectangle { width: 8px; }
+                    Stat { label: "rows"; value: TableState.total-count; }
+                    Stat { label: "active"; value: TableState.active-count; }
+                    Stat { label: "selected"; value: TableState.sel-count; }
+
+                    Rectangle { horizontal-stretch: 1; }
+
+                    Chip {
+                        label: "stress  S";
+                        on: TableState.stress;
+                        clicked => { TableState.toggle-stress(); }
+                    }
+                    Chip {
+                        label: "churn all  C";
+                        on: TableState.churn;
+                        clicked => { TableState.toggle-churn(); }
+                    }
+                    Chip {
+                        label: "theme  T";
+                        on: false;
+                        clicked => { TableState.toggle-theme(); }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  # A warning that does not fail the build is a warning nobody fixes.
+  RUSTFLAGS: -D warnings
+
+jobs:
+  gate:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Slint's winit backend links against X11/Wayland and font headers.
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libx11-xcb-dev libxcb1-dev libxcursor-dev \
+                                  libxi-dev libxkbcommon-dev libxkbcommon-x11-dev \
+                                  libwayland-dev libfontconfig1-dev
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets
+
+      - name: Tests
+        run: cargo test --workspace
+
+      # The binary is part of the product. The budget was 12 MB while the engine was
+      # synthetic; librqbit costs 4.7 MB of it, so 16 MB is the budget now and 13.3 MB
+      # is where it sits. A release that quietly doubles it should not merge.
+      - name: Release build and size budget
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build --release
+          $mb = [math]::Round((Get-Item target/release/zerem.exe).Length / 1MB, 2)
+          Write-Host "zerem.exe is $mb MB"
+          if ($mb -gt 16) { throw "binary is $mb MB, over the 16 MB budget" }

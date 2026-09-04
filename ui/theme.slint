@@ -1,0 +1,36 @@
+// Zerem — M3-flavoured semantic tokens. No component ever writes a hex
+// literal; every colour is named by role here so the light/dark swap is one
+// boolean and the palette can be retuned in one place.
+export global Theme {
+    in-out property <bool> dark: true;
+
+    // --- surfaces ---
+    out property <brush> bg: dark ? #121216 : #f7f7fa;
+    out property <brush> surface: dark ? #1a1a1f : #ffffff;
+    out property <brush> surface-hi: dark ? #22222a : #eeeef3;
+    out property <brush> row-alt: dark ? #ffffff06 : #00000004;
+    out property <brush> hover: dark ? #ffffff0e : #0000000a;
+    out property <brush> selected: dark ? #4c8dff2b : #4c8dff20;
+    out property <brush> border: dark ? #ffffff14 : #00000014;
+    out property <brush> track: dark ? #ffffff12 : #0000000f;
+
+    // --- content ---
+    out property <brush> text: dark ? #e7e7ee : #15151a;
+    out property <brush> text-dim: dark ? #9696a4 : #6b6b78;
+    out property <brush> accent: #4c8dff;
+    out property <brush> seeding: dark ? #4ac68d : #1e9a61;
+    out property <brush> warn: #efa23c;
+    out property <brush> danger: dark ? #ff6b6b : #d33d3d;
+    out property <brush> idle: dark ? #6a6a78 : #9b9ba8;
+
+    // --- type ---
+    out property <string> font: "Segoe UI";
+    out property <length> fs-label: 11px;
+    out property <length> fs-body: 12px;
+    out property <length> fs-title: 13px;
+
+    // --- metrics ---
+    out property <length> row-h: 28px;
+    out property <length> header-h: 30px;
+    out property <length> radius: 6px;
+}

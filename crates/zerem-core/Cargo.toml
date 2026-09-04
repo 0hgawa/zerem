@@ -1,0 +1,15 @@
+[package]
+name = "zerem-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Zerem core — domain types, ordering and display formatting. No async, no I/O, no UI."
+
+# Deliberately empty. The moment this crate needs a dependency, check that what
+# is being added really belongs below the engine rather than inside it.
+[dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,163 @@
+// The floating menus.
+//
+// Two of them now, so the scrim and the card they share are a component rather
+// than the same thirty lines twice. Both exist for the same reason: the thing
+// under the cursor is where the hand already is, and making someone travel to a
+// toolbar to act on what they are pointing at is the small friction that adds up.
+
+import { Theme } from "../theme.slint";
+import { TorrentList } from "../state.slint";
+import { Icon, Lucide } from "icons.slint";
+
+component Item inherits Rectangle {
+    in property <string> label;
+    in property <string> glyph;
+    in property <string> shortcut;
+    in property <bool> danger;
+    in property <bool> enabled: true;
+    /// Whether choosing this closes the menu. A toggle does not: hiding three
+    /// columns should be three clicks, not three trips back to a right-click.
+    in property <bool> closes: true;
+    callback chosen;
+
+    height: 28px;
+    background: ta.has-hover ? Theme.hover : transparent;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                tint: !root.enabled ? Theme.idle : root.danger ? Theme.danger : Theme.text-dim;
+                size: 15px;
+            }
+        }
+        Text {
+            text: root.label;
+            color: !root.enabled ? Theme.idle : root.danger ? Theme.warn : Theme.text;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.shortcut;
+            color: Theme.idle;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            if (root.closes) { TorrentList.close-menu(); }
+            root.chosen();
+        }
+    }
+}
+
+component Separator inherits Rectangle {
+    height: 5px;
+    Rectangle { y: 2px; height: 1px; background: Theme.border; }
+}
+
+/// The scrim and the card. Everything that floats sits on one of these.
+component MenuSurface inherits Rectangle {
+    in property <length> at-x;
+    in property <length> at-y;
+    in property <length> card-width: 232px;
+    callback dismissed;
+    background: transparent;
+
+    // Catches the click that dismisses it. Covering the window is what makes
+    // "click anywhere else" work without every other control knowing about it.
+    TouchArea {
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { root.dismissed(); }
+        }
+    }
+
+    Rectangle {
+        width: root.card-width;
+        height: body.preferred-height + 8px;
+        // Clamped so a right-click near an edge does not open the menu off it.
+        x: min(root.at-x, parent.width - self.width - 4px);
+        y: min(root.at-y, parent.height - self.height - 4px);
+        background: Theme.surface;
+        border-radius: 10px;
+        // No outline: the shadow is what lifts it off the table behind.
+        drop-shadow-blur: 18px;
+        drop-shadow-color: #00000066;
+
+        body := VerticalLayout {
+            padding-top: 4px;
+            padding-bottom: 4px;
+            @children
+        }
+    }
+}
+
+export component ContextMenu inherits MenuSurface {
+    at-x: TorrentList.menu-x;
+    at-y: TorrentList.menu-y;
+    dismissed => { TorrentList.close-menu(); }
+
+    Item {
+        label: TorrentList.selection-running ? "Pause" : "Start";
+        glyph: TorrentList.selection-running ? Lucide.pause : Lucide.play;
+        shortcut: "Space";
+        chosen => {
+            if (TorrentList.selection-running) {
+                TorrentList.pause-selected();
+            } else {
+                TorrentList.start-selected();
+            }
+        }
+    }
+    Separator { }
+    Item {
+        label: "Open folder";
+        glyph: Lucide.folder-open;
+        chosen => { TorrentList.open-folder(); }
+    }
+    Item {
+        label: "Copy magnet link";
+        glyph: Lucide.copy;
+        chosen => { TorrentList.copy-magnet(); }
+    }
+    Separator { }
+    Item {
+        label: "Remove…";
+        glyph: Lucide.trash;
+        shortcut: "Del";
+        danger: true;
+        chosen => { TorrentList.remove-selected(); }
+    }
+}
+
+/// Which columns the table draws, on a right-click in its header.
+///
+/// It stays open while you tick things: hiding four columns is one gesture, not
+/// four. The name is listed and disabled rather than left out — showing seven of
+/// eight columns would raise the question of where the eighth went, and the
+/// answer is that it is the row's identity and never optional.
+export component ColumnsMenu inherits MenuSurface {
+    at-x: TorrentList.columns-x;
+    at-y: TorrentList.columns-y;
+    card-width: 178px;
+    dismissed => { TorrentList.close-columns(); }
+
+    for title[i] in TorrentList.col-title: Item {
+        label: title;
+        glyph: TorrentList.col-visible[i] ? Lucide.check : "";
+        enabled: i > 0;
+        closes: false;
+        chosen => { TorrentList.toggle-column(i); }
+    }
+}

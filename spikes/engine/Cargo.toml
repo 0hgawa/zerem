@@ -1,0 +1,35 @@
+# Its own workspace root: a spike keeps its lockfile and dependency tree to
+# itself, and the app's manifest never has to know it exists.
+[workspace]
+
+[package]
+name = "spike-engine"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Zerem spike S0.2 — librqbit throughput, uTP and the Snapshot mapping."
+
+[dependencies]
+# `rust-tls` does two things at once: rustls instead of the system TLS (no
+# OpenSSL build dep, same choice Vayou made), and — the reason it is here —
+# `sha1w/sha1-ring`, which hashes through aws-lc-rs and its SHA-NI path. The
+# crate's own wrapper says "Sha1 computation is the majority of CPU usage of
+# librqbit", so the backend is not a detail.
+librqbit = { version = "9", default-features = false, features = ["rust-tls"] }
+# Path dependency on purpose: the mapping in src/map.rs is written against the
+# real domain types, so what the spike proves is what Phase 2 moves over.
+zerem-core = { path = "../../crates/zerem-core" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+# The measurement is only meaningful against an optimised build — a torrent
+# engine compiled unoptimised does not saturate a link.
+[profile.release]
+opt-level = 2
+lto = "thin"
+codegen-units = 1

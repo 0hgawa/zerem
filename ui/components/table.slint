@@ -1,0 +1,363 @@
+// The table: header, rows, cells.
+//
+// `fg` rather than `color` and `data` rather than `row`, because every element
+// already carries a deprecated `color` and GridLayout owns `row`/`col` —
+// shadowing either is a compile error.
+
+import { Theme } from "../theme.slint";
+import { Row, TorrentList } from "../state.slint";
+import { Icon, Lucide } from "icons.slint";
+
+export component Cell inherits Rectangle {
+    in property <string> text;
+    in property <bool> right;
+    in property <brush> fg: Theme.text;
+    clip: true;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: root.right ? end : start;
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+// The name, led by what the torrent actually holds.
+//
+// A list of names is read; a list of shapes is scanned — the icon is how a row
+// is found before its name is parsed. It stays put while the row is hovered:
+// identity belongs on the left and does not move aside for a button.
+export component NameCell inherits Rectangle {
+    in property <string> text;
+    in property <int> content;
+    clip: true;
+    HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 10px;
+        spacing: 7px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: Lucide.content-glyph(root.content);
+                size: 14px;
+            }
+        }
+        Text {
+            text: root.text;
+            color: Theme.text;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// Transferred, total and percentage, over the bar that measures them.
+//
+// One column where there were two. The bar is drawn only while there is
+// something left to do: most of a long-lived list is complete, and a full-width
+// wash on every finished row is decoration, not information.
+export component ProgressCell inherits Rectangle {
+    in property <float> progress;
+    in property <string> text;
+    in property <int> kind;
+    clip: true;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        Rectangle {
+            border-radius: 4px;
+            background: root.progress < 1.0 ? Theme.track : transparent;
+            if root.progress < 1.0: Rectangle {
+                x: 0;
+                width: parent.width * root.progress;
+                height: parent.height;
+                border-radius: parent.border-radius;
+                background: root.kind == 4 ? Theme.danger
+                    : root.kind == 2 ? Theme.seeding
+                    : root.kind == 1 ? Theme.accent
+                    : root.kind == 3 ? Theme.warn
+                    : Theme.idle;
+                // Sits behind the figures, so it has to stay quiet enough to
+                // read through: it is a gauge, not a highlight.
+                opacity: 0.3;
+            }
+            Text {
+                text: root.text;
+                color: Theme.text;
+                font-size: Theme.fs-label;
+                font-family: Theme.font;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+                width: 100%;
+                overflow: elide;
+            }
+        }
+    }
+}
+export component TableRow inherits Rectangle {
+    in property <Row> data;
+    in property <int> index;
+    // Read from every area that covers the row: whether Slint hands the hover
+    // to the topmost one alone or to all of them, this is true in the same
+    // cases — so the buttons can never flicker themselves away by stealing the
+    // hover from underneath.
+    property <bool> hovered: ta.has-hover || run.has-hover || del.has-hover;
+    height: Theme.row-h;
+    background: data.selected ? Theme.selected
+        : hovered ? Theme.hover
+        : mod(index, 2) == 1 ? Theme.row-alt
+        : transparent;
+
+    // A right-click has to open the menu wherever it lands, and three areas
+    // cover parts of this row. Each forwards to here so the row is named once.
+    function menu-at(x: length, y: length) {
+        TorrentList.open-menu(root.index, x, y);
+    }
+
+    // Selection marker as a rail rather than a border: it never shifts the
+    // layout, so a row does not jump by a pixel when it is picked.
+    Rectangle {
+        x: 0;
+        width: 2px;
+        height: parent.height;
+        background: data.selected ? Theme.accent : transparent;
+    }
+
+    HorizontalLayout {
+        spacing: 0px;
+        NameCell {
+            width: TorrentList.col-w[0];
+            text: data.name;
+            content: data.content;
+        }
+        if TorrentList.col-visible[1]: ProgressCell {
+            width: TorrentList.col-w[1];
+            progress: data.progress;
+            text: data.progress-text;
+            kind: data.kind;
+        }
+        // A failure puts its own message in this cell instead of the word
+        // "Error" — the colour already says something is wrong, so the text is
+        // free to say what.
+        if TorrentList.col-visible[2]: Cell {
+            width: TorrentList.col-w[2];
+            text: data.state;
+            fg: data.kind == 4 ? Theme.danger
+                : data.kind == 2 ? Theme.seeding
+                : data.kind == 1 ? Theme.accent
+                : Theme.text-dim;
+        }
+        if TorrentList.col-visible[3]: Cell { width: TorrentList.col-w[3]; text: data.down; right: true; fg: data.kind == 1 ? Theme.text : Theme.text-dim; }
+        if TorrentList.col-visible[4]: Cell { width: TorrentList.col-w[4]; text: data.up; right: true; fg: data.kind == 2 ? Theme.text : Theme.text-dim; }
+        if TorrentList.col-visible[5]: Cell { width: TorrentList.col-w[5]; text: data.peers; right: true; fg: Theme.text-dim; }
+        if TorrentList.col-visible[6]: Cell { width: TorrentList.col-w[6]; text: data.eta; right: true; fg: Theme.text-dim; }
+        if TorrentList.col-visible[7]: Cell { width: TorrentList.col-w[7]; text: data.ratio; right: true; fg: Theme.text-dim; }
+    }
+
+    ta := TouchArea {
+        // Both buttons, because a right-click on an unselected row has to select
+        // it first — a menu that acts on something else than what was clicked is
+        // the classic way to delete the wrong thing.
+        pointer-event(e) => {
+            if (e.kind != PointerEventKind.down) {
+                return;
+            }
+            if (e.button == PointerEventButton.right) {
+                root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                return;
+            }
+            TorrentList.select(root.index, e.modifiers.control, e.modifiers.shift);
+        }
+    }
+
+    // The row's own actions, on hover, at the right edge.
+    //
+    // Right rather than in the icon slot: identity on the left and actions on
+    // the right is where a list puts them, and it keeps the type icon visible
+    // while the cursor is on the row. Both act on the row under the pointer and
+    // leave the selection alone — no selecting first, and no chance of hitting
+    // a torrent the cursor is not on.
+    //
+    // Remove sits furthest out, a gap away from start, so the destructive one
+    // is never the near miss of the other. It still asks before it acts.
+    //
+    // Declared after `ta` so they take the click, and always present rather
+    // than conditional: an area that appears and disappears under the cursor is
+    // an area that can appear and disappear under the cursor. Only the paint is
+    // conditional, and neither is reachable without hovering the row anyway.
+    Rectangle {
+        width: 48px;
+        height: 24px;
+        x: parent.width - self.width - 6px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 7px;
+        // A surface of its own, because it floats over whatever the last column
+        // is showing. It reads as a small raised group rather than as icons
+        // scattered on top of a number.
+        background: Theme.surface;
+        opacity: root.hovered ? 1 : 0;
+        animate opacity { duration: 90ms; easing: ease-out; }
+
+        run := TouchArea {
+            x: 3px;
+            y: 2px;
+            width: 20px;
+            height: 20px;
+            mouse-cursor: pointer;
+            clicked => {
+                if (data.active) {
+                    TorrentList.pause-row(root.index);
+                } else {
+                    TorrentList.start-row(root.index);
+                }
+            }
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                    root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+            }
+            Rectangle {
+                border-radius: 6px;
+                background: run.pressed ? Theme.selected : run.has-hover ? Theme.hover : transparent;
+                Icon {
+                    glyph: data.active ? Lucide.pause : Lucide.play;
+                    tint: Theme.text;
+                    size: 12px;
+                }
+            }
+        }
+
+        del := TouchArea {
+            x: 25px;
+            y: 2px;
+            width: 20px;
+            height: 20px;
+            mouse-cursor: pointer;
+            clicked => { TorrentList.remove-row(root.index); }
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                    root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+            }
+            Rectangle {
+                border-radius: 6px;
+                background: del.pressed ? Theme.selected : del.has-hover ? Theme.hover : transparent;
+                Icon {
+                    // Red only under the cursor. A permanently red icon on
+                    // every row turns the list into a wall of warnings.
+                    glyph: Lucide.trash;
+                    tint: del.has-hover ? Theme.danger : Theme.text-dim;
+                    size: 12px;
+                }
+            }
+        }
+    }
+}
+
+export component HeaderCell inherits Rectangle {
+    in property <bool> right;
+    in property <int> idx;
+    property <bool> active: TorrentList.sort-col == idx;
+    clip: true;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 3px;
+        alignment: root.right ? end : start;
+        Text {
+            text: TorrentList.col-title[root.idx];
+            color: active ? Theme.accent : Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if active: VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: TorrentList.sort-desc ? Lucide.chevron-down : Lucide.chevron-up;
+                tint: Theme.accent;
+                size: 13px;
+            }
+        }
+    }
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { TorrentList.sort(root.idx); }
+        // The right button opens the column menu instead of sorting. `clicked`
+        // is left-only in Slint, so the two never collide.
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                TorrentList.open-columns(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        height: parent.height;
+        background: Theme.border;
+    }
+
+    // Last, so it sits above the sort TouchArea and wins the grip strip.
+    TouchArea {
+        x: parent.width - 4px;
+        width: 8px;
+        mouse-cursor: col-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { TorrentList.resize-begin(root.idx); }
+        }
+        moved => {
+            if (self.pressed) { TorrentList.resize-move(root.idx, self.mouse-x - self.pressed-x); }
+        }
+    }
+}
+
+export component TableHeader inherits Rectangle {
+    height: Theme.header-h;
+    background: Theme.surface;
+    HorizontalLayout {
+        spacing: 0px;
+        HeaderCell { width: TorrentList.col-w[0]; idx: 0; }
+        // Named for what it sorts by. The cell shows the progress too, and the
+        // bar says so without a word in the header: size is the key worth
+        // ordering on, and the only one of the two that does not force a
+        // re-sort every tick.
+        if TorrentList.col-visible[1]: HeaderCell { width: TorrentList.col-w[1]; idx: 1; }
+        if TorrentList.col-visible[2]: HeaderCell { width: TorrentList.col-w[2]; idx: 2; }
+        if TorrentList.col-visible[3]: HeaderCell { width: TorrentList.col-w[3]; idx: 3; right: true; }
+        if TorrentList.col-visible[4]: HeaderCell { width: TorrentList.col-w[4]; idx: 4; right: true; }
+        if TorrentList.col-visible[5]: HeaderCell { width: TorrentList.col-w[5]; idx: 5; right: true; }
+        if TorrentList.col-visible[6]: HeaderCell { width: TorrentList.col-w[6]; idx: 6; right: true; }
+        if TorrentList.col-visible[7]: HeaderCell { width: TorrentList.col-w[7]; idx: 7; right: true; }
+        // The slack past the last column. It takes the right-click too, so the
+        // way back from hiding several of them is where the eye already is.
+        Rectangle {
+            TouchArea {
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                        TorrentList.open-columns(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                    }
+                }
+            }
+        }
+    }
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}

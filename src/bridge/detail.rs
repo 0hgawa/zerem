@@ -1,0 +1,294 @@
+//! The drawer: what is inside the selected torrent.
+//!
+//! The rule this module exists to enforce is in the architecture doc and is
+//! about cost, not tidiness: **details are built only for the watched torrent,
+//! and only while the drawer is open**. Closing it sends `WatchDetails(None)`,
+//! and the engine stops assembling file lists and peer tables altogether.
+//!
+//! The two lists use plain `VecModel`s rather than the diffing model the main
+//! table needs. They hold tens of rows, not thousands, and they exist only while
+//! someone is looking at them — the diff would cost more to maintain than it
+//! could ever save.
+
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use slint::{ComponentHandle, Model as _, ModelRc, SharedString, VecModel};
+use zerem_core::{fmt, Details, TorrentId};
+use zerem_engine::{Command, Snapshot};
+
+use crate::state::UiState;
+use crate::{DetailState, FileEntry, MainWindow, PeerEntry};
+
+pub struct Models {
+    files: Rc<VecModel<FileEntry>>,
+    peers: Rc<VecModel<PeerEntry>>,
+    /// Each file's size and whether it is wanted — the two numbers the line
+    /// above the list is built from. Held beside the model because the model
+    /// carries sizes as finished strings, and because a tick has to move now
+    /// rather than on the next tick, summary included.
+    sizes: RefCell<Vec<(u64, bool)>>,
+    /// Whose files these are. Taken from the details the drawer last drew
+    /// rather than from the selection: a click acts on the torrent whose lines
+    /// are on screen, which for one tick after the selection moves is not yet
+    /// the selected one.
+    shown: RefCell<Option<TorrentId>>,
+    /// The sequence a file edit was made against, or 0 for none in flight.
+    guess: Cell<u64>,
+}
+
+impl Models {
+    #[must_use]
+    pub fn new(ui: &MainWindow) -> Self {
+        let this = Self {
+            files: Rc::new(VecModel::default()),
+            peers: Rc::new(VecModel::default()),
+            sizes: RefCell::new(Vec::new()),
+            shown: RefCell::new(None),
+            guess: Cell::new(0),
+        };
+        let detail = ui.global::<DetailState>();
+        detail.set_files(ModelRc::from(this.files.clone()));
+        detail.set_peers(ModelRc::from(this.peers.clone()));
+        this
+    }
+
+    /// Take the snapshot's answer for which files are wanted — unless a click
+    /// is still in flight.
+    ///
+    /// The same rule the table's optimistic edits follow: the guess is made
+    /// against a sequence number, and the first snapshot published after it is
+    /// the truth, whether the engine agreed or not. A snapshot that was already
+    /// on its way when the click happened knows nothing about it and would put
+    /// the tick back for a quarter of a second.
+    fn adopt(&self, seq: u64, details: &Details) {
+        // A different torrent drops the guess whatever its sequence says — two
+        // torrents with the same number of files would otherwise inherit each
+        // other's ticks.
+        let same = self.shown.replace(Some(details.id)) == Some(details.id);
+
+        let mut sizes = self.sizes.borrow_mut();
+        let in_flight = same && seq <= self.guess.get() && sizes.len() == details.files.len();
+        if !in_flight {
+            self.guess.set(0);
+            *sizes = details.files.iter().map(|f| (f.size, f.wanted)).collect();
+        }
+    }
+
+    /// Flip one line, or every line, without waiting for the engine.
+    ///
+    /// The optimistic half of the rule the whole app follows: the tick moves on
+    /// the click and the next snapshot is the truth — which puts it back if the
+    /// engine said no.
+    fn set_wanted(&self, file: Option<usize>, wanted: bool) {
+        let mut sizes = self.sizes.borrow_mut();
+        let range = match file {
+            Some(i) if i < sizes.len() => i..i + 1,
+            Some(_) => return,
+            None => 0..sizes.len(),
+        };
+        for i in range {
+            sizes[i].1 = wanted;
+            if let Some(mut row) = self.files.row_data(i) {
+                row.wanted = wanted;
+                self.files.set_row_data(i, row);
+            }
+        }
+    }
+
+    /// Record which snapshot a file edit was made against, so the one already
+    /// in flight when it happened does not undraw it.
+    fn expect(&self, seq: u64) {
+        self.guess.set(seq);
+    }
+
+    /// Whether the line at `index` is currently being fetched.
+    fn is_wanted(&self, index: usize) -> bool {
+        self.sizes.borrow().get(index).is_some_and(|&(_, wanted)| wanted)
+    }
+
+    /// "12 files · 3.72 GB", or "3 of 12 files · 1.44 GB of 3.72 GB" once
+    /// something has been left out — and whether anything has.
+    fn choice(&self) -> (String, bool) {
+        let sizes = self.sizes.borrow();
+        let total: u64 = sizes.iter().map(|&(size, _)| size).sum();
+        let (count, bytes) = sizes
+            .iter()
+            .filter(|&&(_, wanted)| wanted)
+            .fold((0_usize, 0_u64), |(n, b), &(size, _)| (n + 1, b + size));
+
+        if count == sizes.len() {
+            return (format!("{} files · {}", sizes.len(), fmt::bytes(total)), false);
+        }
+        (format!("{count} of {} files · {} of {}", sizes.len(), fmt::bytes(bytes), fmt::bytes(total)), true)
+    }
+}
+
+pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+    let detail = ui.global::<DetailState>();
+
+    detail.on_close({
+        let (state, ui) = (state.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            ui.global::<DetailState>().set_open(false);
+            // Not merely hidden: the engine stops building this.
+            state.engine.send(Command::WatchDetails(None));
+        }
+    });
+
+    detail.on_pick_tab({
+        let ui = ui.as_weak();
+        move |tab| {
+            let Some(ui) = ui.upgrade() else { return };
+            ui.global::<DetailState>().set_tab(tab);
+        }
+    });
+
+    // Both of these name the file and the answer, never the whole selection:
+    // the engine applies the change to what is current there, so a click made
+    // against a second-old panel cannot undo anything that happened since.
+    detail.on_toggle_file({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            let Ok(index) = usize::try_from(index) else { return };
+            let wanted = !views.detail.is_wanted(index);
+            views.detail.expect(state.snapshot().seq);
+            views.detail.set_wanted(Some(index), wanted);
+            show_choice(&ui, &views.detail);
+            if let Some(id) = *views.detail.shown.borrow() {
+                state.engine.send(Command::SetFileWanted { id, file: Some(index), wanted });
+            }
+        }
+    });
+
+    detail.on_restore_all_files({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            views.detail.expect(state.snapshot().seq);
+            views.detail.set_wanted(None, true);
+            show_choice(&ui, &views.detail);
+            if let Some(id) = *views.detail.shown.borrow() {
+                state.engine.send(Command::SetFileWanted { id, file: None, wanted: true });
+            }
+        }
+    });
+
+    ui.global::<crate::TorrentList>().on_toggle_details({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let detail = ui.global::<DetailState>();
+            detail.set_open(!detail.get_open());
+            follow_selection(&ui, &state);
+            // Redrawn at once so the drawer is not blank for up to a tick after
+            // it opens — the first snapshot with details is a moment away.
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+}
+
+/// Tell the engine what to watch, or to stop.
+///
+/// Called whenever the drawer opens or closes and whenever the selection moves.
+/// With several rows selected it watches the first — a drawer showing three
+/// torrents at once would be showing none of them.
+pub fn follow_selection(ui: &MainWindow, state: &UiState) {
+    let open = ui.global::<DetailState>().get_open();
+    let watching = open.then(|| first_selected(state)).flatten();
+    state.engine.send(Command::WatchDetails(watching));
+}
+
+fn first_selected(state: &UiState) -> Option<TorrentId> {
+    // By view order rather than whatever the set hands over, so "the first" is
+    // the one nearest the top of the table.
+    (0..).map_while(|i| state.model.id_at(i)).find(|id| state.selection().contains(id))
+}
+
+/// Push a snapshot's details into the drawer. Does nothing when it is shut.
+pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
+    let detail = ui.global::<DetailState>();
+    if !detail.get_open() {
+        return;
+    }
+
+    let Some(details) = &snapshot.details else {
+        // Watched but not built yet — the command and the tick can cross.
+        return;
+    };
+
+    let name = snapshot
+        .torrents
+        .iter()
+        .find(|t| t.id == details.id)
+        .map_or_else(SharedString::default, |t| t.name.as_ref().into());
+    push!(detail, get_title, set_title, name);
+    push!(detail, get_files_summary, set_files_summary, details.files.len().to_string().into());
+    push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
+
+    models.adopt(snapshot.seq, details);
+    apply(&models.files, build_files(details, &models.sizes.borrow()));
+    apply(&models.peers, build_peers(details));
+    show_choice(ui, models);
+}
+
+/// Push what is being fetched, and whether there is anything to put back.
+fn show_choice(ui: &MainWindow, models: &Models) {
+    let detail = ui.global::<DetailState>();
+    let (summary, partial) = models.choice();
+    push!(detail, get_files_choice, set_files_choice, summary.into());
+    push!(detail, get_files_partial, set_files_partial, partial);
+}
+
+/// Replace a model's contents, reusing the rows that did not change.
+///
+/// Not the diffing machinery the table uses — just enough to stop a fifty-row
+/// file list being torn down and rebuilt every second, which is what would throw
+/// away the scroll position while someone is reading it.
+fn apply<T: Clone + PartialEq + 'static>(model: &Rc<VecModel<T>>, next: Vec<T>) {
+    if model.row_count() != next.len() {
+        model.set_vec(next);
+        return;
+    }
+    for (i, row) in next.into_iter().enumerate() {
+        if model.row_data(i).as_ref() != Some(&row) {
+            model.set_row_data(i, row);
+        }
+    }
+}
+
+/// `chosen` is what the drawer believes, which is the snapshot's answer except
+/// while a click is still in flight — see [`Models::adopt`].
+fn build_files(details: &Details, chosen: &[(u64, bool)]) -> Vec<FileEntry> {
+    details
+        .files
+        .iter()
+        .enumerate()
+        .map(|(i, f)| FileEntry {
+            path: f.path.as_ref().into(),
+            size: fmt::bytes(f.size).into(),
+            pct: fmt::percent(f.done, f.size).into(),
+            progress: f.progress_bp() as f32 / 10_000.0,
+            complete: f.is_complete(),
+            wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
+        })
+        .collect()
+}
+
+fn build_peers(details: &Details) -> Vec<PeerEntry> {
+    details
+        .peers
+        .iter()
+        .map(|p| PeerEntry {
+            addr: p.addr.as_ref().into(),
+            // An unnamed peer is one that has not said, not one called "".
+            client: p.client.as_deref().unwrap_or("unknown").into(),
+            transport: p.transport.label().into(),
+            state: p.state.into(),
+            down: fmt::bytes(p.downloaded).into(),
+            up: fmt::bytes(p.uploaded).into(),
+        })
+        .collect()
+}

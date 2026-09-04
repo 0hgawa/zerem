@@ -1,0 +1,187 @@
+// The add dialog.
+//
+// The two decisions that matter — where it goes, and what comes down — get the
+// room they deserve instead of a cramped tree with the destination hidden behind
+// it. Wide, one file per line, the destination on top where it is read first.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { AddState, PendingFileEntry } from "../state.slint";
+import { Lucide } from "icons.slint";
+import { Button, ButtonKind } from "button.slint";
+import { Modal, Tick } from "common.slint";
+
+component FileLine inherits Rectangle {
+    in property <PendingFileEntry> entry;
+    in property <int> index;
+    height: 26px;
+    background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            Tick { on: entry.wanted; }
+        }
+        Text {
+            text: entry.path;
+            // An unticked file dims rather than disappears: it is still there,
+            // it is just not coming down.
+            color: entry.wanted ? Theme.text : Theme.idle;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: entry.size;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            width: 84px;
+            horizontal-alignment: right;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { AddState.toggle-file(root.index); }
+    }
+}
+
+export component AddDialog inherits Modal {
+    card-width: 660px;
+    card-height: 520px;
+    dismissed => { AddState.cancel(); }
+
+        VerticalLayout {
+            padding: 20px;
+            spacing: 14px;
+
+            Text {
+                text: AddState.fetching ? "Reading torrent…" : "Add torrent";
+                color: Theme.text;
+                font-size: Theme.fs-title;
+                font-family: Theme.font;
+                font-weight: 600;
+            }
+
+            Text {
+                text: AddState.name;
+                color: Theme.text-dim;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                overflow: elide;
+            }
+
+            // The destination sits above the file list rather than behind it.
+            // It is the decision people get wrong, and burying it is why.
+            HorizontalLayout {
+                spacing: 10px;
+                VerticalLayout {
+                    alignment: center;
+                    width: 66px;
+                    Text {
+                        text: "Save to";
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: AddState.destination;
+                        color: Theme.text;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                        overflow: elide;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Button {
+                        label: "Change";
+                        glyph: Lucide.folder-open;
+                        clicked => { AddState.change-destination(); }
+                    }
+                }
+            }
+
+            if AddState.error != "": Text {
+                text: AddState.error;
+                color: Theme.danger;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                wrap: word-wrap;
+            }
+
+            if AddState.fetching: Rectangle {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 6px;
+                    Text {
+                        text: "Fetching the file list from the swarm…";
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                        horizontal-alignment: center;
+                    }
+                    // Said plainly, because this is the one wait in the app that
+                    // can genuinely take a while and looks like a hang otherwise.
+                    Text {
+                        text: "A magnet link carries no file list — it has to be asked for.";
+                        color: Theme.idle;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            if !AddState.fetching && AddState.files.length > 0: HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Text {
+                    text: AddState.summary;
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-label;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Button { label: "All"; kind: ButtonKind.text; clicked => { AddState.set-all(true); } }
+                Button { label: "None"; kind: ButtonKind.text; clicked => { AddState.set-all(false); } }
+            }
+
+            if !AddState.fetching && AddState.files.length > 0: Rectangle {
+                vertical-stretch: 1;
+                border-radius: Theme.radius;
+                border-width: 1px;
+                border-color: Theme.border;
+                clip: true;
+                ListView {
+                    for f[i] in AddState.files: FileLine { entry: f; index: i; }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                Button { label: "Cancel"; kind: ButtonKind.text; clicked => { AddState.cancel(); } }
+                Button {
+                    label: "Add";
+                    glyph: Lucide.plus;
+                    kind: ButtonKind.primary;
+                    enabled: AddState.can-add;
+                    clicked => { AddState.confirm(); }
+                }
+            }
+        }
+}

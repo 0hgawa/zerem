@@ -1,0 +1,17 @@
+# One compiler for local builds, CI and releases.
+#
+# Without this, CI installs whatever `stable` happens to be that week while a
+# developer builds with whatever they installed months ago. Combined with the
+# `-D warnings` gate in .github/workflows/ci.yml, that turns every new Rust
+# release into a red build on code nobody touched — Vayou lost a day to exactly
+# that, on a lint that arrived after the last green run, in a file no one had
+# edited.
+#
+# It also makes release binaries reproducible: the published installer is built
+# by the compiler the tests and lints ran against.
+#
+# To bump: raise `channel`, run `cargo clippy --workspace --all-targets`, fix
+# whatever the newer lints find, and commit the two together.
+[toolchain]
+channel = "1.98.0"
+components = ["clippy", "rustfmt"]

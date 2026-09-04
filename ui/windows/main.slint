@@ -1,0 +1,355 @@
+// The window: a toolbar, the list, a drawer, a status bar. Everything else is a
+// component — this file composes, it does not draw.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { AddState, DetailState, Prefs, Row, SessionState, TorrentList } from "../state.slint";
+import { TableHeader, TableRow } from "../components/table.slint";
+import { DetailDrawer } from "../components/detail.slint";
+import { ColumnsMenu, ContextMenu } from "../components/menu.slint";
+import { AddDialog } from "../components/add.slint";
+import { Lucide } from "../components/icons.slint";
+import { Button, ButtonKind, IconButton } from "../components/button.slint";
+import { EmptyState, SearchField, Sparkline, Stat } from "../components/common.slint";
+import { ConfirmRemove, Preferences } from "dialogs.slint";
+
+component Toolbar inherits Rectangle {
+    in property <bool> has-selection;
+    /// Ctrl+F lands here. The field is nested two layouts deep, so the window
+    /// reaches it through the toolbar rather than through a global — an element
+    /// reference is the one thing a global cannot hold.
+    public function focus-search() { search.take-focus(); }
+    /// Escape in the field. The window answers by taking the keyboard back.
+    callback dismissed;
+    height: 44px;
+    background: Theme.surface;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        alignment: start;
+
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: "Paste magnet";
+                glyph: Lucide.clipboard;
+                clicked => { TorrentList.add-magnet-from-clipboard(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: "Add file";
+                glyph: Lucide.plus;
+                clicked => { TorrentList.add-torrent-file(); }
+            }
+        }
+
+        Rectangle { width: 10px; }
+
+        // One button, not two: what the selection is doing decides what it
+        // offers, so there is never a dead control beside a live one.
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: TorrentList.selection-running ? "Pause" : "Start";
+                glyph: TorrentList.selection-running ? Lucide.pause : Lucide.play;
+                enabled: root.has-selection;
+                clicked => {
+                    if (TorrentList.selection-running) {
+                        TorrentList.pause-selected();
+                    } else {
+                        TorrentList.start-selected();
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: "Remove";
+                glyph: Lucide.trash;
+                kind: ButtonKind.danger;
+                enabled: root.has-selection;
+                clicked => { TorrentList.remove-selected(); }
+            }
+        }
+
+        Rectangle { horizontal-stretch: 1; }
+
+        VerticalLayout {
+            alignment: center;
+            search := SearchField {
+                text <=> TorrentList.filter;
+                placeholder: "Filter";
+                edited(text) => { TorrentList.filter-changed(text); }
+                dismissed => { root.dismissed(); }
+            }
+        }
+        Rectangle { width: 6px; }
+
+        // Tertiary, so icons alone. Anything that is not about a torrent stays
+        // out of the way of everything that is.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.panel-right;
+                tint: DetailState.open ? Theme.accent : Theme.text-dim;
+                clicked => { TorrentList.toggle-details(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Theme.dark ? Lucide.sun : Lucide.moon;
+                clicked => { TorrentList.toggle-theme(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.sliders;
+                clicked => { Prefs.open = true; }
+            }
+        }
+    }
+
+    Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border; }
+}
+
+component StatusBar inherits Rectangle {
+    height: 30px;
+    background: Theme.surface;
+    Rectangle { y: 0; height: 1px; background: Theme.border; }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 18px;
+        alignment: start;
+
+        Stat { glyph: Lucide.arrow-down; value: SessionState.down; tint: Theme.accent; }
+        Stat { glyph: Lucide.arrow-up; value: SessionState.up; tint: Theme.seeding; }
+
+        // Beside the two figures it plots, not off in a corner: the line is
+        // what the numbers mean over time, and reading them together is the
+        // whole point of drawing it at all.
+        if SessionState.spark-down != "": VerticalLayout {
+            alignment: center;
+            Sparkline {
+                down: SessionState.spark-down;
+                up: SessionState.spark-up;
+            }
+        }
+        Rectangle { width: 6px; }
+
+        // Errors that belong to no row land here rather than in a popup: a
+        // failed paste should not interrupt anything.
+        Text {
+            text: SessionState.notice;
+            color: Theme.danger;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+
+        Stat { label: "active"; value: SessionState.active; }
+        Stat { label: "paused"; value: SessionState.paused; }
+        if SessionState.matched == "": Stat { label: "total"; value: SessionState.total; }
+        // Replaces the total rather than joining it, and takes the accent: what
+        // it says is "you are not looking at all of them".
+        if SessionState.matched != "": Stat { glyph: Lucide.search; value: SessionState.matched; tint: Theme.accent; }
+    }
+}
+
+export component MainWindow inherits Window {
+    title: "Zerem";
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    preferred-width: 1180px;
+    preferred-height: 720px;
+    min-width: 720px;
+    min-height: 420px;
+
+    forward-focus: keys;
+
+    property <bool> has-selection: TorrentList.selected-count > 0;
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            // Whatever is modal owns the keyboard: nothing behind it should
+            // react to a keypress aimed at what is on screen.
+            if (TorrentList.confirming) {
+                if (e.text == Key.Escape) { TorrentList.confirm-cancel(); return accept; }
+                if (e.text == Key.Return) { TorrentList.confirm-accept(); return accept; }
+                return accept;
+            }
+            if (AddState.open) {
+                if (e.text == Key.Escape) { AddState.cancel(); return accept; }
+                if (e.text == Key.Return && AddState.can-add) { AddState.confirm(); return accept; }
+                return accept;
+            }
+            if (Prefs.open) {
+                if (e.text == Key.Escape || e.text == Key.Return) { Prefs.close(); return accept; }
+                return accept;
+            }
+            if (TorrentList.columns-open) {
+                TorrentList.close-columns();
+                return accept;
+            }
+            if (TorrentList.menu-open) {
+                TorrentList.close-menu();
+                return accept;
+            }
+
+            if (e.text == "v" && e.modifiers.control) {
+                TorrentList.add-magnet-from-clipboard();
+                return accept;
+            }
+            if (e.text == "o" && e.modifiers.control) {
+                TorrentList.add-torrent-file();
+                return accept;
+            }
+            if (e.text == "," && e.modifiers.control) {
+                Prefs.open = true;
+                return accept;
+            }
+            if (e.text == "f" && e.modifiers.control) {
+                bar.focus-search();
+                return accept;
+            }
+            if (e.text == "i" && e.modifiers.control && root.has-selection) {
+                TorrentList.toggle-details();
+                return accept;
+            }
+
+            // Arrows walk the list, Shift extends the run. Ctrl is deliberately
+            // absent: "move without selecting" needs a focus ring the table does
+            // not have yet, and a modifier that silently does nothing is worse
+            // than one that is not offered.
+            if (e.text == Key.UpArrow) { TorrentList.move-focus(-1, e.modifiers.shift); return accept; }
+            if (e.text == Key.DownArrow) { TorrentList.move-focus(1, e.modifiers.shift); return accept; }
+            if (e.text == Key.Home) { TorrentList.focus-edge(0, e.modifiers.shift); return accept; }
+            if (e.text == Key.End) { TorrentList.focus-edge(-1, e.modifiers.shift); return accept; }
+
+            if (e.text == " " && root.has-selection) {
+                if (TorrentList.selection-running) {
+                    TorrentList.pause-selected();
+                } else {
+                    TorrentList.start-selected();
+                }
+                return accept;
+            }
+            if (e.text == Key.Delete && root.has-selection) {
+                TorrentList.remove-selected();
+                return accept;
+            }
+            if (e.text == "t") { TorrentList.toggle-theme(); return accept; }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 0px;
+
+            bar := Toolbar {
+                has-selection: root.has-selection;
+                dismissed => { keys.focus(); }
+            }
+
+            // The panel takes width from the table rather than height, so the
+            // list keeps every row it had.
+            HorizontalLayout {
+                spacing: 0px;
+
+                VerticalLayout {
+                    spacing: 0px;
+                    horizontal-stretch: 1;
+
+                    TableHeader { }
+
+                    if TorrentList.rows.length == 0 && TorrentList.filter == "": EmptyState {
+                        glyph: Lucide.folder-open;
+                        title: "No torrents yet";
+                        detail: "Paste a magnet link with Ctrl+V, or add a .torrent file.";
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 8px;
+                            Button {
+                                label: "Paste magnet";
+                                glyph: Lucide.clipboard;
+                                kind: ButtonKind.primary;
+                                clicked => { TorrentList.add-magnet-from-clipboard(); }
+                            }
+                            Button {
+                                label: "Add .torrent file";
+                                glyph: Lucide.plus;
+                                clicked => { TorrentList.add-torrent-file(); }
+                            }
+                        }
+                    }
+
+                    // A filter that matches nothing is not an empty session,
+                    // and telling someone to paste a magnet link when they have
+                    // three hundred torrents is the app not knowing where it is.
+                    if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
+                        glyph: Lucide.search;
+                        title: "Nothing matches";
+                        detail: "No torrent's name contains every word you typed.";
+                        HorizontalLayout {
+                            alignment: center;
+                            Button {
+                                label: "Clear filter";
+                                glyph: Lucide.x;
+                                kind: ButtonKind.primary;
+                                clicked => {
+                                    TorrentList.filter = "";
+                                    TorrentList.filter-changed("");
+                                }
+                            }
+                        }
+                    }
+
+                    if TorrentList.rows.length > 0: list := ListView {
+                        // Keeps the arrow-key row on screen. Fired by
+                        // `focus-tick` rather than by `focus-row`, so holding an
+                        // arrow at the top or bottom of the list still scrolls
+                        // when the row does not move.
+                        property <int> tick: TorrentList.focus-tick;
+                        changed tick => {
+                            if (TorrentList.focus-row >= 0) {
+                                self.viewport-y = clamp(
+                                    self.viewport-y,
+                                    self.visible-height - (TorrentList.focus-row + 1) * Theme.row-h,
+                                    -TorrentList.focus-row * Theme.row-h);
+                            }
+                        }
+                        for r[i] in TorrentList.rows: TableRow {
+                            data: r;
+                            index: i;
+                        }
+                    }
+                }
+
+                // A constant, deliberately. Sizing it as a share of the window
+                // reads better and is a binding loop: the window's own width is
+                // derived from what its children ask for, so a child that asks
+                // for a fraction of the window asks about itself.
+                if DetailState.open: DetailDrawer { width: 330px; }
+            }
+
+            StatusBar { }
+        }
+
+        // Declared last so they draw over everything, innermost question last:
+        // if two were somehow up, the one that has to be answered is on top.
+        if Prefs.open: Preferences { width: root.width; height: root.height; }
+        if TorrentList.menu-open: ContextMenu { width: root.width; height: root.height; }
+        if TorrentList.columns-open: ColumnsMenu { width: root.width; height: root.height; }
+        if AddState.open: AddDialog { width: root.width; height: root.height; }
+        if TorrentList.confirming: ConfirmRemove { width: root.width; height: root.height; }
+    }
+}

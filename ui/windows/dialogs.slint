@@ -1,0 +1,131 @@
+// The two dialogs that belong to the main window: preferences, and the one
+// question the app asks before doing something it cannot undo for you.
+
+import { Theme } from "../theme.slint";
+import { Lucide } from "../components/icons.slint";
+import { Button, ButtonKind } from "../components/button.slint";
+import { Check, Field, Modal } from "../components/common.slint";
+import { Prefs, TorrentList } from "../state.slint";
+
+/// Only what can change while the app runs.
+///
+/// The listening port, uTP and UPnP live in the settings file but not here:
+/// they are fixed when the session is built, and a control that silently does
+/// nothing until the next launch is worse than no control at all.
+export component Preferences inherits Modal {
+    card-width: 520px;
+    card-height: card.preferred-height;
+    dismissed => { Prefs.close(); }
+
+    card := VerticalLayout {
+        padding: 22px;
+        spacing: 16px;
+
+        Text {
+            text: "Preferences";
+            color: Theme.text;
+            font-size: Theme.fs-title;
+            font-family: Theme.font;
+            font-weight: 600;
+        }
+
+        Field {
+            label: "Save to";
+            value: Prefs.download-dir;
+            hint: "Torrents already in the list keep their folder.";
+            action: "Change";
+            glyph: Lucide.folder-open;
+            activated => { Prefs.pick-download-dir(); }
+        }
+
+        Rectangle { height: 1px; background: Theme.border; }
+
+        Field {
+            label: "Download limit";
+            value: Prefs.down-limit;
+            action: "Change";
+            glyph: Lucide.arrow-down;
+            activated => { Prefs.cycle-down-limit(); }
+        }
+
+        Field {
+            label: "Upload limit";
+            value: Prefs.up-limit;
+            // The one that matters day to day, so it says why.
+            hint: "An unlimited upload fills the uplink and stalls everything else on the connection.";
+            action: "Change";
+            glyph: Lucide.arrow-up;
+            activated => { Prefs.cycle-up-limit(); }
+        }
+
+        if Prefs.custom-limits: Text {
+            text: "A limit here was set by hand in settings.json. Changing it will step to the nearest preset.";
+            color: Theme.warn;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                label: "Done";
+                kind: ButtonKind.primary;
+                clicked => { Prefs.close(); }
+            }
+        }
+    }
+}
+
+/// Removing is the one destructive thing the app does, so it is the one action
+/// that asks. Escape cancels, Enter confirms.
+export component ConfirmRemove inherits Modal {
+    card-width: 420px;
+    card-height: card.preferred-height;
+    dismissed => { TorrentList.confirm-cancel(); }
+
+    card := VerticalLayout {
+        padding: 22px;
+        spacing: 14px;
+
+        Text {
+            text: TorrentList.confirm-what;
+            color: Theme.text;
+            font-size: Theme.fs-title;
+            font-family: Theme.font;
+            font-weight: 600;
+            wrap: word-wrap;
+        }
+
+        Check {
+            label: "Also move the data to the recycle bin";
+            checked <=> TorrentList.confirm-delete-data;
+        }
+
+        Text {
+            text: TorrentList.confirm-delete-data
+                ? "The files go to the recycle bin, so this can be undone."
+                : "The files stay where they are.";
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: end;
+            Button {
+                label: "Cancel";
+                kind: ButtonKind.text;
+                clicked => { TorrentList.confirm-cancel(); }
+            }
+            Button {
+                label: "Remove";
+                glyph: Lucide.trash;
+                kind: ButtonKind.danger;
+                clicked => { TorrentList.confirm-accept(); }
+            }
+        }
+    }
+}

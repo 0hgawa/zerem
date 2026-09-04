@@ -1,0 +1,8 @@
+# Matches how Clipo and Vayou are already written by hand, so `cargo fmt` is
+# something CI can enforce rather than a reformatting of the whole tree.
+#
+# `Max` keeps a short struct literal, call or match arm on one line instead of
+# exploding `Self { col, desc: !self.desc }` across four. The wider column is
+# what those files already use.
+max_width = 110
+use_small_heuristics = "Max"

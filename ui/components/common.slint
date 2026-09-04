@@ -1,0 +1,339 @@
+// The small pieces that were inlined in the window until there were enough of
+// them to be a file.
+//
+// Each is used from more than one place, which is the test for extracting: a
+// component that exists once is a section of its parent with extra ceremony.
+
+import { Theme } from "../theme.slint";
+import { Icon, Lucide } from "icons.slint";
+import { Button, ButtonKind, IconButton } from "button.slint";
+
+/// A labelled number in the status bar.
+export component Stat inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> glyph;
+    in property <string> value;
+    in property <brush> tint: Theme.text;
+    spacing: 5px;
+
+    if root.glyph != "": VerticalLayout {
+        alignment: center;
+        Icon { glyph: root.glyph; tint: root.tint; size: 13px; }
+    }
+    if root.label != "": Text {
+        text: root.label;
+        color: Theme.text-dim;
+        font-size: Theme.fs-label;
+        font-family: Theme.font;
+        vertical-alignment: center;
+    }
+    Text {
+        text: root.value;
+        color: root.tint;
+        font-size: Theme.fs-label;
+        font-family: Theme.font;
+        font-weight: 600;
+        vertical-alignment: center;
+    }
+}
+
+/// The mark on its own, without a touch area or a label.
+///
+/// Used wherever a whole line is the target rather than the box — the file
+/// lists in the add dialog and the drawer both work that way, because a 16 px
+/// square is a small thing to ask someone to hit fifty times in a row.
+export component Tick inherits Rectangle {
+    in property <bool> on;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: on ? Theme.accent : Theme.surface-hi;
+    animate background { duration: 90ms; easing: ease-out; }
+    if on: Icon {
+        glyph: Lucide.check;
+        tint: #ffffff;
+        size: 12px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+}
+
+/// A tick box that answers for itself, with a label beside it.
+export component Check inherits Rectangle {
+    in-out property <bool> checked;
+    in property <string> label;
+    height: 20px;
+
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        VerticalLayout {
+            alignment: center;
+            Tick { on: root.checked; }
+        }
+        if root.label != "": Text {
+            text: root.label;
+            color: Theme.text;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.checked = !root.checked; }
+    }
+}
+
+/// A label, a value, and the control that changes it.
+export component Field inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <string> action;
+    in property <string> glyph;
+    in property <string> hint;
+    callback activated;
+    spacing: 12px;
+
+    VerticalLayout {
+        alignment: center;
+        width: 118px;
+        Text {
+            text: root.label;
+            color: Theme.text-dim;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+        }
+    }
+    VerticalLayout {
+        horizontal-stretch: 1;
+        alignment: center;
+        spacing: 2px;
+        Text {
+            text: root.value;
+            color: Theme.text;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            overflow: elide;
+        }
+        if root.hint != "": Text {
+            text: root.hint;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        Button {
+            label: root.action;
+            glyph: root.glyph;
+            clicked => { root.activated(); }
+        }
+    }
+}
+
+/// The scrim and card every modal shares.
+///
+/// Extracted because three dialogs had the same forty lines of centring, border
+/// radius and click-catching, and the fourth would have had them too.
+export component Modal inherits Rectangle {
+    in property <length> card-width: 520px;
+    in property <length> card-height;
+    callback dismissed;
+    background: #00000080;
+
+    // Catches the click that dismisses. Covering the window is what makes
+    // "click anywhere else" work without every other control knowing about it.
+    TouchArea {
+        clicked => { root.dismissed(); }
+    }
+
+    Rectangle {
+        width: min(root.card-width, parent.width - 40px);
+        height: min(root.card-height, parent.height - 40px);
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Theme.surface;
+        border-radius: 12px;
+        // No outline. The scrim already separates it from what is behind.
+        drop-shadow-blur: 24px;
+        drop-shadow-color: #00000066;
+
+        // Swallows clicks so they never reach the scrim.
+        TouchArea { }
+
+        @children
+    }
+}
+
+/// Never a bare "no data". The first thing a new user sees says what to do.
+export component EmptyState inherits Rectangle {
+    in property <string> glyph;
+    in property <string> title;
+    in property <string> detail;
+    background: transparent;
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 12px;
+
+        if root.glyph != "": HorizontalLayout {
+            alignment: center;
+            Icon { glyph: root.glyph; tint: Theme.idle; size: 40px; }
+        }
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: 16px;
+            font-family: Theme.font;
+            horizontal-alignment: center;
+        }
+        if root.detail != "": Text {
+            text: root.detail;
+            color: Theme.text-dim;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+            horizontal-alignment: center;
+        }
+        @children
+    }
+}
+
+/// The filter box.
+///
+/// Its own component because it owns behaviour and not only a shape: where the
+/// focus goes on Ctrl+F, what Escape does, and when the clear button exists at
+/// all. The window composes it; it does not reach into the window.
+export component SearchField inherits Rectangle {
+    in-out property <string> text;
+    in property <string> placeholder;
+    callback edited(string);
+    /// Escape: the way out of a field that has taken the keyboard. The window
+    /// answers by putting focus back on the list.
+    callback dismissed();
+
+    width: 186px;
+    height: 26px;
+    border-radius: Theme.radius;
+    background: input.has-focus ? Theme.surface-hi : Theme.hover;
+    animate background { duration: 90ms; easing: ease-out; }
+
+    public function take-focus() {
+        input.focus();
+        input.select-all();
+    }
+
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 3px;
+        spacing: 6px;
+
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                glyph: Lucide.search;
+                tint: input.has-focus ? Theme.accent : Theme.text-dim;
+                size: 13px;
+            }
+        }
+
+        Rectangle {
+            horizontal-stretch: 1;
+            clip: true;
+            // Drawn under the input rather than by it: Slint's TextInput has no
+            // placeholder of its own, and an empty field with no hint is a box
+            // that does not say what it does.
+            if root.text == "": Text {
+                x: 0;
+                width: 100%;
+                height: 100%;
+                text: root.placeholder;
+                color: Theme.idle;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                vertical-alignment: center;
+            }
+            input := TextInput {
+                width: 100%;
+                height: 100%;
+                text <=> root.text;
+                color: Theme.text;
+                font-size: Theme.fs-body;
+                font-family: Theme.font;
+                vertical-alignment: center;
+                single-line: true;
+                edited => { root.edited(self.text); }
+                // Escape clears as well as leaves: "get me out of here" and
+                // "and put the list back" are the same thought. `rejected`
+                // belongs to the LineEdit widget, not to this element, so the
+                // key is read directly.
+                key-pressed(e) => {
+                    if (e.text == Key.Escape) {
+                        root.text = "";
+                        root.edited("");
+                        root.dismissed();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+        }
+
+        if root.text != "": VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.x;
+                diameter: 20px;
+                clicked => {
+                    root.text = "";
+                    root.edited("");
+                }
+            }
+        }
+    }
+}
+
+/// Sixty seconds of session throughput — download over upload.
+///
+/// Shape, not scale. The rates are printed beside it, and what a line adds is
+/// the one thing a number cannot say: whether this is going anywhere. There is
+/// no axis for the same reason — a footer has no room to label one, and the
+/// question it answers is "steady, climbing or dying", not "how much".
+///
+/// The two lines share one vertical scale, so upload can be read against
+/// download by eye. Empty commands draw nothing, which is what an idle minute
+/// is supposed to look like.
+export component Sparkline inherits Rectangle {
+    /// SVG path commands, built in Rust. The viewbox below mirrors
+    /// `zerem_core::history` — the width is one unit per gap between samples.
+    in property <string> down;
+    in property <string> up;
+    width: 104px;
+    height: 16px;
+
+    // Upload first, so the download line is the one on top where the two
+    // cross. It is the number people are watching.
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 59;
+        viewbox-height: 100;
+        fit: fill;
+        commands: root.up;
+        stroke: Theme.seeding;
+        stroke-width: 1.5px;
+    }
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 59;
+        viewbox-height: 100;
+        fit: fill;
+        commands: root.down;
+        stroke: Theme.accent;
+        stroke-width: 1.5px;
+    }
+}

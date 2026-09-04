@@ -1,0 +1,32 @@
+[package]
+name = "zerem-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Zerem engine — the BitTorrent session, the tick, and the Snapshot/Command contract. Knows nothing about the UI."
+
+[dependencies]
+zerem-core.workspace = true
+tracing.workspace = true
+
+# `rust-tls` rather than the default, for one reason: it swaps the system TLS
+# for rustls, which is what keeps a Linux build from needing OpenSSL headers —
+# the same call Vayou made.
+#
+# Neither of the other two things it changes turned out to matter, and both were
+# measured rather than assumed: it also selects the aws-lc-rs SHA-1 backend,
+# which spike S0.2 found no faster than the default (Windows CNG is already
+# hardware-accelerated), and it costs nothing in binary size — 13.32 MB either
+# way, to the hundredth of a megabyte.
+librqbit = { version = "9", default-features = false, features = ["rust-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "macros"] }
+anyhow = "1"
+dirs = "5"
+# Deleting a torrent's data sends it to the recycle bin. A mis-click has to stay
+# recoverable — `remove_file` is never the right call on a user's files.
+trash = "5"
+
+[lints]
+workspace = true

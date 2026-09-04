@@ -1,0 +1,98 @@
+// Buttons.
+//
+// **No borders.** An outline on every button is the 2018 look; Material 3 has
+// five variants and Outlined is the one you reach for when a control needs to
+// separate itself from a busy background, not the default. The defaults here are
+// tonal — a filled surface, no stroke — and text for anything tertiary.
+//
+// Four variants, and the choice is about weight rather than decoration:
+//
+//   Tonal    the ordinary one. A surface, no outline.
+//   Text     tertiary. Nothing until hovered.
+//   Primary  the single affirmative action in a dialog. Filled accent.
+//   Danger   destructive. Coloured text on a tonal surface, never a red block —
+//            a red slab reads as the primary action, which is the opposite of
+//            what a destructive button should invite.
+
+import { Theme } from "../theme.slint";
+import { Icon } from "icons.slint";
+
+export enum ButtonKind { tonal, text, primary, danger }
+
+export component Button inherits Rectangle {
+    in property <string> label;
+    in property <string> glyph;
+    in property <ButtonKind> kind: ButtonKind.tonal;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    property <bool> filled: kind == ButtonKind.primary;
+    property <brush> ink: !enabled ? Theme.idle
+        : kind == ButtonKind.primary ? #ffffff
+        : kind == ButtonKind.danger ? Theme.danger
+        : Theme.text;
+
+    height: 28px;
+    width: row.preferred-width + 24px;
+    border-radius: 14px;
+    background: !enabled ? transparent
+        : filled ? (ta.pressed ? Theme.accent.darker(15%) : Theme.accent)
+        : ta.pressed ? Theme.selected
+        : ta.has-hover ? Theme.hover
+        : kind == ButtonKind.text ? transparent
+        : Theme.surface-hi;
+    animate background { duration: 90ms; easing: ease-out; }
+
+    row := HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 7px;
+        alignment: center;
+
+        if root.glyph != "": VerticalLayout {
+            alignment: center;
+            Icon { glyph: root.glyph; tint: root.ink; size: 15px; }
+        }
+        if root.label != "": Text {
+            text: root.label;
+            color: root.ink;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: root.filled ? 600 : 400;
+            vertical-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+/// A square button that is only an icon. Same surface rules, round.
+export component IconButton inherits Rectangle {
+    in property <string> glyph;
+    in property <brush> tint: Theme.text-dim;
+    in property <length> diameter: 26px;
+    callback clicked;
+
+    width: diameter;
+    height: diameter;
+    border-radius: diameter / 2;
+    background: ta.pressed ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+    animate background { duration: 90ms; easing: ease-out; }
+
+    Icon {
+        glyph: root.glyph;
+        tint: root.tint;
+        size: root.diameter * 0.58;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
