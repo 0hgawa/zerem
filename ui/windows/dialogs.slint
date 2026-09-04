@@ -146,6 +146,25 @@ export component Preferences inherits Modal {
                         }
                         Divider { }
                         SettingsRow {
+                            title: @tr("Move here when finished");
+                            subtitle: Prefs.keep-dir == "" ? @tr("Finished torrents stay in the folder they downloaded to.")
+                                : Prefs.keep-dir;
+                            HorizontalLayout {
+                                spacing: 6px;
+                                if Prefs.keep-dir != "": Button {
+                                    label: @tr("Off");
+                                    kind: ButtonKind.text;
+                                    clicked => { Prefs.clear-keep-dir(); }
+                                }
+                                Button {
+                                    label: @tr("Change");
+                                    glyph: Lucide.folder-open;
+                                    clicked => { Prefs.pick-keep-dir(); }
+                                }
+                            }
+                        }
+                        Divider { }
+                        SettingsRow {
                             title: @tr("Add torrents stopped");
                             Toggle {
                                 on: Prefs.add-paused;

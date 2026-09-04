@@ -86,6 +86,7 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     push!(prefs, get_add_paused, set_add_paused, settings.add_paused);
     push!(prefs, get_utp, set_utp, settings.utp);
     push!(prefs, get_upnp, set_upnp, settings.upnp);
+    push!(prefs, get_keep_dir, set_keep_dir, settings.keep_dir.as_str().into());
     apply_language(&settings.language);
     offer_languages(&prefs, &settings.language);
 
@@ -266,6 +267,58 @@ fn wire_download_dir(
                 // Its "not enough room" line is answered by the picker that
                 // just closed, so it is answered now and not a tick later.
                 super::add::show_choice(&ui, &views.add);
+            }
+        }
+    });
+
+    prefs.on_pick_keep_dir({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move || {
+            // The same handoff the download folder uses, for the same reason:
+            // a native dialog cannot run on the UI thread and `Rc<Store>`
+            // cannot leave it.
+            let settings = store.get();
+            let start = if settings.keep_dir.is_empty() {
+                settings.download_dir
+            } else {
+                std::path::PathBuf::from(&settings.keep_dir)
+            };
+            let ui = ui.clone();
+            std::thread::spawn(move || {
+                let Some(dir) = rfd::FileDialog::new()
+                    .set_title("Where should finished torrents be moved to?")
+                    .set_directory(&start)
+                    .pick_folder()
+                else {
+                    return;
+                };
+                let chosen = dir.to_string_lossy().into_owned();
+                let _ = ui.upgrade_in_event_loop(move |ui| {
+                    ui.global::<Prefs>().invoke_keep_dir_picked(chosen.into());
+                });
+            });
+        }
+    });
+
+    prefs.on_keep_dir_picked({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move |chosen| {
+            let Some(ui) = ui.upgrade() else { return };
+            let dir = chosen.to_string();
+            if store.update(|s| s.keep_dir.clone_from(&dir)) {
+                state.engine.send(Command::SetKeepDir(Some(dir)));
+                show(&ui, &store.get());
+            }
+        }
+    });
+
+    prefs.on_clear_keep_dir({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            if store.update(|s| s.keep_dir.clear()) {
+                state.engine.send(Command::SetKeepDir(None));
+                show(&ui, &store.get());
             }
         }
     });

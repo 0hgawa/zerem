@@ -1,9 +1,8 @@
 //! Carrying a finished download to where it is kept.
 //!
-//! The plan is a list of pairs — where each file is and where it goes — and
-//! nothing here knows what a torrent is. The rule the whole module is built
-//! around: **if it cannot finish, it leaves everything exactly as it found
-//! it**. A half-moved torrent is worse than one
+//! The plan comes from [`zerem_core::move_plan`]; this carries it out. The
+//! rule the whole module is built around: **if it cannot finish, it leaves
+//! everything exactly as it found it**. A half-moved torrent is worse than one
 //! that never moved, because the files are then in two places and neither is
 //! the one the client is pointing at.
 //!
@@ -20,14 +19,20 @@
 //! are through does anything get deleted. A failure at any point deletes what
 //! was copied and returns, and the originals have not been touched.
 //!
-//! Verifying by length and not by hash is deliberate. Whatever moved these is
-//! going to verify them properly afterwards — nothing that keeps checksums
-//! trusts a copy on faith — so hashing here would be hashing everything twice
-//! to answer a question that gets asked again anyway.
+//! Verifying by length and not by hash is deliberate. The torrent is checked
+//! piece by piece when it is added back at its new home — librqbit will not
+//! seed it otherwise — so hashing here would be hashing every byte twice to
+//! answer a question the next step asks properly anyway.
+//!
+//! It lives beside the session rather than in `zerem-shell` because there is no
+//! desktop in it: no Win32, no COM, no registry, only `std::fs`. Shell is for
+//! what needs the machine to be a machine somebody is sitting at.
 
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+use zerem_core::Step;
 
 /// What went wrong, in the words the app will show.
 #[derive(Debug)]
@@ -63,7 +68,7 @@ impl std::fmt::Display for Fault {
 /// # Errors
 ///
 /// Every [`Fault`] leaves the source files where they were.
-pub fn carry(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
+pub fn carry(plan: &[Step]) -> Result<(), Fault> {
     for folder in folders(plan) {
         fs::create_dir_all(&folder).map_err(|why| Fault::Folder(folder.clone(), why))?;
     }
@@ -78,11 +83,11 @@ pub fn carry(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
     // folder it was not handed, and the first version of this did exactly that
     // — the test for it is the one that caught it. Undoing a rename is another
     // rename in the other direction, on a volume that has just proved it works.
-    let mut renamed: Vec<&(PathBuf, PathBuf)> = Vec::with_capacity(plan.len());
+    let mut renamed: Vec<&Step> = Vec::with_capacity(plan.len());
     for step in plan {
-        if fs::rename(&step.0, &step.1).is_err() {
-            for (from, to) in renamed {
-                let _ = fs::rename(to, from);
+        if fs::rename(&step.from, &step.to).is_err() {
+            for done in renamed {
+                let _ = fs::rename(&done.to, &done.from);
             }
             return copy_and_delete(plan);
         }
@@ -93,29 +98,29 @@ pub fn carry(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
 }
 
 /// The cross-volume path: every byte copied and checked before anything goes.
-fn copy_and_delete(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
+fn copy_and_delete(plan: &[Step]) -> Result<(), Fault> {
     copy_all(plan)?;
-    for (from, _) in plan {
+    for step in plan {
         // The copies are all through and checked. A source that will not delete
         // is a file somebody has open, and leaving it is better than failing a
         // move that has already succeeded — the data is at the destination.
-        let _ = fs::remove_file(from);
+        let _ = fs::remove_file(&step.from);
     }
     prune(plan);
     Ok(())
 }
 
 /// Copy every file, or copy none.
-fn copy_all(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
+fn copy_all(plan: &[Step]) -> Result<(), Fault> {
     let mut done: Vec<&PathBuf> = Vec::with_capacity(plan.len());
     for step in plan {
         // A rename may already have moved this one, if the plan straddles
         // volumes and the earlier attempt got partway. Skip what is there.
-        if !step.0.exists() && step.1.exists() {
+        if !step.from.exists() && step.to.exists() {
             continue;
         }
         match copy_one(step) {
-            Ok(()) => done.push(&step.1),
+            Ok(()) => done.push(&step.to),
             Err(fault) => {
                 for made in done {
                     let _ = fs::remove_file(made);
@@ -127,17 +132,18 @@ fn copy_all(plan: &[(PathBuf, PathBuf)]) -> Result<(), Fault> {
     Ok(())
 }
 
-fn copy_one((from, to): &(PathBuf, PathBuf)) -> Result<(), Fault> {
-    let written = fs::copy(from, to).map_err(|why| Fault::Copy(from.clone(), why))?;
-    let expected = fs::metadata(from).map(|m| m.len()).map_err(|why| Fault::Copy(from.clone(), why))?;
+fn copy_one(step: &Step) -> Result<(), Fault> {
+    let written = fs::copy(&step.from, &step.to).map_err(|why| Fault::Copy(step.from.clone(), why))?;
+    let expected =
+        fs::metadata(&step.from).map(|m| m.len()).map_err(|why| Fault::Copy(step.from.clone(), why))?;
     if written == expected {
         return Ok(());
     }
     // Windows will report a successful copy that ran out of room. The length is
     // the cheap way to catch it, and the file has to go: a short file at the
     // destination would be re-checked, found wrong, and re-downloaded.
-    let _ = fs::remove_file(to);
-    Err(Fault::Short(to.clone()))
+    let _ = fs::remove_file(&step.to);
+    Err(Fault::Short(step.to.clone()))
 }
 
 /// Every folder that has to exist before a plan can run, parents first.
@@ -145,9 +151,9 @@ fn copy_one((from, to): &(PathBuf, PathBuf)) -> Result<(), Fault> {
 /// The order matters and getting it wrong fails halfway: a plan writes
 /// `a/b/c.mkv` before anything has made `a/b`, and the failure reads as a
 /// permissions problem.
-fn folders(plan: &[(PathBuf, PathBuf)]) -> Vec<PathBuf> {
+fn folders(plan: &[Step]) -> Vec<PathBuf> {
     let mut all: Vec<PathBuf> =
-        plan.iter().filter_map(|(_, to)| to.parent().map(Path::to_path_buf)).collect();
+        plan.iter().filter_map(|step| step.to.parent().map(Path::to_path_buf)).collect();
     all.sort();
     all.dedup();
     all
@@ -158,8 +164,8 @@ fn folders(plan: &[(PathBuf, PathBuf)]) -> Vec<PathBuf> {
 /// Only ones that came out empty, and failure is ignored throughout: a folder
 /// somebody else put something in is not this function's business, and the move
 /// has already succeeded by the time it runs.
-fn prune(plan: &[(PathBuf, PathBuf)]) {
-    let mut folders: Vec<&Path> = plan.iter().filter_map(|(from, _)| from.parent()).collect();
+fn prune(plan: &[Step]) {
+    let mut folders: Vec<&Path> = plan.iter().filter_map(|step| step.from.parent()).collect();
     folders.sort_unstable();
     folders.dedup();
     // Deepest first, so `a/b` is gone before `a` is tried.
@@ -174,6 +180,7 @@ mod tests {
     use super::carry;
     use std::fs;
     use std::path::{Path, PathBuf};
+    use zerem_core::Step;
 
     /// A scratch folder that removes itself, so a failing test does not leave
     /// gigabytes of nothing behind on somebody's disk.
@@ -205,8 +212,8 @@ mod tests {
         }
     }
 
-    fn step(from: PathBuf, to: PathBuf) -> (PathBuf, PathBuf) {
-        (from, to)
+    fn step(from: PathBuf, to: PathBuf) -> Step {
+        Step { from, to }
     }
 
     #[test]

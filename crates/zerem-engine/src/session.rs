@@ -19,8 +19,8 @@ use crate::snapshot::Snapshot;
 const NOTICE_TICKS: u8 = 8;
 
 /// One torrent, plus what librqbit makes expensive to ask for repeatedly.
-struct Entry {
-    handle: Arc<ManagedTorrent>,
+pub struct Entry {
+    pub handle: Arc<ManagedTorrent>,
     /// `None` until a magnet's metadata arrives. Cached as `Arc<str>` because
     /// `handle.name()` allocates a fresh `String` on every call, and the diff
     /// in the UI depends on the name being pointer-identical between ticks.
@@ -29,7 +29,7 @@ struct Entry {
     /// Both fixed for the torrent's life, so they are resolved once. Asking the
     /// handle every tick would allocate a String per row per second for values
     /// that never change.
-    folder: Arc<str>,
+    pub folder: Arc<str>,
     info_hash: Arc<str>,
     /// What the torrent holds. `None` until the metadata arrives, and resolved
     /// exactly once after that: a file list does not change, and walking a few
@@ -43,7 +43,7 @@ struct Entry {
     /// The user's ticks. Empty until the metadata arrives, and the truth after
     /// that: while a file is pinned the handle's own `only_files` is narrower
     /// than what was asked for, so it can no longer be read back as the answer.
-    wanted: Vec<bool>,
+    pub wanted: Vec<bool>,
     /// Which files to fetch before the others. Held here and nowhere else —
     /// a pin is an instruction given in a moment, not a setting, so it does not
     /// survive a restart. What does survive is the selection it narrowed, which
@@ -55,14 +55,14 @@ struct Entry {
     /// answer to "did somebody stop this?". This is the intent the queue works
     /// from, and what it paused is written down so a restart can tell the two
     /// apart again.
-    wanted_running: bool,
+    pub wanted_running: bool,
     /// Its turn. Lower goes first; pressing Start moves it below everything.
-    position: i64,
+    pub position: i64,
     /// Whether it was already finished last tick.
     ///
     /// `None` until it has been seen once, which is what stops every torrent
     /// that was already complete announcing itself the moment the app opens.
-    was_complete: Option<bool>,
+    pub was_complete: Option<bool>,
 }
 
 impl Entry {
@@ -162,8 +162,8 @@ struct Notice {
 }
 
 pub struct TorrentSession {
-    session: Arc<Session>,
-    entries: HashMap<TorrentId, Entry>,
+    pub session: Arc<Session>,
+    pub entries: HashMap<TorrentId, Entry>,
     seq: u64,
     generation: u64,
     notice: Option<Notice>,
@@ -180,6 +180,17 @@ pub struct TorrentSession {
     /// `Vec<u8>` rather than librqbit's `Bytes`, which is not re-exported.
     /// `AddTorrent::from_bytes` takes anything that converts.
     pending_bytes: Option<Vec<u8>>,
+    /// Where a torrent goes once it has arrived, or `None` for staying put.
+    ///
+    /// Off by default: moving somebody's files is not something to start doing
+    /// because an update shipped.
+    pub keep_dir: Option<PathBuf>,
+    /// Torrents that crossed into complete on the last publish and have not
+    /// been dealt with yet.
+    ///
+    /// Recorded in `publish`, which is synchronous, and acted on afterwards by
+    /// the tick — moving files is neither quick nor synchronous.
+    arrived: Vec<TorrentId>,
     /// The last minute of session throughput, for the footer.
     history: History,
     /// Selections narrowed by a pin, so an interrupted run can put them back.
@@ -231,6 +242,8 @@ impl TorrentSession {
         );
 
         let mut this = Self {
+            keep_dir: config.keep_dir.clone(),
+            arrived: Vec::new(),
             session,
             entries,
             seq: 0,
@@ -261,6 +274,65 @@ impl TorrentSession {
             ));
         }
         Ok(this)
+    }
+
+    /// Take what finished, leaving the list empty.
+    pub(crate) fn take_arrived(&mut self) -> Vec<TorrentId> {
+        std::mem::take(&mut self.arrived)
+    }
+
+    /// Say something in the status bar. Named apart from `notify` so the intent
+    /// reads at the call site: this one is always about something going wrong.
+    pub(crate) fn report(&mut self, text: &str) {
+        self.notify(text);
+    }
+
+    /// Where finished torrents go from now on. `None` switches it off.
+    pub fn set_keep_dir(&mut self, folder: Option<PathBuf>) {
+        self.keep_dir = folder;
+    }
+
+    /// Stop a torrent so its files can move, without recording that somebody
+    /// wanted it stopped.
+    ///
+    /// `set_running(false)` would, and the torrent would come back paused after
+    /// a move nobody asked to pause it for.
+    pub(crate) async fn pause_for_move(&self, id: TorrentId) -> anyhow::Result<()> {
+        let handle = self.entries.get(&id).context("no such torrent")?.handle.clone();
+        // Already paused is the state we want, not an error.
+        let _ = self.session.pause(&handle).await;
+        Ok(())
+    }
+
+    /// Drop a torrent from the session, keeping every file on disk.
+    pub(crate) async fn forget(&self, id: TorrentId) -> anyhow::Result<()> {
+        self.session
+            .delete(TorrentIdOrHash::Id(id.0 as usize), false)
+            .await
+            .context("letting go of the torrent before adding it back")
+    }
+
+    /// Put a rebuilt torrent in the old one's place.
+    ///
+    /// It keeps its place in the queue and its own row in the table, so a move
+    /// does not send a finished torrent to the back of a line it has already
+    /// left. The id changes because librqbit hands out a new one; everything
+    /// above this layer is keyed on the id, so the generation is bumped and the
+    /// UI rebuilds its order.
+    pub(crate) fn adopt_moved(&mut self, was: TorrentId, handle: Arc<ManagedTorrent>) {
+        let old = self.entries.remove(&was);
+        let id = TorrentId(handle.id() as u32);
+        let mut entry = Entry::new(handle);
+        if let Some(old) = old {
+            entry.position = old.position;
+            entry.wanted_running = old.wanted_running;
+            // It has just been verified as complete, so it is complete: without
+            // this the rebuilt torrent would announce itself as newly finished
+            // the moment its check passes.
+            entry.was_complete = Some(true);
+        }
+        self.entries.insert(id, entry);
+        self.generation += 1;
     }
 
     pub fn notify(&mut self, text: impl Into<Arc<str>>) {
@@ -826,6 +898,7 @@ impl TorrentSession {
             let complete = row.size > 0 && row.is_complete();
             if entry.was_complete.replace(complete) == Some(false) && complete {
                 finished.push(row.name.clone());
+                self.arrived.push(*id);
             }
             torrents.push(row);
         }

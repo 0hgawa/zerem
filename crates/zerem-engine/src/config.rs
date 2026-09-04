@@ -36,6 +36,9 @@ pub struct EngineConfig {
     /// uTP alongside TCP. On by default here, off by default in librqbit.
     pub utp: bool,
     pub upnp: bool,
+    /// Where a torrent goes once it has finished, or `None` to leave it where
+    /// it downloaded.
+    pub keep_dir: Option<PathBuf>,
 }
 
 impl Default for EngineConfig {
@@ -50,6 +53,7 @@ impl Default for EngineConfig {
             add_paused: false,
             utp: true,
             upnp: true,
+            keep_dir: None,
         }
     }
 }

@@ -52,6 +52,10 @@ pub enum Command {
     SetMaxActive(u32),
     /// Whether the next torrent added is added stopped.
     SetAddPaused(bool),
+    /// Where a torrent goes once it has finished, or `None` to leave it where
+    /// it downloaded. Off by default: moving somebody's files is not something
+    /// to start doing because an update shipped.
+    SetKeepDir(Option<String>),
     /// Global transfer caps in bytes per second. `None` is unlimited.
     ///
     /// Takes effect at once — librqbit's rate limiters are settable while the

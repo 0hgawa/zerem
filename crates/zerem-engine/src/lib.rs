@@ -9,10 +9,12 @@
 //! it likes and compares `seq`; at one publish a second a callback would buy
 //! nothing but a `Send` bound reaching back into the consumer's own types.
 
+mod arrival;
 mod command;
 mod config;
 mod journal;
 mod map;
+mod relocate;
 mod session;
 mod snapshot;
 
@@ -149,6 +151,10 @@ async fn run(
         // And gives the next torrent its turn when one finishes or is stopped.
         // Free when no limit is set, which is the default.
         session.enforce_queue().await;
+        // Anything that arrived on the last publish goes to where finished
+        // downloads are kept, if anywhere is. Free when nothing finished, which
+        // is almost every tick.
+        session.relocate_arrived().await;
 
         // A command still publishes while the view is paused: a tray action has
         // to show its result the moment the window comes back.
@@ -201,6 +207,10 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.set_max_active(limit).await;
             Ok(())
         }
+        Command::SetKeepDir(ref folder) => {
+            session.set_keep_dir(folder.as_deref().map(std::path::PathBuf::from));
+            Ok(())
+        }
         Command::SetAddPaused(paused) => {
             session.set_add_paused(paused);
             Ok(())
@@ -246,6 +256,9 @@ mod tests {
             // binaries must not fight over 6881.
             port: 0,
             max_active: 0,
+            // Off, like the default: a test that moved files would move them
+            // somewhere on the machine running it.
+            keep_dir: None,
             add_paused: false,
             utp: false,
             upnp: false,

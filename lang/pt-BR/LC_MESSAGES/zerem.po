@@ -320,3 +320,13 @@ msgstr "Baixar"
 
 msgid "Fetch this one first"
 msgstr "Baixar este primeiro"
+
+# Mover ao completar.
+msgid "Move here when finished"
+msgstr "Mover para cá ao terminar"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Torrents terminados ficam na pasta em que foram baixados."
+
+msgid "Off"
+msgstr "Desligar"

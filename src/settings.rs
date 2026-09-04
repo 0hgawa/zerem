@@ -77,6 +77,11 @@ pub struct Settings {
     /// For somebody who adds a batch and then picks: the alternative is twenty
     /// torrents all racing before anybody has looked at them.
     pub add_paused: bool,
+    /// Where a torrent is moved once it finishes. Empty is off, which is the
+    /// default: moving somebody's files is not something to start doing
+    /// because an update shipped.
+    #[serde(default)]
+    pub keep_dir: String,
     /// Which language the interface is in, as a folder name under `lang/`.
     ///
     /// Empty means "whatever the machine is set to", and is stored as empty
@@ -115,6 +120,7 @@ impl Default for Settings {
             column_visible: Vec::new(),
             max_active: 0,
             add_paused: false,
+            keep_dir: String::new(),
             language: zerem_core::language::SYSTEM.to_owned(),
             drawer_width: crate::state::DEFAULT_DRAWER_W,
         }
@@ -171,6 +177,7 @@ impl Settings {
             download_dir: self.download_dir.clone(),
             max_active: self.max_active,
             add_paused: self.add_paused,
+            keep_dir: (!self.keep_dir.is_empty()).then(|| PathBuf::from(&self.keep_dir)),
             port: self.port,
             utp: self.utp,
             upnp: self.upnp,

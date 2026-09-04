@@ -215,6 +215,8 @@ export global Prefs {
     /// Whether the other pair of limits is the one in force.
     in-out property <bool> alt-speed;
     in-out property <bool> add-paused;
+    /// Where a finished torrent is moved to. Empty means it stays put.
+    in-out property <string> keep-dir;
     in-out property <bool> utp;
     in-out property <bool> upnp;
     /// Every language on offer: "System" first, then each one named in itself.
@@ -228,6 +230,10 @@ export global Prefs {
 
     callback close();
     callback pick-download-dir();
+    callback pick-keep-dir();
+    callback keep-dir-picked(string);
+    /// Stop moving finished torrents anywhere.
+    callback clear-keep-dir();
     /// Raised by the picker thread once the user has chosen, not by anything in
     /// the UI. It is how that thread gets back onto this one carrying a value:
     /// invoking a callback is the only handoff Slint offers that arrives with
