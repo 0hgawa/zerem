@@ -208,7 +208,7 @@ export component TableRow inherits Rectangle {
         // scattered on top of a number.
         background: Theme.surface;
         opacity: root.hovered ? 1 : 0;
-        animate opacity { duration: 90ms; easing: ease-out; }
+        animate opacity { duration: Theme.quick; easing: Theme.ease-standard(); }
 
         run := TouchArea {
             x: 3px;

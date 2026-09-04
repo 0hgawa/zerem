@@ -29,6 +29,23 @@ export global Theme {
     out property <length> fs-body: 12px;
     out property <length> fs-title: 13px;
 
+    // --- motion ---
+    //
+    // Two durations and two curves is the whole vocabulary. M3 publishes a
+    // dozen of each; a table and a side panel need two, and a token nobody
+    // spends is a token that drifts away from what the app actually does.
+    //
+    // The curves are M3's own: `standard` for something changing in place,
+    // `emphasized` for something arriving or leaving — it overshoots the
+    // deceleration, which is what makes a panel feel pushed rather than faded.
+    out property <duration> quick: 90ms;
+    out property <duration> panel: 240ms;
+    // Functions and not properties: Slint cannot expose an `easing` across the
+    // native boundary and warns about every global that tries, and a private
+    // property would not be readable from the components that need it.
+    public pure function ease-standard() -> easing { return cubic-bezier(0.2, 0.0, 0.0, 1.0); }
+    public pure function ease-emphasized() -> easing { return cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+
     // --- metrics ---
     out property <length> row-h: 28px;
     out property <length> header-h: 30px;

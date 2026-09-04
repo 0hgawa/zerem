@@ -41,7 +41,7 @@ export component Button inherits Rectangle {
         : ta.has-hover ? Theme.hover
         : kind == ButtonKind.text ? transparent
         : Theme.surface-hi;
-    animate background { duration: 90ms; easing: ease-out; }
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     row := HorizontalLayout {
         padding-left: 12px;
@@ -81,7 +81,7 @@ export component IconButton inherits Rectangle {
     height: diameter;
     border-radius: diameter / 2;
     background: ta.pressed ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
-    animate background { duration: 90ms; easing: ease-out; }
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     Icon {
         glyph: root.glyph;

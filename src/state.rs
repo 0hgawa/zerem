@@ -19,15 +19,21 @@ use crate::model::{ApplyStats, TorrentModel};
 pub const MIN_COL_W: f32 = 48.0;
 pub const MAX_COL_W: f32 = 640.0;
 
-/// The details drawer, in pixels.
+/// The details drawer, in pixels — M3's own side-sheet measurements.
 ///
-/// It started at a fixed 330 and that was too narrow to read a file path in —
-/// every line elided. The floor is where the two-line layout still works; the
-/// ceiling is where the drawer would start being the app and the table its
-/// sidebar, which is the wrong way round.
-pub const MIN_DRAWER_W: f32 = 280.0;
-pub const MAX_DRAWER_W: f32 = 900.0;
-pub const DEFAULT_DRAWER_W: f32 = 440.0;
+/// 360 is the standard side sheet, 256 and 400 the range the spec gives it.
+/// Taken rather than invented: a panel beside a list has no proportion of its
+/// own to be derived from — deriving one from the window is a binding loop,
+/// which Slint says out loud — so the honest source is the design system this
+/// app already follows everywhere else.
+///
+/// It was 330, then 440 while a layout bug was making the panel look narrow
+/// when it was really being cut off. With the table yielding properly, 440 is
+/// simply too much: past 400 the panel stops being beside the list and starts
+/// competing with it.
+pub const MIN_DRAWER_W: f32 = 256.0;
+pub const MAX_DRAWER_W: f32 = 400.0;
+pub const DEFAULT_DRAWER_W: f32 = 360.0;
 
 const DEFAULT_WIDTHS: [f32; 8] = [300.0, 200.0, 108.0, 96.0, 96.0, 84.0, 84.0, 66.0];
 

@@ -48,7 +48,7 @@ export component Tick inherits Rectangle {
     height: 16px;
     border-radius: 4px;
     background: on ? Theme.accent : Theme.surface-hi;
-    animate background { duration: 90ms; easing: ease-out; }
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
     if on: Icon {
         glyph: Lucide.check;
         tint: #ffffff;
@@ -219,7 +219,7 @@ export component SearchField inherits Rectangle {
     height: 26px;
     border-radius: Theme.radius;
     background: input.has-focus ? Theme.surface-hi : Theme.hover;
-    animate background { duration: 90ms; easing: ease-out; }
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     public function take-focus() {
         input.focus();

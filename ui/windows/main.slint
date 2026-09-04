@@ -179,6 +179,12 @@ export component MainWindow inherits Window {
 
     property <bool> has-selection: TorrentList.selected-count > 0;
 
+    /// How far open the panel is. Animated here rather than on the width
+    /// itself, so a drag on the edge stays pinned to the cursor: the width is
+    /// computed from this, and only this moves on its own.
+    property <float> reveal: DetailState.open ? 1.0 : 0.0;
+    animate reveal { duration: Theme.panel; easing: Theme.ease-emphasized(); }
+
     keys := FocusScope {
         key-pressed(e) => {
             // Whatever is modal owns the keyboard: nothing behind it should
@@ -364,11 +370,16 @@ export component MainWindow inherits Window {
                 // is the one that stretches. On a window too narrow for both,
                 // the panel falls back to its floor instead of hanging off the
                 // right edge — which is what it used to do.
-                if DetailState.open: DetailDrawer {
+                // Always here, never `if`: an element cannot be animated into
+                // existence. Closed is `reveal` at zero, which is a slot of no
+                // width — the engine still stops building the lists inside, so
+                // what stays is an empty shell, not a hidden panel.
+                DetailDrawer {
                     horizontal-stretch: 0;
-                    min-width: 240px;
-                    preferred-width: DetailState.width;
-                    max-width: DetailState.width;
+                    min-width: root.reveal * 240px;
+                    preferred-width: root.reveal * DetailState.width;
+                    max-width: root.reveal * DetailState.width;
+                    full-width: DetailState.width;
                 }
             }
 

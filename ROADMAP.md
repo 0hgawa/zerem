@@ -369,8 +369,25 @@ sai mais barato que não suavizar.**
 `Ctrl+F` vai para o filtro e `Esc` volta para a lista. ⏳ `Enter` abre a pasta, e
 rebindável no molde do `keybindings.rs` do Vayou.
 
-⏳ **Movimento com propósito.** Expandir o painel de detalhes, entrada e saída de
-linha. Nada decorativo. Durações e curvas dos tokens M3.
+✅ **Movimento com propósito.** Dois tokens de duração e duas curvas no
+[`theme.slint`](ui/theme.slint), e nada mais: o M3 publica uma dúzia de cada, e
+um token que ninguém gasta é um token que se afasta do que o app faz. As curvas
+são as do M3 — `standard` para algo mudando no lugar, `emphasized` para algo
+chegando ou saindo.
+
+O painel de detalhes desliza, 240 ms na `emphasized`. A folha é desenhada uma
+vez na largura cheia e passa por baixo do recorte; animar a largura do layout
+faria cada caminho reticenciar de novo a cada quadro, e texto pulando entre duas
+elisões não é movimento, é defeito. A animação vive num `reveal` de 0 a 1 e não
+na largura, para que arrastar a borda continue colado no cursor.
+
+As animações que já existiam soltas — 90 ms `ease-out` copiadas em cinco
+lugares — passaram a ler os mesmos tokens.
+
+⏸ **Entrada e saída de linha não entra.** O `ListView` do Slint não tem ciclo de
+vida por item onde pendurar isso, e a alternativa é uma animação por linha —
+que a 2000 linhas é exatamente o custo que a Fase 0 passou o tempo dela
+removendo. Volta se o Slint expuser o gancho.
 
 ✅ **Sparkline de 60 s** no rodapé para ↓/↑ agregado, ao lado dos dois totais que
 ela desenha. Forma e não escala: sem eixo, porque a pergunta que ela responde é

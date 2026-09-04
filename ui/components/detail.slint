@@ -204,6 +204,18 @@ component PeerLine inherits Rectangle {
 }
 
 export component DetailDrawer inherits Rectangle {
+    /// What the panel measures when it is all the way open.
+    ///
+    /// The root's own width is the animated one, and the sheet inside is laid
+    /// out once at this size and slid past the clip. Animating the layout width
+    /// instead would re-elide every path and every address on every frame, and
+    /// text jumping between two elisions is not motion, it is a glitch.
+    in property <length> full-width;
+    background: Theme.surface;
+    clip: true;
+
+    sheet := Rectangle {
+    width: root.full-width;
     background: Theme.surface;
 
     Rectangle { x: 0; width: 1px; height: parent.height; background: Theme.border; }
@@ -211,9 +223,10 @@ export component DetailDrawer inherits Rectangle {
     // The grip, on the edge the drawer grows from. Same eight pixels and the
     // same cursor the column handles use, because it is the same gesture — and
     // declared before the content so a control inside the panel still wins its
-    // own clicks.
+    // own clicks. Inside the sheet rather than over the seam: a touch area
+    // hanging outside a clipping parent is not reliably hit.
     TouchArea {
-        x: -3px;
+        x: 0;
         width: 8px;
         height: parent.height;
         mouse-cursor: col-resize;
@@ -309,5 +322,6 @@ export component DetailDrawer inherits Rectangle {
         if DetailState.tab == "peers" && DetailState.peers.length > 0: ListView {
             for p[i] in DetailState.peers: PeerLine { entry: p; index: i; }
         }
+    }
     }
 }

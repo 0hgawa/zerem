@@ -154,13 +154,24 @@ padrão móvel, *side sheet* o de desktop. Em compensação, com o painel aberto
 numa janela estreita as últimas colunas ficam cortadas; estreite uma coluna ou
 alargue a janela.
 
-**A borda esquerda do painel arrasta**, com a mesma alça e o mesmo cursor das
-colunas da tabela — é o mesmo gesto. A largura sobrevive a fechar e reabrir,
-como as colunas: ninguém escolhe essa medida num painel de preferências, se
-chega nela; chegar nela duas vezes é que é o aborrecimento.
+**360 px**, que é a medida do *side sheet* do M3 — 256 e 400 são o mínimo e o
+máximo que a spec dá a ele. Tomada emprestada em vez de inventada: um painel ao
+lado de uma lista não tem proporção própria de onde sair, e derivar uma da
+janela é binding loop — o Slint fala em voz alta quando se tenta. A fonte
+honesta é o sistema de design que o app já segue em todo o resto.
+
+**A borda esquerda arrasta**, com a mesma alça e o mesmo cursor das colunas da
+tabela — é o mesmo gesto. A largura sobrevive a fechar e reabrir, como as
+colunas: ninguém escolhe essa medida num painel de preferências, se chega nela;
+chegar nela duas vezes é que é o aborrecimento.
+
+**Ele desliza para dentro**, 240 ms na curva *emphasized* do M3. A folha é
+desenhada uma vez na largura cheia e passa por baixo do recorte; animar a
+largura do layout faria cada caminho e cada endereço reticenciar de novo a cada
+quadro, e texto pulando entre duas elisões não é movimento, é defeito.
 
 Cada linha do painel tem duas: o caminho ou o endereço, e os números embaixo.
-Isso lê melhor em 440 px do que uma tabela de quatro colunas jamais leu em 1180.
+Isso lê melhor em 360 px do que uma tabela de quatro colunas jamais leu em 1180.
 
 **O tique na aba de Arquivos liga e desliga o download de cada um**, com o
 torrent rodando. Clicar em qualquer ponto da linha alterna — um quadrado de
