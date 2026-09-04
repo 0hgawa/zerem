@@ -56,7 +56,7 @@ pub fn current() -> Lang {
 ///
 /// Sorted, and a test says so: the lookup is a binary search, and an unsorted
 /// table would fail quietly, missing some entries while their neighbours work.
-const TABLE: [(&str, &str); 19] = [
+const TABLE: [(&str, &str); 21] = [
     ("Another program has one of the files open", "Outro programa está com um dos arquivos aberto"),
     ("Checking", "Verificando"),
     ("Connecting", "Conectando"),
@@ -74,6 +74,8 @@ const TABLE: [(&str, &str); 19] = [
     ("Seeding", "Semeando"),
     ("System", "Sistema"),
     ("That drive is not available", "Essa unidade não está disponível"),
+    ("That file has not finished yet", "Esse arquivo ainda não terminou"),
+    ("That file is not on disk yet", "Esse arquivo ainda não está no disco"),
     ("The download folder is not there any more", "A pasta de destino não existe mais"),
     ("The download folder is read-only", "A pasta de destino é somente leitura"),
 ];
@@ -169,9 +171,21 @@ mod tests {
         Lang, TABLE,
     };
 
-    /// The tests share one process and one global, so each says what it wants
-    /// and puts the source language back.
+    /// One at a time, because the language is one global for the whole process
+    /// and cargo runs these on several threads at once.
+    ///
+    /// Setting it and putting it back was not enough, and the failure was the
+    /// worst kind: the suite passed on its own and failed inside a workspace
+    /// run, roughly one time in three. A test that fails sometimes teaches
+    /// people to run it again, which is how a real failure gets waved through.
+    ///
+    /// The lock is taken past a poisoning, on purpose. A panic in one of these
+    /// leaves the language wherever it was, and every one of them sets what it
+    /// wants on the way in — so the second failure would be an artefact of the
+    /// first rather than a finding.
     fn with(tag: &str, body: impl FnOnce()) {
+        static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _held = ONE_AT_A_TIME.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         set(tag);
         body();
         set("en");
@@ -197,10 +211,11 @@ mod tests {
     fn the_source_language_is_the_strings_themselves() {
         // No lookup at all in English: the argument *is* the answer, which is
         // what keeps the default path free.
-        set("en");
-        assert_eq!(current(), Lang::En);
-        assert_eq!(tr("Downloading"), "Downloading");
-        assert_eq!(matched(12, 300), "12 of 300");
+        with("en", || {
+            assert_eq!(current(), Lang::En);
+            assert_eq!(tr("Downloading"), "Downloading");
+            assert_eq!(matched(12, 300), "12 of 300");
+        });
     }
 
     #[test]

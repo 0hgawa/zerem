@@ -170,6 +170,11 @@ impl Models {
         image
     }
 
+    /// Whether a row's file has all of itself.
+    fn is_complete(&self, index: i32) -> bool {
+        usize::try_from(index).ok().and_then(|at| self.files.row_data(at)).is_some_and(|row| row.complete)
+    }
+
     /// Where a row's file actually is on disk.
     ///
     /// The torrent's folder plus the path the torrent declares. `None` when the
@@ -389,6 +394,14 @@ fn wire_menu(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
         move |index| {
             let Some(ui) = ui.upgrade() else { return };
             ui.global::<DetailState>().set_file_menu_open(false);
+            // The menu greys this row out on a file that has not arrived; a
+            // double click has no greyed-out state to show, so it says so. A
+            // partial video opens as a few seconds and a codec error, which is
+            // a worse answer than being told to wait.
+            if !views.detail.is_complete(index) {
+                state.set_notice(zerem_core::tr("That file has not finished yet"));
+                return;
+            }
             match views.detail.path_of(&state, index) {
                 Some(path) => zerem_shell::open(&path),
                 None => state.set_notice(zerem_core::tr("That file is not on disk yet")),

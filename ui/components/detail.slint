@@ -210,6 +210,9 @@ component FileLine inherits Rectangle {
                                            self.absolute-position.y + self.mouse-y);
             }
         }
+        // The same thing a double click does to a file everywhere else, and
+        // the same action the menu's first row offers.
+        double-clicked => { DetailState.open-file(root.index); }
     }
 
     // The gutter the tick sits in — 38 px wide and the full height of the row,
