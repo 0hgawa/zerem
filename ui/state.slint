@@ -210,7 +210,24 @@ export global DetailState {
 // Joins now because there is finally something to hold. Speeds arrive already
 // formatted — "Unlimited", "500 kB/s" — because the alternative is the `.slint`
 // deciding how a number reads, which is Rust's job everywhere else.
+/// What the window is being asked to explain, and where.
+///
+/// A global because a tooltip has to be drawn by the *window* rather than by
+/// the control it belongs to. This app renders in software with partial
+/// redraw, and the dirty region is worked out from an element's own geometry —
+/// so a control painting a box below itself, outside its own bounds, leaves
+/// those pixels behind and takes a bite out of what was under them. Every
+/// floating thing here is drawn at the top level for that reason.
+export global Hint {
+    /// Empty when there is nothing to explain, which is almost always.
+    in-out property <string> text;
+    /// The middle of the control, and just under it.
+    in-out property <length> at-x;
+    in-out property <length> at-y;
+}
+
 export global Prefs {
+
     in-out property <bool> open;
     in-out property <string> download-dir;
     /// Typed, not stepped. Empty means unlimited, which is what the placeholder

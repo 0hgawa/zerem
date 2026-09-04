@@ -7,6 +7,7 @@
 import { Theme } from "../theme.slint";
 import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind, IconButton } from "button.slint";
+import { Hint } from "../state.slint";
 
 /// A number in the status bar, marked by what it counts.
 ///
@@ -675,4 +676,36 @@ export component SettingsGroup inherits Text {
     font-size: Theme.fs-label;
     font-family: Theme.font;
     font-weight: Theme.semibold;
+}
+
+/// The little box that says what a control is.
+///
+/// Drawn by the window and positioned from what asked for it, because a
+/// control cannot paint outside itself here — see [`Hint`].
+///
+/// It clamps rather than centring blindly: a tooltip on the last button in a
+/// toolbar would otherwise hang past the right edge, and half a word is worse
+/// than no word.
+export component Tooltip inherits Rectangle {
+    background: transparent;
+
+    Rectangle {
+        x: min(max(4px, Hint.at-x - self.width / 2), parent.width - self.width - 4px);
+        y: min(Hint.at-y, parent.height - self.height - 4px);
+        width: caption.width + 16px;
+        height: caption.height + 10px;
+        border-radius: 6px;
+        background: Theme.surface-hi;
+        drop-shadow-blur: 12px;
+        drop-shadow-color: #00000059;
+
+        caption := Text {
+            text: Hint.text;
+            color: Theme.text;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+        }
+    }
 }

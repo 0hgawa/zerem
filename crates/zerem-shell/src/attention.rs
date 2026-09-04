@@ -90,12 +90,14 @@ mod imp {
     pub const fn ask() {}
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn asking_with_no_window_is_not_a_crash() {
-        // Which is the case in a test binary, and would also be the case for a
-        // headless run — the reason this returns rather than unwraps.
-        super::ask();
-    }
-}
+// No test, and that is the finding rather than an omission.
+//
+// The one that was here called `ask()` to prove it did not panic. In a test
+// binary `EnumWindows` finds the console window, which belongs to this process
+// and is visible — so every `cargo test` on this repository flashed a window in
+// the taskbar of whoever ran it.
+//
+// A test whose only assertion is "it returned" is not worth a side effect on
+// somebody's desktop. What is left below the `window()` guard is one FFI call
+// with nothing in it to get wrong, and the guard itself returns early on the
+// only branch a test could reach.

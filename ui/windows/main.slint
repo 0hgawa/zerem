@@ -3,14 +3,14 @@
 
 import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
-import { AddState, DetailState, Prefs, Row, SessionState, TorrentList } from "../state.slint";
+import { AddState, DetailState, Hint, Prefs, Row, SessionState, TorrentList } from "../state.slint";
 import { TableHeader, TableRow } from "../components/table.slint";
 import { DetailDrawer } from "../components/detail.slint";
 import { ColumnsMenu, ContextMenu, FileMenu } from "../components/menu.slint";
 import { AddDialog } from "../components/add.slint";
 import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind, IconButton } from "../components/button.slint";
-import { EmptyState, RailItem, SearchField, Sparkline, Stat } from "../components/common.slint";
+import { EmptyState, RailItem, SearchField, Sparkline, Stat, Tooltip } from "../components/common.slint";
 import { ConfirmRemove, Preferences } from "dialogs.slint";
 
 component Toolbar inherits Rectangle {
@@ -563,6 +563,9 @@ export component MainWindow inherits Window {
         // Over the whole window, not inside the panel: a menu opened on the
         // last file of a long list has to be allowed to hang past its edge.
         if DetailState.file-menu-open: FileMenu { width: root.width; height: root.height; }
+        // Last, and at the top level: a control cannot paint outside itself
+        // under partial software rendering without leaving a hole behind it.
+        if Hint.text != "": Tooltip { width: root.width; height: root.height; }
         if AddState.open: AddDialog { width: root.width; height: root.height; }
         if TorrentList.confirming: ConfirmRemove { width: root.width; height: root.height; }
     }

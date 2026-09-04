@@ -16,6 +16,7 @@
 
 import { Theme } from "../theme.slint";
 import { Icon } from "icons.slint";
+import { Hint } from "../state.slint";
 
 export enum ButtonKind { tonal, text, primary, danger }
 
@@ -92,7 +93,22 @@ export component IconButton inherits Rectangle {
     in property <string> label;
     callback clicked;
 
-    /// Whether the cursor has been still long enough to mean it.
+    /// The label, on screen, after a pause.
+    ///
+    /// It was written for screen readers and nothing else could reach it, which
+    /// meant five icons in a toolbar and no way to learn any of them. The first
+    /// question anybody asked about this toolbar was what one of the buttons
+    /// did — that is the question a tooltip exists to answer.
+    ///
+    /// The button asks for it rather than drawing it. Drawing it here meant a
+    /// rectangle painted *below the button and outside it*, and this app
+    /// renders in software with partial redraw: the dirty region is worked out
+    /// from an element's own geometry, so a child painting outside its parent
+    /// leaves its pixels behind and takes a bite out of whatever was under
+    /// them. Parts of the window went missing, and this was why.
+    ///
+    /// So the window draws it, at the top of everything, like every other
+    /// floating thing here already is.
     property <bool> settled;
     wait := Timer {
         interval: 600ms;
@@ -100,6 +116,11 @@ export component IconButton inherits Rectangle {
         triggered => {
             root.settled = true;
             self.running = false;
+            if (root.label != "") {
+                Hint.text = root.label;
+                Hint.at-x = root.absolute-position.x + root.width / 2;
+                Hint.at-y = root.absolute-position.y + root.height + 5px;
+            }
         }
     }
 
@@ -121,35 +142,6 @@ export component IconButton inherits Rectangle {
         y: (parent.height - self.height) / 2;
     }
 
-    // The label, on screen, after a pause.
-    //
-    // It was written for screen readers and nothing else could reach it, which
-    // meant five icons in a toolbar and no way to learn any of them. The first
-    // question anybody asked about this toolbar was what one of the buttons
-    // did — that is the question a tooltip exists to answer.
-    //
-    // Declared last so it draws over its neighbours, and after a delay so
-    // crossing the toolbar on the way somewhere else does not light up four of
-    // them in turn.
-    if root.label != "" && ta.has-hover && root.settled: Rectangle {
-        y: parent.height + 5px;
-        x: (parent.width - self.width) / 2;
-        width: caption.width + 16px;
-        height: caption.height + 10px;
-        border-radius: 6px;
-        background: Theme.surface-hi;
-        drop-shadow-blur: 12px;
-        drop-shadow-color: #00000059;
-        caption := Text {
-            text: root.label;
-            color: Theme.text;
-            font-size: Theme.fs-label;
-            font-family: Theme.font;
-            x: (parent.width - self.width) / 2;
-            y: (parent.height - self.height) / 2;
-        }
-    }
-
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => { root.clicked(); }
@@ -159,6 +151,12 @@ export component IconButton inherits Rectangle {
             } else {
                 wait.running = false;
                 root.settled = false;
+                // Only if it is still mine. Moving from one button to the next
+                // fires this after the other one has already asked, and
+                // clearing then would take the new tooltip down with the old.
+                if (Hint.text == root.label) {
+                    Hint.text = "";
+                }
             }
         }
     }

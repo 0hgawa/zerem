@@ -8,8 +8,21 @@
 //!
 //! Neither reports failure. There is nothing useful to say: the desktop has
 //! already shown whatever it wants to show about a file it cannot open, and a
-//! second complaint from this app on top of that is noise. What does not happen
-//! is a crash, and that is what the tests here are about.
+//! second complaint from this app on top of that is noise.
+//!
+//! # What is tested here, and what is not
+//!
+//! The argument is tested. The launch is not, and deliberately: the first
+//! version of these tests called `open` and `reveal` with a made-up path to
+//! prove they did not panic, and every `cargo test` on this repository opened
+//! Explorer windows on the machine running it. `reveal("")` in particular
+//! builds `/select,""`, which is the exact mistake the quoting below exists to
+//! prevent — Explorer shrugs and opens the user's Documents.
+//!
+//! A test that has to be watched to notice what it did is worse than no test.
+//! What is left is a pure function that builds the argument, which is where the
+//! mistake would actually be made; past it is one FFI call with nothing in it
+//! to get wrong.
 
 use std::path::Path;
 
@@ -23,6 +36,23 @@ pub fn reveal(path: &Path) {
     imp::reveal(path);
 }
 
+/// What to hand Explorer to show a path.
+///
+/// `/select,` takes its argument glued to it with no space, and the path has to
+/// be quoted: unquoted, a comma or a space in a filename splits it into two
+/// arguments and Explorer shrugs and opens the user's Documents.
+///
+/// A folder is shown rather than selected inside its parent, which is what
+/// somebody asking to see a folder means. Whether it *is* a folder is passed in
+/// rather than asked here, so this can be tested without a disk.
+#[must_use]
+fn explorer_argument(path: &Path, is_folder: bool) -> String {
+    if is_folder {
+        format!("\"{}\"", path.display())
+    } else {
+        format!("/select,\"{}\"", path.display())
+    }
+}
 #[cfg(windows)]
 mod imp {
     use std::os::windows::ffi::OsStrExt;
@@ -53,17 +83,7 @@ mod imp {
     }
 
     pub fn reveal(path: &Path) {
-        // `/select,` needs the argument glued to it with no space, and the path
-        // quoted — a comma or a space in a filename otherwise splits it into
-        // two arguments and Explorer opens the user's Documents instead.
-        //
-        // A folder is shown rather than selected inside its own parent, which
-        // is what somebody asking to see a folder means.
-        let argument = if path.is_dir() {
-            format!("\"{}\"", path.display())
-        } else {
-            format!("/select,\"{}\"", path.display())
-        };
+        let argument = super::explorer_argument(path, path.is_dir());
         let file = wide(std::ffi::OsStr::new("explorer.exe"));
         let args = wide(std::ffi::OsStr::new(&argument));
         let _ = unsafe {
@@ -97,20 +117,29 @@ mod imp {
 
 #[cfg(test)]
 mod tests {
-    use super::{open, reveal};
+    use super::explorer_argument;
     use std::path::Path;
 
     #[test]
-    fn a_path_that_is_not_there_is_not_a_crash() {
-        // Which is the case in a test binary, and also the case when somebody
-        // deletes a file between the menu opening and the click landing.
-        open(Path::new("Z:/nowhere/at/all/nothing.mkv"));
-        reveal(Path::new("Z:/nowhere/at/all/nothing.mkv"));
+    fn a_file_is_picked_out_and_a_folder_is_opened() {
+        assert_eq!(explorer_argument(Path::new("D:/a/b.mkv"), false), r#"/select,"D:/a/b.mkv""#);
+        assert_eq!(explorer_argument(Path::new("D:/a"), true), r#""D:/a""#);
     }
 
     #[test]
-    fn an_empty_path_is_not_a_crash_either() {
-        open(Path::new(""));
-        reveal(Path::new(""));
+    fn a_name_with_a_comma_in_it_stays_one_argument() {
+        // The whole reason for the quotes. Unquoted, Explorer takes everything
+        // after the comma as a second argument, finds it is not a path, and
+        // opens the user's Documents — which is a wrong window, not an error.
+        let argument = explorer_argument(Path::new("D:/Some, Film (2011)/a.mkv"), false);
+        assert_eq!(argument, r#"/select,"D:/Some, Film (2011)/a.mkv""#);
+        assert_eq!(argument.matches('"').count(), 2, "the path is wrapped once and only once");
+    }
+
+    #[test]
+    fn a_name_with_spaces_stays_one_argument_too() {
+        let argument = explorer_argument(Path::new("D:/A Long Name/an episode.mkv"), false);
+        assert!(argument.starts_with("/select,\""), "no space after the comma: {argument}");
+        assert!(argument.ends_with('"'));
     }
 }
