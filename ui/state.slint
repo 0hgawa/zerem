@@ -77,6 +77,9 @@ export global AddState {
     /// number in this app.
     in-out property <string> summary;
     in-out property <string> destination;
+    /// "Not enough room in this folder — 2.51 GB short", or empty. A warning
+    /// and not a refusal: see the dialog for why the Add button stays live.
+    in-out property <string> shortfall;
     /// Waiting on a magnet's metadata to come back from the swarm.
     in-out property <bool> fetching;
     in-out property <string> error;

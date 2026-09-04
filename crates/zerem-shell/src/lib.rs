@@ -5,7 +5,9 @@
 //! a repository shared with Clipo and Vayou is a move rather than a rewrite.
 
 pub mod assoc;
+pub mod disk;
 pub mod single_instance;
 
 pub use assoc::{ensure_registered, Outcome, Registration};
+pub use disk::free_space;
 pub use single_instance::{acquire, Instance};

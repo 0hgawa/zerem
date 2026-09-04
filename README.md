@@ -21,8 +21,9 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 > preferências e o estado da tabela sobrevivem a fechar e reabrir; há bandeja com
 > instância única, limites de banda e painel de detalhes. O diálogo de adição
 > escolhe os arquivos antes de começar, e a aba de Arquivos os troca depois. O
-> filtro responde a cada tecla, um torrent que empaca diz por quê, os números
-> pararam de tremer e o rodapé desenha o último minuto. O que falta é o resto da Fase 3 — erros recuperáveis,
+> filtro responde a cada tecla, o diálogo avisa quando não vai caber no disco,
+> um torrent que empaca diz por quê, os números pararam de tremer e o rodapé
+> desenha o último minuto. O que falta é o resto da Fase 3 — erros recuperáveis,
 > movimento, acessibilidade, i18n — e o auto-update da Fase 4; a ordem está no
 > [roadmap](ROADMAP.md).
 
@@ -46,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,04 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,06 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
@@ -168,6 +169,29 @@ como um cliente queima um núcleo sem mover um byte.
 A coluna de transporte é o único lugar onde o uTP aparece. Trackers ainda não
 têm aba: o librqbit expõe as URLs e nada mais — sem estado de anúncio, seeds ou
 leechers — e uma aba que lista URLs não se sustenta.
+
+## Antes de encher o disco
+
+O diálogo de adição pergunta ao volume de destino quanto cabe, e avisa **antes**
+de escrever qualquer coisa: `Not enough room in this folder — 2.51 GB short`,
+logo abaixo da pasta a que se refere e com o botão **Change** ainda na tela.
+
+O número é o que falta, não os dois totais. O que o torrent precisa já está na
+linha de resumo logo abaixo; a quantidade que tem de ser liberada — ou que tem
+de sair da lista de tiques — é a única acionável.
+
+**É aviso, não recusa, e as duas razões são honestas.** O volume pode ser
+liberado muito antes de o download chegar no fim dele, e arquivos que já estão
+no disco de uma tentativa anterior são contados aqui como se tivessem de vir de
+novo. Bloquear com base numa estimativa que pode errar a favor do usuário é pior
+que dizer qual é a estimativa.
+
+Quando o espaço livre **não pode ser lido**, o app não diz nada. Um aviso
+construído sobre um desconhecido é pior que aviso nenhum: é o que ensina a
+pessoa a fechar o aviso de verdade sem ler. No Linux ainda é esse o caso — a
+resposta é `statvfs`, que significa `libc`, uma dependência que o
+[`zerem-shell`](crates/zerem-shell/) não vai adquirir por uma chamada antes de o
+build Linux precisar dela.
 
 ## Quando nada acontece
 

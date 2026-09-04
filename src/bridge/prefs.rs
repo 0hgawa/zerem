@@ -52,7 +52,7 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     super::add::show_destination(ui, &settings.download_dir.display().to_string());
 }
 
-pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store>) {
+pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store>, views: &Rc<super::Views>) {
     let prefs = ui.global::<Prefs>();
 
     prefs.on_close({
@@ -93,13 +93,17 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
     });
 
     prefs.on_download_dir_picked({
-        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        let (store, state, ui, views) = (store.clone(), state.clone(), ui.as_weak(), views.clone());
         move |chosen| {
             let Some(ui) = ui.upgrade() else { return };
             let dir = std::path::PathBuf::from(chosen.as_str());
             if store.update(|s| s.download_dir.clone_from(&dir)) {
                 state.engine.send(Command::SetDownloadDir(dir));
                 show(&ui, &store.get());
+                // The add dialog may be open, asking about this very folder.
+                // Its "not enough room" line is answered by the picker that
+                // just closed, so it is answered now and not a tick later.
+                super::add::show_choice(&ui, &views.add);
             }
         }
     });

@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,04 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,06 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,04 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,06 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -328,9 +328,31 @@ alcançabilidade da porta — a mesma lacuna que já tinha cortado a aba de
 Trackers. O que está escrito é exatamente o que as contagens de peers sustentam.
 Um palpite vestido de diagnóstico é pior que a palavra "Downloading".
 
-⏳ **Erros legíveis e recuperáveis.** "Sem espaço em disco — faltam 2,3 GB" com o
-botão **Escolher outra pasta** ao lado. Nunca um código de erro sozinho, nunca um
-estado do qual só se sai reiniciando.
+**Erros legíveis e recuperáveis.** ✅ O diálogo de adição pergunta ao volume de
+destino quanto cabe e avisa **antes de escrever qualquer coisa** —
+`Not enough room in this folder — 2.51 GB short`, logo abaixo da pasta a que se
+refere, com o botão **Change** ainda na tela. Prevenir vale mais que traduzir:
+um download que morre aos 94 % é recuperável no papel e miserável na prática —
+o tempo foi embora, o arquivo parcial ficou, e nada avisou.
+
+O número é o que falta, e não os dois totais: o que o torrent precisa já está na
+linha de resumo abaixo, e a quantidade a liberar é a única acionável. É **aviso,
+não recusa** — o volume pode ser liberado antes de o download chegar lá, e
+arquivos já no disco de uma tentativa anterior são contados como se tivessem de
+vir de novo. Bloquear com base numa estimativa que erra a favor do usuário é
+pior que dizer qual é a estimativa. E quando o espaço livre não pode ser lido o
+app se cala: um aviso construído sobre um desconhecido é o que ensina a fechar
+o aviso de verdade sem ler.
+
+O `GetDiskFreeSpaceExW` mora no [`zerem-shell`](crates/zerem-shell/), neutro como
+o resto dele, e **não custou dependência nova** — o `windows` já estava lá com a
+feature certa. No Linux responde `None`, porque `statvfs` significa `libc` e essa
+dependência entra com o build Linux, não antes.
+
+⏳ **Falta a metade reativa:** um torrent que falha no meio já mostra a mensagem
+do librqbit na coluna de estado em vez da palavra "Error", mas não tem botão ao
+lado. "Sem espaço em disco" com **Escolher outra pasta** ali mesmo continua em
+aberto.
 
 ✅ **Números estáveis.** A taxa que o librqbit informa já é uma média de cinco
 segundos; o que sobra de ruído é a janela dela, um segundo entrando e um saindo.

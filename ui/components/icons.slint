@@ -36,6 +36,7 @@ export global Lucide {
     out property <string> users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75";
     out property <string> loader: "M12 2v4 M12 18v4 M4.93 4.93l2.83 2.83 M16.24 16.24l2.83 2.83 M2 12h4 M18 12h4 M4.93 19.07l2.83-2.83 M16.24 7.76l2.83-2.83";
     out property <string> search: "M11 3a8 8 0 1 0 0 16 8 8 0 1 0 0-16z m21 21-4.34-4.34";
+    out property <string> triangle-alert: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3 M12 9v4 M12 17h.01";
 
     // --- what a torrent holds ---
     //
@@ -90,6 +91,13 @@ export component Icon inherits Rectangle {
         commands: root.glyph;
         stroke: root.tint;
         stroke-width: root.size / 12;
+        // Round, because that is how the family is drawn — the note at the top
+        // of this file says so and the element was defaulting to butt and
+        // mitre regardless. It also decides whether a dot renders at all: the
+        // warning triangle's full stop is a segment one hundredth of a unit
+        // long, which is a round cap or it is nothing.
+        stroke-line-cap: round;
+        stroke-line-join: round;
         // Lucide is a stroked family. Filling it would turn every open shape
         // into a blob.
         fill: transparent;

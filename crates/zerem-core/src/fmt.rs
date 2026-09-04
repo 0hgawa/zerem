@@ -103,6 +103,21 @@ pub fn progress(done: u64, size: u64) -> String {
     format!("{} / {} · {}", bytes(done), bytes(size), percent(done, size))
 }
 
+/// What to say when a download will not fit where it is going, and nothing
+/// when it will.
+///
+/// The shortfall, not the two totals: it is the one actionable number — how
+/// much has to be freed, or how much has to come off the list of ticks. What
+/// the torrent needs is already on the summary line right below it.
+///
+/// Exactly filling the volume is not warned about. The rule has to be crisp
+/// enough to state, and "it fits" is the rule.
+#[must_use]
+pub fn shortfall(needed: u64, free: u64) -> Option<String> {
+    let short = needed.checked_sub(free).filter(|&short| short > 0)?;
+    Some(format!("Not enough room in this folder — {} short", bytes(short)))
+}
+
 /// How much of the list is showing, while a filter is on. Replaces the plain
 /// total rather than joining it: two counts side by side is one too many.
 #[must_use]
@@ -112,7 +127,7 @@ pub fn matched(shown: usize, total: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{bytes, eta, matched, percent, progress, ratio, speed};
+    use super::{bytes, eta, matched, percent, progress, ratio, shortfall, speed};
 
     #[test]
     fn byte_precision_keeps_a_stable_width() {
@@ -176,6 +191,31 @@ mod tests {
         // `total_bytes: 0` until the swarm answers, which would divide by zero
         // anywhere the percentage was computed instead.
         assert_eq!(progress(0, 0), "0 B");
+    }
+
+    #[test]
+    fn room_is_only_mentioned_when_there_is_not_enough() {
+        assert_eq!(shortfall(1_000, 5_000), None);
+        // Exactly filling the volume fits, and the rule has to be crisp enough
+        // to state.
+        assert_eq!(shortfall(5_000, 5_000), None);
+    }
+
+    #[test]
+    fn the_shortfall_is_the_number_that_can_be_acted_on() {
+        // Not "needs 3.72 GB, 1.21 GB free" — the figure someone needs is how
+        // much to free or to untick, and the total is on the line below.
+        assert_eq!(
+            shortfall(4_000_000_000, 1_300_000_000).as_deref(),
+            Some("Not enough room in this folder — 2.51 GB short")
+        );
+    }
+
+    #[test]
+    fn an_empty_volume_is_reported_as_the_whole_amount() {
+        // Free space of zero is a real answer, not a missing one — the caller
+        // passes `None` through without asking when it does not know.
+        assert!(shortfall(1_024, 0).is_some());
     }
 
     #[test]

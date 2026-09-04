@@ -41,7 +41,7 @@ impl Views {
 /// Register every domain's callbacks.
 pub fn wire(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings::Store>, views: &Rc<Views>) {
     torrents::wire(ui, state, store, views);
-    prefs::wire(ui, state, store);
+    prefs::wire(ui, state, store, views);
     detail::wire(ui, state, views);
     menu::wire(ui, state, views);
     add::wire(ui, state, views);

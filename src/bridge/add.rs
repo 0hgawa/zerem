@@ -10,6 +10,7 @@
 //! make a click wait on a thread for no reason.
 
 use std::cell::RefCell;
+use std::path::Path;
 use std::rc::Rc;
 
 use slint::{ComponentHandle, Model as _, ModelRc, VecModel};
@@ -72,9 +73,9 @@ impl Choice {
         Some(files.iter().enumerate().filter(|(_, (_, w))| *w).map(|(i, _)| i).collect())
     }
 
-    /// "3 of 12 files · 1.44 GB of 3.72 GB" — and how many are ticked, which is
-    /// what decides whether Add can be pressed.
-    fn summary(&self) -> (String, usize) {
+    /// "3 of 12 files · 1.44 GB of 3.72 GB", how many are ticked — which is what
+    /// decides whether Add can be pressed — and how much they come to.
+    fn summary(&self) -> (String, usize, u64) {
         let files = self.files.borrow();
         let chosen: Vec<u64> = files.iter().filter(|(_, w)| *w).map(|(s, _)| *s).collect();
         let total: u64 = files.iter().map(|(s, _)| *s).sum();
@@ -86,7 +87,7 @@ impl Choice {
             fmt::bytes(picked),
             fmt::bytes(total)
         );
-        (text, chosen.len())
+        (text, chosen.len(), picked)
     }
 }
 
@@ -169,13 +170,38 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, choice: &Choice) {
     show_choice(ui, choice);
 }
 
-/// Push what is ticked, and whether Add can be pressed at all.
-fn show_choice(ui: &MainWindow, choice: &Choice) {
+/// Push what is ticked, whether it fits, and whether Add can be pressed at all.
+///
+/// Reachable from `prefs` because picking a new destination changes the answer,
+/// and a warning that outlives the thing that fixed it is worse than no
+/// warning: the folder picker is the whole recovery path this line points at.
+pub(super) fn show_choice(ui: &MainWindow, choice: &Choice) {
     let add = ui.global::<AddState>();
-    let (summary, chosen) = choice.summary();
+    let (summary, chosen, picked) = choice.summary();
     push!(add, get_summary, set_summary, summary.into());
+    push!(add, get_shortfall, set_shortfall, room_for(picked, &add.get_destination()).into());
     // Confirming with nothing ticked would add a torrent that downloads nothing.
     push!(add, get_can_add, set_can_add, chosen > 0 && !add.get_fetching() && add.get_error().is_empty());
+}
+
+/// Whether what is ticked fits where it is going, asked of the volume itself.
+///
+/// Silent when the free space cannot be read: a warning built on an unknown is
+/// worse than none, because it is the one that teaches people to dismiss the
+/// real one without reading it.
+///
+/// It is a warning and not a refusal, and both reasons are honest ones. The
+/// volume may be freed long before the download reaches the end of it, and
+/// files already on disk from an earlier run are counted here as if they had
+/// to be fetched again. Blocking on an estimate that can be wrong in the
+/// user's favour is worse than saying what the estimate is.
+fn room_for(needed: u64, destination: &str) -> String {
+    if destination.is_empty() {
+        return String::new();
+    }
+    zerem_shell::free_space(Path::new(destination))
+        .and_then(|free| fmt::shortfall(needed, free))
+        .unwrap_or_default()
 }
 
 /// Show the destination the next torrent will use.

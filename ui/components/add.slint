@@ -7,7 +7,7 @@
 import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 import { AddState, PendingFileEntry } from "../state.slint";
-import { Lucide } from "icons.slint";
+import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind } from "button.slint";
 import { Modal, Tick } from "common.slint";
 
@@ -110,6 +110,28 @@ export component AddDialog inherits Modal {
                         glyph: Lucide.folder-open;
                         clicked => { AddState.change-destination(); }
                     }
+                }
+            }
+
+            // Directly under the folder it is about, with the Change button that
+            // fixes it still on screen above. The Add button stays live on
+            // purpose: the volume may be freed before the download gets there,
+            // and files already on disk from a previous run are not counted —
+            // refusing on an estimate is worse than saying what it is.
+            if AddState.shortfall != "": HorizontalLayout {
+                spacing: 8px;
+                VerticalLayout {
+                    alignment: center;
+                    width: 66px;
+                    Icon { glyph: Lucide.triangle-alert; tint: Theme.warn; size: 15px; }
+                }
+                Text {
+                    text: AddState.shortfall;
+                    color: Theme.warn;
+                    font-size: Theme.fs-body;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    wrap: word-wrap;
                 }
             }
 
