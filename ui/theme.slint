@@ -49,8 +49,17 @@ export global Theme {
     // in the light theme, the way every settings screen on this desktop draws
     // one, and the lighter grey in the dark theme where lighter is up.
     out property <brush> card: dark ? #282624 : #fdfdfc;
-    out property <brush> row-alt: dark ? #ffffff06 : #0f0d0a04;
-    out property <brush> hover: dark ? #ffffff0e : #0f0d0a0a;
+    // The stripe on every other row, and the two are set together because
+    // they compete.
+    //
+    // It was 2.4% in the dark theme and 1.6% in the light one, which against
+    // #fdfdfc is a ratio of 1.01 — a stripe that exists in the code and not on
+    // the screen. Raising it alone is not enough either: hover was 3.9%, so
+    // pointing at an odd row would have moved it from 3.1% to 3.9% and the
+    // list would have stopped answering the cursor. Hover goes up with it, to
+    // roughly twice the stripe, which is where Fluent puts a list hover.
+    out property <brush> row-alt: dark ? #ffffff0a : #0f0d0a08;
+    out property <brush> hover: dark ? #ffffff16 : #0f0d0a11;
     out property <brush> selected: dark ? #299fff26 : #0890ff1c;
     out property <brush> border: dark ? #ffffff0f : #0f0d0a0a;
     out property <brush> track: dark ? #ffffff12 : #0f0d0a0f;
