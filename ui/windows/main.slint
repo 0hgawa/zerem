@@ -29,6 +29,22 @@ component Toolbar inherits Rectangle {
         spacing: 6px;
         alignment: start;
 
+        // First, and hard against the left edge, because that is where the
+        // thing it opens is. It used to sit at the far right among the
+        // preferences and the theme switch, a control for the left of the
+        // window living on the right of the toolbar — every application on
+        // this desktop puts this button over the panel it reveals.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.panel-left;
+                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
+                clicked => { TorrentList.toggle-rail(); }
+            }
+        }
+        Rectangle { width: 4px; }
+
         VerticalLayout {
             alignment: center;
             Button {
@@ -76,30 +92,17 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             IconButton {
-                glyph: Lucide.zap;
+                glyph: Lucide.turtle;
                 label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
                 tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
                 clicked => { Prefs.toggle-alt-speed(); }
             }
         }
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.panel-left;
-                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
-                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
-                clicked => { TorrentList.toggle-rail(); }
-            }
-        }
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.panel-right;
-                label: DetailState.open ? @tr("Hide the details panel") : @tr("Show the details panel");
-                tint: DetailState.open ? Theme.accent : Theme.text-dim;
-                clicked => { TorrentList.toggle-details(); }
-            }
-        }
+        // The details panel has no button here any more. It is not a view of
+        // the window, it is a view of one torrent: clicking a row opens it and
+        // its own × closes it. A global switch for something that is always
+        // *about* a selected row is a switch that does nothing half the time
+        // somebody presses it.
         VerticalLayout {
             alignment: center;
             IconButton {

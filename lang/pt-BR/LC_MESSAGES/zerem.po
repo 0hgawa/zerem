@@ -93,9 +93,6 @@ msgstr "Filtrar a lista por nome"
 msgid "Finished"
 msgstr "Concluído"
 
-msgid "Hide the details panel"
-msgstr "Ocultar o painel de detalhes"
-
 msgid "No file list yet"
 msgstr "Ainda sem lista de arquivos"
 
@@ -152,9 +149,6 @@ msgstr "Remover…"
 
 msgid "Save to"
 msgstr "Salvar em"
-
-msgid "Show the details panel"
-msgstr "Mostrar o painel de detalhes"
 
 msgid "Space"
 msgstr "Espaço"
