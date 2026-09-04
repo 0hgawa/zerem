@@ -5,26 +5,36 @@ import { Theme } from "../theme.slint";
 import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind } from "../components/button.slint";
 import { ScrollView } from "std-widgets.slint";
-import { Check, Field, Modal, NumberField, SettingsGroup } from "../components/common.slint";
+import { Check, Field, Modal, NumberField, RailItem, SettingsGroup } from "../components/common.slint";
 import { Prefs, TorrentList } from "../state.slint";
 
-/// Everything the app will let somebody change, grouped and scrollable.
+/// Everything the app will let somebody change, one subject at a time.
 ///
-/// The three restart-only settings are here now, which reverses an earlier
-/// call. The objection was right — a control that *silently* does nothing until
-/// the next launch is worse than no control — and it was an argument against
-/// the silence rather than against the control. Each of them says so on its
-/// own line, so the panel is honest instead of incomplete.
+/// It used to be a single scroll with four headings in it, which meant the way
+/// to reach the listening port was to read past the speed limits. Four rooms
+/// with a list of doors is how Windows itself lays this out, and it is better
+/// for the same reason a table of contents is: the shape of what is on offer is
+/// visible before anything is read.
+///
+/// The three restart-only settings are here, which reverses an earlier call.
+/// The objection was right — a control that *silently* does nothing until the
+/// next launch is worse than no control — and it was an argument against the
+/// silence rather than against the control. Connection says so once, at the
+/// bottom, covering all three.
 export component Preferences inherits Modal {
-    card-width: 560px;
-    // Stated, not asked. Everything else in the app sizes to its content, and
-    // this one cannot: the panel is a ScrollView, and a ScrollView reports a
+    card-width: 700px;
+    // Stated, not asked. The pane is a ScrollView, and a ScrollView reports a
     // small preferred height on purpose — hugging its content is the one thing
     // it exists not to do. Asking it collapsed the card to a title, a sliver of
     // list and the Done button. The Modal still clamps this against the window,
     // so a short desktop gets a shorter dialog rather than one off the edge.
-    card-height: 620px;
+    card-height: 470px;
     dismissed => { Prefs.close(); }
+
+    /// Which room is open. Local rather than global: the dialog is rebuilt each
+    /// time it opens, so it always opens on Downloads instead of wherever
+    /// somebody happened to leave it a week ago.
+    property <string> section: "downloads";
 
     VerticalLayout {
         padding: 22px;
@@ -38,123 +48,187 @@ export component Preferences inherits Modal {
             font-weight: 600;
         }
 
-        ScrollView {
+        HorizontalLayout {
             vertical-stretch: 1;
-            viewport-width: self.width;
+            spacing: 20px;
 
+            // The same rail the main window uses for states, because it is the
+            // same idea — and a second one drawn slightly differently is how an
+            // interface starts to look assembled rather than designed.
             VerticalLayout {
-                spacing: 15px;
-                padding-right: 12px;
+                width: 158px;
+                spacing: 2px;
                 alignment: start;
 
-                SettingsGroup { text: @tr("Downloads"); }
-
-                Field {
-                    label: @tr("Save to");
-                    value: Prefs.download-dir;
-                    hint: @tr("Torrents already in the list keep their folder.");
-                    action: @tr("Change");
+                RailItem {
+                    label: @tr("Downloads");
                     glyph: Lucide.folder-open;
-                    activated => { Prefs.pick-download-dir(); }
+                    active: root.section == "downloads";
+                    chosen => { root.section = "downloads"; }
                 }
-
-                NumberField {
-                    label: @tr("Download at once");
-                    value: Prefs.max-active;
-                    placeholder: @tr("No limit");
-                    hint: @tr("The rest wait their turn. Seeding never waits.");
-                    committed(text) => { Prefs.set-max-active(text); }
+                RailItem {
+                    label: @tr("Speed");
+                    glyph: Lucide.zap;
+                    active: root.section == "speed";
+                    chosen => { root.section = "speed"; }
                 }
-
-                Check {
-                    label: @tr("Add torrents stopped");
-                    checked: Prefs.add-paused;
-                    toggled(on) => { Prefs.set-add-paused(on); }
+                RailItem {
+                    label: @tr("Connection");
+                    glyph: Lucide.globe;
+                    active: root.section == "connection";
+                    chosen => { root.section = "connection"; }
                 }
-
-                SettingsGroup { text: @tr("Speed"); }
-
-                NumberField {
-                    label: @tr("Download limit");
-                    value: Prefs.down-limit;
-                    unit: @tr("kB/s");
-                    placeholder: @tr("Unlimited");
-                    committed(text) => { Prefs.set-down-limit(text); }
+                RailItem {
+                    label: @tr("Appearance");
+                    glyph: Lucide.sun;
+                    active: root.section == "appearance";
+                    chosen => { root.section = "appearance"; }
                 }
+            }
 
-                NumberField {
-                    label: @tr("Slow download");
-                    value: Prefs.alt-down-limit;
-                    unit: @tr("kB/s");
-                    placeholder: @tr("Unlimited");
-                    committed(text) => { Prefs.set-alt-down-limit(text); }
-                }
+            ScrollView {
+                horizontal-stretch: 1;
+                viewport-width: self.width;
 
-                NumberField {
-                    label: @tr("Slow upload");
-                    value: Prefs.alt-up-limit;
-                    unit: @tr("kB/s");
-                    placeholder: @tr("Unlimited");
-                    hint: @tr("The second pair, for when the line is needed for something else. The button in the toolbar switches to them.");
-                    committed(text) => { Prefs.set-alt-up-limit(text); }
-                }
+                VerticalLayout {
+                    spacing: 16px;
+                    padding-right: 12px;
+                    alignment: start;
 
-                NumberField {
-                    label: @tr("Upload limit");
-                    value: Prefs.up-limit;
-                    unit: @tr("kB/s");
-                    placeholder: @tr("Unlimited");
-                    // The one that matters day to day, so it says why.
-                    hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
-                    committed(text) => { Prefs.set-up-limit(text); }
-                }
+                    if root.section == "downloads": VerticalLayout {
+                        spacing: 16px;
 
-                SettingsGroup { text: @tr("Connection"); }
+                        Field {
+                            label: @tr("Save to");
+                            value: Prefs.download-dir;
+                            hint: @tr("Torrents already in the list keep their folder.");
+                            action: @tr("Change");
+                            glyph: Lucide.folder-open;
+                            activated => { Prefs.pick-download-dir(); }
+                        }
 
-                NumberField {
-                    label: @tr("Listening port");
-                    value: Prefs.port;
-                    placeholder: "6881";
-                    hint: @tr("Takes effect the next time Zerem starts.");
-                    committed(text) => { Prefs.set-port(text); }
-                }
+                        NumberField {
+                            label: @tr("Download at once");
+                            value: Prefs.max-active;
+                            placeholder: @tr("No limit");
+                            hint: @tr("The rest wait their turn. Seeding never waits.");
+                            committed(text) => { Prefs.set-max-active(text); }
+                        }
 
-                Check {
-                    label: @tr("uTP — yields to other traffic on the same line");
-                    checked: Prefs.utp;
-                    toggled(on) => { Prefs.set-utp(on); }
-                }
+                        Check {
+                            label: @tr("Add torrents stopped");
+                            checked: Prefs.add-paused;
+                            toggled(on) => { Prefs.set-add-paused(on); }
+                        }
+                    }
 
-                Check {
-                    label: @tr("Ask the router to open the port (UPnP)");
-                    checked: Prefs.upnp;
-                    toggled(on) => { Prefs.set-upnp(on); }
-                }
+                    if root.section == "speed": VerticalLayout {
+                        spacing: 16px;
 
-                Text {
-                    text: @tr("Both take effect the next time Zerem starts.");
-                    color: Theme.text-dim;
-                    font-size: Theme.fs-label;
-                    font-family: Theme.font;
-                    wrap: word-wrap;
-                }
+                        // Down and up together. The two alternates used to sit
+                        // between them, so the pair somebody actually came to
+                        // set read as four unrelated fields.
+                        NumberField {
+                            label: @tr("Download limit");
+                            value: Prefs.down-limit;
+                            unit: @tr("kB/s");
+                            placeholder: @tr("Unlimited");
+                            committed(text) => { Prefs.set-down-limit(text); }
+                        }
 
-                SettingsGroup { text: @tr("Appearance"); }
+                        NumberField {
+                            label: @tr("Upload limit");
+                            value: Prefs.up-limit;
+                            unit: @tr("kB/s");
+                            placeholder: @tr("Unlimited");
+                            // The one that matters day to day, so it says why.
+                            hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
+                            committed(text) => { Prefs.set-up-limit(text); }
+                        }
 
-                Field {
-                    label: @tr("Language");
-                    value: Prefs.language;
-                    action: @tr("Change");
-                    glyph: Lucide.file-text;
-                    activated => { Prefs.cycle-language(); }
-                }
+                        SettingsGroup { text: @tr("Alternative limits"); }
 
-                Check {
-                    label: @tr("Dark theme");
-                    checked: Theme.dark;
-                    // Through the same callback the toolbar button uses, so the
-                    // choice is written down rather than only drawn.
-                    toggled(on) => { TorrentList.toggle-theme(); }
+                        // Said once, above the pair it is about, rather than
+                        // hanging off whichever of the two happened to be last.
+                        Text {
+                            text: @tr("The second pair, for when the line is needed for something else. The button in the toolbar switches to them.");
+                            color: Theme.text-dim;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            wrap: word-wrap;
+                        }
+
+                        NumberField {
+                            label: @tr("Slow download");
+                            value: Prefs.alt-down-limit;
+                            unit: @tr("kB/s");
+                            placeholder: @tr("Unlimited");
+                            committed(text) => { Prefs.set-alt-down-limit(text); }
+                        }
+
+                        NumberField {
+                            label: @tr("Slow upload");
+                            value: Prefs.alt-up-limit;
+                            unit: @tr("kB/s");
+                            placeholder: @tr("Unlimited");
+                            committed(text) => { Prefs.set-alt-up-limit(text); }
+                        }
+                    }
+
+                    if root.section == "connection": VerticalLayout {
+                        spacing: 16px;
+
+                        NumberField {
+                            label: @tr("Listening port");
+                            value: Prefs.port;
+                            placeholder: "6881";
+                            committed(text) => { Prefs.set-port(text); }
+                        }
+
+                        Check {
+                            label: @tr("uTP — yields to other traffic on the same line");
+                            checked: Prefs.utp;
+                            toggled(on) => { Prefs.set-utp(on); }
+                        }
+
+                        Check {
+                            label: @tr("Ask the router to open the port (UPnP)");
+                            checked: Prefs.upnp;
+                            toggled(on) => { Prefs.set-upnp(on); }
+                        }
+
+                        // Once, for all three. The port carried its own copy of
+                        // this and the two checkboxes another, so the same
+                        // sentence was on screen twice.
+                        Text {
+                            text: @tr("All three take effect the next time Zerem starts.");
+                            color: Theme.text-dim;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            wrap: word-wrap;
+                        }
+                    }
+
+                    if root.section == "appearance": VerticalLayout {
+                        spacing: 16px;
+
+                        Field {
+                            label: @tr("Language");
+                            value: Prefs.language;
+                            action: @tr("Change");
+                            glyph: Lucide.file-text;
+                            activated => { Prefs.cycle-language(); }
+                        }
+
+                        Check {
+                            label: @tr("Dark theme");
+                            checked: Theme.dark;
+                            // Through the same callback the toolbar button
+                            // uses, so the choice is written down rather than
+                            // only drawn.
+                            toggled(on) => { TorrentList.toggle-theme(); }
+                        }
+                    }
                 }
             }
         }

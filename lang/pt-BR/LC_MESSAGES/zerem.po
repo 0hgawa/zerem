@@ -240,11 +240,8 @@ msgstr "Adicionar torrents parados"
 msgid "Listening port"
 msgstr "Porta de escuta"
 
-msgid "Takes effect the next time Zerem starts."
-msgstr "Vale a partir da próxima vez que o Zerem abrir."
-
-msgid "Both take effect the next time Zerem starts."
-msgstr "Os dois valem a partir da próxima vez que o Zerem abrir."
+msgid "All three take effect the next time Zerem starts."
+msgstr "Os três valem a partir da próxima vez que o Zerem abrir."
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — cede espaço para o resto do tráfego da linha"
@@ -258,17 +255,28 @@ msgstr "Idioma"
 msgid "Dark theme"
 msgstr "Tema escuro"
 
-# Os três contadores do rodapé, em minúsculas porque são rótulos e não frases.
-msgid "active"
-msgstr "ativos"
+# Os contadores do rodapé. Agora são ícones na tela; o texto sobrou para quem
+# usa leitor de tela, então voltou a ser frase com inicial maiúscula. "Paused"
+# não aparece aqui porque já é o nome do estado, mais acima.
+msgid "Active"
+msgstr "Ativos"
 
-msgid "paused"
-msgstr "pausados"
+msgid "Total"
+msgstr "Total"
 
-msgid "total"
-msgstr "total"
+msgid "Download speed"
+msgstr "Velocidade de download"
+
+msgid "Upload speed"
+msgstr "Velocidade de upload"
+
+msgid "Matching the filter"
+msgstr "Correspondem ao filtro"
 
 # Velocidade alternativa e o nome da pasta no diálogo de adição.
+msgid "Alternative limits"
+msgstr "Limites alternativos"
+
 msgid "Slow download"
 msgstr "Download reduzido"
 

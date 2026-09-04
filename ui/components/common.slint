@@ -8,24 +8,29 @@ import { Theme } from "../theme.slint";
 import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind, IconButton } from "button.slint";
 
-/// A labelled number in the status bar.
+/// A number in the status bar, marked by what it counts.
+///
+/// The mark carries the meaning and the word is gone. Five words strung across
+/// the bar were five things to read, and a row of counters is glanced at rather
+/// than read — the same reason no toolbar in the app spells its buttons out.
+///
+/// The word does not vanish, though: it moves to `hint`, which is what a screen
+/// reader announces. An icon nobody can hear is not more compact, it is less
+/// finished.
 export component Stat inherits HorizontalLayout {
-    in property <string> label;
     in property <string> glyph;
     in property <string> value;
+    in property <string> hint;
     in property <brush> tint: Theme.text;
-    spacing: 5px;
+    spacing: 4px;
 
-    if root.glyph != "": VerticalLayout {
+    accessible-role: text;
+    accessible-label: root.hint;
+    accessible-value: root.value;
+
+    VerticalLayout {
         alignment: center;
         Icon { glyph: root.glyph; tint: root.tint; size: 13px; }
-    }
-    if root.label != "": Text {
-        text: root.label;
-        color: Theme.text-dim;
-        font-size: Theme.fs-label;
-        font-family: Theme.font;
-        vertical-alignment: center;
     }
     Text {
         text: root.value;

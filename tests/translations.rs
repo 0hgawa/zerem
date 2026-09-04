@@ -81,3 +81,18 @@ fn the_ui_has_prose_to_translate_at_all() {
     // would empty the set above and make both tests pass by saying nothing.
     assert!(marked().len() > 40, "only {} strings found — did the marking change?", marked().len());
 }
+
+#[test]
+fn no_string_is_translated_twice() {
+    // A duplicate `msgid` makes the file invalid, and neither test above can
+    // see one: both compare sets, and a set quietly swallows the second copy.
+    // This nearly shipped — "Paused" is both a state name and a status-bar
+    // counter, and adding the counter added a second entry for it.
+    let mut seen = BTreeSet::new();
+    let repeated: Vec<&str> = PT_BR
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("msgid \"")?.strip_suffix('"'))
+        .filter(|id| !id.is_empty() && !seen.insert(id.to_owned()))
+        .collect();
+    assert!(repeated.is_empty(), "pt-BR translates these twice:\n  {}", repeated.join("\n  "));
+}

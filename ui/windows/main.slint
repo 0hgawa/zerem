@@ -127,11 +127,21 @@ component StatusBar inherits Rectangle {
     HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        spacing: 18px;
+        spacing: 14px;
         alignment: start;
 
-        Stat { glyph: Lucide.arrow-down; value: SessionState.down; tint: Theme.accent; }
-        Stat { glyph: Lucide.arrow-up; value: SessionState.up; tint: Theme.seeding; }
+        Stat {
+            glyph: Lucide.arrow-down;
+            value: SessionState.down;
+            hint: @tr("Download speed");
+            tint: Theme.accent;
+        }
+        Stat {
+            glyph: Lucide.arrow-up;
+            value: SessionState.up;
+            hint: @tr("Upload speed");
+            tint: Theme.seeding;
+        }
 
         // Beside the two figures it plots, not off in a corner: the line is
         // what the numbers mean over time, and reading them together is the
@@ -157,12 +167,34 @@ component StatusBar inherits Rectangle {
             horizontal-stretch: 1;
         }
 
-        Stat { label: @tr("active"); value: SessionState.active; }
-        Stat { label: @tr("paused"); value: SessionState.paused; }
-        if SessionState.matched == "": Stat { label: @tr("total"); value: SessionState.total; }
+        // The same three marks the list already uses for these states, so the
+        // bar is read with knowledge the table has taught.
+        Stat {
+            glyph: Lucide.play;
+            value: SessionState.active;
+            hint: @tr("Active");
+            tint: Theme.text-dim;
+        }
+        Stat {
+            glyph: Lucide.pause;
+            value: SessionState.paused;
+            hint: @tr("Paused");
+            tint: Theme.text-dim;
+        }
+        if SessionState.matched == "": Stat {
+            glyph: Lucide.files;
+            value: SessionState.total;
+            hint: @tr("Total");
+            tint: Theme.text-dim;
+        }
         // Replaces the total rather than joining it, and takes the accent: what
         // it says is "you are not looking at all of them".
-        if SessionState.matched != "": Stat { glyph: Lucide.search; value: SessionState.matched; tint: Theme.accent; }
+        if SessionState.matched != "": Stat {
+            glyph: Lucide.search;
+            value: SessionState.matched;
+            hint: @tr("Matching the filter");
+            tint: Theme.accent;
+        }
     }
 }
 
