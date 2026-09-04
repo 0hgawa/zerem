@@ -34,6 +34,10 @@ export struct Row {
     eta: string,
     ratio: string,
     selected: bool,
+    // One sentence for a screen reader, built in Rust like every other string
+    // here. A row is eight cells of numbers; read out cell by cell it is a
+    // list of figures with no subject, so it is composed once instead.
+    a11y: string,
 }
 
 // Strings, not numbers: Rust does every conversion, here as everywhere. A count

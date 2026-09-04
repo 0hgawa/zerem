@@ -96,6 +96,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.panel-right;
+                label: DetailState.open ? "Hide the details panel" : "Show the details panel";
                 tint: DetailState.open ? Theme.accent : Theme.text-dim;
                 clicked => { TorrentList.toggle-details(); }
             }
@@ -104,6 +105,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Theme.dark ? Lucide.sun : Lucide.moon;
+                label: Theme.dark ? "Switch to the light theme" : "Switch to the dark theme";
                 clicked => { TorrentList.toggle-theme(); }
             }
         }
@@ -111,6 +113,7 @@ component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.sliders;
+                label: "Preferences";
                 clicked => { Prefs.open = true; }
             }
         }

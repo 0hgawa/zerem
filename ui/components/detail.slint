@@ -27,6 +27,11 @@ component Tab inherits Rectangle {
     in property <string> count;
     property <bool> active: DetailState.tab == id;
 
+    accessible-role: tab;
+    accessible-label: root.label;
+    accessible-item-selected: root.active;
+    accessible-action-default => { DetailState.pick-tab(root.id); }
+
     height: 26px;
     border-radius: Theme.radius;
     background: active ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
@@ -87,6 +92,17 @@ component FileLine inherits Rectangle {
     in property <FileEntry> entry;
     in property <int> index;
     height: 42px;
+
+    // A checkbox, because that is what it is: the whole line toggles whether
+    // the file is being fetched. The path is the label; the tick is the state.
+    accessible-role: checkbox;
+    accessible-label: root.entry.path;
+    accessible-checkable: true;
+    accessible-checked: root.entry.wanted;
+    accessible-description: root.entry.first ? "Being fetched before the others"
+        : root.entry.complete ? "Finished"
+        : root.entry.pct;
+    accessible-action-default => { DetailState.toggle-file(root.index); }
     background: ta.has-hover ? Theme.hover : mod(index, 2) == 1 ? Theme.row-alt : transparent;
 
     HorizontalLayout {
@@ -193,6 +209,12 @@ component FileLine inherits Rectangle {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
         }
+
+        accessible-role: button;
+        accessible-label: root.entry.first ? "Stop fetching this one first"
+            : "Fetch this one before the others";
+        accessible-enabled: !root.entry.complete && root.entry.wanted;
+        accessible-action-default => { DetailState.toggle-first(root.index); }
 
         pin := TouchArea {
             // Off on a line that has no pin to offer, so an invisible control
@@ -306,6 +328,7 @@ export component DetailDrawer inherits Rectangle {
                     alignment: center;
                     IconButton {
                         glyph: Lucide.x;
+                        label: "Close the details panel";
                         clicked => { DetailState.close(); }
                     }
                 }

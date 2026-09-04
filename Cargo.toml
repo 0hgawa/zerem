@@ -84,6 +84,10 @@ slint = { version = "1.17", default-features = false, features = [
     "backend-winit",
     "renderer-software",
     "std",
+    # AccessKit. A default feature, and `default-features = false` had been
+    # switching it off — so every `accessible-*` in the `.slint` was inert and
+    # the whole window read to a screen reader as one unlabelled rectangle.
+    "accessibility",
 ] }
 
 [build-dependencies]

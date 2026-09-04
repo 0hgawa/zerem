@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,13 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,35 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,13 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,35 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -441,8 +441,29 @@ haste com a ponta fora da grade, o sol não tinha raios diagonais, e a lupa e o
 ícone de imagem tinham perdido um traço cada. O comentário no topo do
 `icons.slint` afirmava que a concatenação era segura; agora diz quando é.
 
-⏳ **Acessibilidade** — contraste verificado, rótulos AccessKit, navegação por
-teclado sem armadilha de foco.
+✅ **Acessibilidade.** O contraste é medido, não opinado:
+[`tests/contrast.rs`](tests/contrast.rs) lê o *próprio* `theme.slint` e afere
+cada par contra o AA da WCAG, então retocar uma cor ou a mantém legível ou
+deixa o CI vermelho. O tema escuro passou de primeira; **o claro falhava em nove
+pares**, o `warn` no pior caso a 1,98:1 — laranja de peso médio sobre fundo
+quase branco não chega a 4,5:1 e continua laranja, então no tema claro virou
+âmbar. O `idle` é aferido a 3:1 e não a 4,5:1 de propósito: ele nunca é frase, é
+a barra de um torrent pausado e o caminho de um arquivo que ninguém pediu.
+
+Rótulos AccessKit em tudo que é clicável — e aqui estava o problema de verdade:
+**o AccessKit nem estava compilado**. `accessibility` é feature default do
+Slint e o `default-features = false` a desligava, então qualquer `accessible-*`
+no `.slint` seria inerte. Ligada, custa 0,22 MB. Cada linha da tabela é um
+`list-item` com uma frase montada no Rust (ler oito células soltas é ler oito
+números sem sujeito); cada linha de arquivo é um `checkbox` com o caminho como
+rótulo; abas, botões e o campo de filtro dizem o que são e respondem à ação
+padrão, para que um leitor consiga *apertar* e não só anunciar.
+
+⏸ **Tab não percorre a barra de ferramentas.** Não há armadilha de foco — não há
+anel de foco onde ficar preso: toda ação tem tecla, a lista anda de seta, e o
+filtro toma e devolve o teclado com `Ctrl+F` e `Esc`. Percorrer os botões com
+Tab exigiria um anel de foco desenhado em cada um, que é trabalho de UI e não de
+acessibilidade — e pela ação padrão do AccessKit um leitor já os aciona.
 
 ⏳ **i18n** — 12 idiomas via `.po` empacotado, mesmo pipeline do Vayou.
 

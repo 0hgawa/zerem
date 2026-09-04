@@ -113,6 +113,14 @@ export component TableRow inherits Rectangle {
     // hover from underneath.
     property <bool> hovered: ta.has-hover || run.has-hover || del.has-hover;
     height: Theme.row-h;
+
+    // One item in a list, announced as one sentence — see `Row.a11y`. The
+    // default action is the click, which is also what opens the panel, so a
+    // reader gets to the inside of a torrent the same way a mouse does.
+    accessible-role: list-item;
+    accessible-label: root.data.a11y;
+    accessible-item-selected: root.data.selected;
+    accessible-action-default => { TorrentList.select(root.index, false, false); }
     background: data.selected ? Theme.selected
         : hovered ? Theme.hover
         : mod(index, 2) == 1 ? Theme.row-alt

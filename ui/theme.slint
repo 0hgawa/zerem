@@ -1,6 +1,20 @@
 // Zerem — M3-flavoured semantic tokens. No component ever writes a hex
 // literal; every colour is named by role here so the light/dark swap is one
 // boolean and the palette can be retuned in one place.
+//
+// Every pair drawn from here is contrast-checked against WCAG AA by
+// `tests/contrast.rs`, which reads *this file* rather than a copy of the
+// values. Retuning a colour either keeps it legible or turns CI red.
+//
+// That test is why the light theme's accent, seeding, warn and danger are
+// darker than their dark-theme counterparts rather than the same hex. The
+// dark theme passed on the first measurement; the light one failed nine pairs
+// out of nineteen, `warn` worst at 1.98:1 — a mid-weight orange on a near-white
+// ground cannot reach 4.5:1 and stay orange, so in the light theme it is amber
+// instead. `idle` is held to 3:1 and not 4.5:1 on purpose: it is never a
+// sentence, it is the bar of a paused torrent and the path of a file nobody
+// asked for, and pushing it to the text bar would stop "switched off" reading
+// as switched off.
 export global Theme {
     in-out property <bool> dark: true;
 
@@ -17,11 +31,11 @@ export global Theme {
     // --- content ---
     out property <brush> text: dark ? #e7e7ee : #15151a;
     out property <brush> text-dim: dark ? #9696a4 : #6b6b78;
-    out property <brush> accent: #4c8dff;
-    out property <brush> seeding: dark ? #4ac68d : #1e9a61;
-    out property <brush> warn: #efa23c;
-    out property <brush> danger: dark ? #ff6b6b : #d33d3d;
-    out property <brush> idle: dark ? #6a6a78 : #9b9ba8;
+    out property <brush> accent: dark ? #4c8dff : #0b57d0;
+    out property <brush> seeding: dark ? #4ac68d : #0f7a48;
+    out property <brush> warn: dark ? #efa23c : #8a5300;
+    out property <brush> danger: dark ? #ff6b6b : #b3261e;
+    out property <brush> idle: dark ? #6a6a78 : #75757f;
 
     // --- type ---
     out property <string> font: "Segoe UI";

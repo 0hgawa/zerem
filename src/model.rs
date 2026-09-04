@@ -155,6 +155,19 @@ impl Model for TorrentModel {
 /// Domain row → the strings the UI draws. The only place formatting happens,
 /// and it runs once per changed row per tick rather than once per row per frame.
 fn build(t: &TorrentRow, selected: bool) -> Row {
+    // Read out cell by cell, a row is eight figures with no subject. This is
+    // the one sentence a screen reader announces instead, and it is built here
+    // for the same reason every other string is: once per changed row, not once
+    // per row per frame.
+    let a11y = format!(
+        "{}, {}, {}, down {}, up {}, {} peers",
+        t.name,
+        t.status_text(),
+        fmt::progress(t.done, t.size),
+        fmt::speed(t.down_bps),
+        fmt::speed(t.up_bps),
+        t.peers_connected,
+    );
     Row {
         id: t.id.0 as i32,
         name: t.name.as_ref().into(),
@@ -170,6 +183,7 @@ fn build(t: &TorrentRow, selected: bool) -> Row {
         eta: fmt::eta(t.eta).into(),
         ratio: fmt::ratio(t.ratio_x100).into(),
         selected,
+        a11y: a11y.into(),
     }
 }
 

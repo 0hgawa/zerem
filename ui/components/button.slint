@@ -26,6 +26,17 @@ export component Button inherits Rectangle {
     in property <bool> enabled: true;
     callback clicked;
 
+    // A `TouchArea` is invisible to a screen reader — it is a rectangle that
+    // happens to react. Every control in this app is built out of one, so
+    // without these the whole window reads as a picture.
+    //
+    // The default action is wired too, and not only announced: a reader has to
+    // be able to press the button, not just say its name.
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+
     property <bool> filled: kind == ButtonKind.primary;
     property <brush> ink: !enabled ? Theme.idle
         : kind == ButtonKind.primary ? #ffffff
@@ -75,7 +86,15 @@ export component IconButton inherits Rectangle {
     in property <string> glyph;
     in property <brush> tint: Theme.text-dim;
     in property <length> diameter: 26px;
+    /// What it is, in words. An icon-only control has no text to fall back on,
+    /// so this is the only thing a reader can announce — a button without one
+    /// is announced as "button" and nothing else.
+    in property <string> label;
     callback clicked;
+
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
 
     width: diameter;
     height: diameter;

@@ -219,6 +219,13 @@ export component SearchField inherits Rectangle {
     height: 26px;
     border-radius: Theme.radius;
     background: input.has-focus ? Theme.surface-hi : Theme.hover;
+
+    // The `TextInput` inside announces itself as a text field, but not what
+    // the field is for — the placeholder is drawn, not spoken.
+    accessible-role: text-input;
+    accessible-label: "Filter the list by name";
+    accessible-value: root.text;
+    accessible-placeholder-text: root.placeholder;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     public function take-focus() {
@@ -286,6 +293,7 @@ export component SearchField inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: Lucide.x;
+                label: "Clear the filter";
                 diameter: 20px;
                 clicked => {
                     root.text = "";

@@ -47,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,13 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,35 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |

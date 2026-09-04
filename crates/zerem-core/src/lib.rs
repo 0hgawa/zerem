@@ -6,6 +6,7 @@
 
 pub mod choice;
 pub mod content;
+pub mod contrast;
 pub mod detail;
 pub mod fault;
 pub mod filter;
