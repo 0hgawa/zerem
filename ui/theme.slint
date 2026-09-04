@@ -38,8 +38,13 @@ export global Theme {
     // fourteen per cent — where this palette used to be a cool blue-grey at
     // hue 240. Same lightness ramp, different temperature, and the whole app
     // stops looking like a dialog box.
+    // `ground` is the window itself, seen in the gutter between the cards. It
+    // is the *lowest* layer, which is why the cards on it can be lighter and
+    // read as raised — the composition Windows 11 uses everywhere, and the
+    // reason its surfaces look like objects rather than regions.
+    out property <brush> ground: dark ? #0e0d0c : #f0eeec;
     out property <brush> bg: dark ? #131211 : #fdfdfc;
-    out property <brush> surface: dark ? #181716 : #f5f3f2;
+    out property <brush> surface: dark ? #181716 : #f9f8f7;
     out property <brush> surface-hi: dark ? #201f1d : #eae8e6;
     // A panel raised on top of chrome, which is not the same direction in both
     // themes and was drawn as though it were. `surface-hi` means "one step

@@ -377,6 +377,10 @@ export component DetailDrawer inherits Rectangle {
     /// text jumping between two elisions is not motion, it is a glitch.
     in property <length> full-width;
     background: Theme.surface;
+    // A card of its own, like everything else in the window. The clip that
+    // makes the slide work rounds the corners too, which is why the radius
+    // goes here rather than on the sheet inside.
+    border-radius: Theme.radius-float;
     clip: true;
 
     sheet := Rectangle {
