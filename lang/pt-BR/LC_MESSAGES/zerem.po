@@ -330,3 +330,7 @@ msgstr "Torrents terminados ficam na pasta em que foram baixados."
 
 msgid "Off"
 msgstr "Desligar"
+
+# O resumo no topo do painel de detalhes.
+msgid "Ratio"
+msgstr "Proporção"

@@ -168,8 +168,31 @@ export global DetailState {
     /// is room to read it and, next to it, the one button that acts on it.
     in-out property <string> fault;
 
+    // --- how the torrent in this panel is doing ---
+    //
+    // The panel said the name and nothing else: you opened the insides of a
+    // torrent and could not tell whether it was moving. All of it comes from
+    // the same row the table draws, so the two can never disagree.
+    in-out property <float> progress;
+    in-out property <string> progress-text;
+    in-out property <string> state;
+    /// Which colour the state is written in — the table's own `kind`.
+    in-out property <int> kind;
+    in-out property <bool> running;
+    in-out property <string> down;
+    in-out property <string> up;
+    in-out property <string> eta;
+    in-out property <string> ratio;
+    in-out property <string> swarm;
+
     callback close();
     callback pick-tab(string);
+    /// Start or stop *this* torrent — the one in the panel, which is not
+    /// necessarily the whole selection. Ctrl-clicking three rows and pressing
+    /// the panel's button should not act on the other two.
+    callback toggle-running();
+    callback open-folder();
+    callback remove();
     /// Fetch this file, or stop fetching it. Applies to the line at once; the
     /// engine's next snapshot is the truth, and puts the tick back if it said no.
     callback toggle-file(int);

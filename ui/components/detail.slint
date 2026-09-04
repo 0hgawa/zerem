@@ -18,7 +18,7 @@ import { Theme } from "../theme.slint";
 import { DetailState, FileEntry, PeerEntry } from "../state.slint";
 import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind, IconButton } from "button.slint";
-import { EmptyState, Tick } from "common.slint";
+import { EmptyState, Stat, Tick } from "common.slint";
 
 component Tab inherits Rectangle {
     in property <string> label;
@@ -444,6 +444,138 @@ export component DetailDrawer inherits Rectangle {
             }
         }
 
+
+        // How the torrent is doing, which the panel never said.
+        //
+        // You could open the insides of a torrent and not tell whether it was
+        // moving — the name, then straight into a file list. This is the first
+        // question anybody has when they click a row, so it is the first thing
+        // the panel answers, and everything in it comes from the same row the
+        // table draws so the two cannot disagree.
+        Rectangle {
+            height: 92px;
+            VerticalLayout {
+                padding-left: 13px;
+                padding-right: 13px;
+                padding-bottom: 10px;
+                spacing: 8px;
+
+                // The bar first: it is read without being read.
+                Rectangle {
+                    height: 4px;
+                    border-radius: 2px;
+                    background: Theme.track;
+                    Rectangle {
+                        x: 0;
+                        width: parent.width * DetailState.progress;
+                        height: parent.height;
+                        border-radius: parent.border-radius;
+                        background: DetailState.kind == 4 ? Theme.danger
+                            : DetailState.kind == 2 ? Theme.seeding
+                            : DetailState.kind == 3 ? Theme.idle
+                            : Theme.accent-fill;
+                        animate width { duration: Theme.quick; easing: Theme.ease-standard(); }
+                    }
+                }
+
+                // Then the sentence: what it is doing, how fast, and how long.
+                // One line, because three facts on three lines is a form.
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: DetailState.state;
+                        color: DetailState.kind == 4 ? Theme.danger
+                            : DetailState.kind == 2 ? Theme.seeding
+                            : DetailState.kind == 1 ? Theme.accent
+                            : Theme.text-dim;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        font-weight: Theme.semibold;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: DetailState.progress-text;
+                        color: Theme.text;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    if DetailState.eta != "": Text {
+                        text: DetailState.eta;
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                    }
+                }
+
+                // The four numbers, in the marks the status bar already taught.
+                HorizontalLayout {
+                    spacing: 14px;
+                    Stat {
+                        glyph: Lucide.arrow-down;
+                        value: DetailState.down;
+                        hint: @tr("Download speed");
+                        tint: Theme.accent;
+                    }
+                    Stat {
+                        glyph: Lucide.arrow-up;
+                        value: DetailState.up;
+                        hint: @tr("Upload speed");
+                        tint: Theme.seeding;
+                    }
+                    Stat {
+                        glyph: Lucide.users;
+                        value: DetailState.swarm;
+                        hint: @tr("Peers");
+                        tint: Theme.text-dim;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Stat {
+                        glyph: Lucide.zap;
+                        value: DetailState.ratio;
+                        hint: @tr("Ratio");
+                        tint: Theme.text-dim;
+                    }
+                }
+            }
+        }
+
+        // And what can be done about it, on the torrent this panel is about —
+        // not on the selection, which may be three other rows. Every one of
+        // these has another route: the button on the hovered row, the menu,
+        // the keyboard. This is the route for somebody who is already looking
+        // at the thing.
+        Rectangle {
+            height: 44px;
+            HorizontalLayout {
+                padding-left: 13px;
+                padding-right: 13px;
+                padding-bottom: 10px;
+                spacing: 8px;
+                alignment: start;
+
+                Button {
+                    label: DetailState.running ? @tr("Pause") : @tr("Start");
+                    glyph: DetailState.running ? Lucide.pause : Lucide.play;
+                    kind: ButtonKind.primary;
+                    clicked => { DetailState.toggle-running(); }
+                }
+                Button {
+                    label: @tr("Open folder");
+                    glyph: Lucide.folder-open;
+                    clicked => { DetailState.open-folder(); }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Button {
+                    label: @tr("Remove…");
+                    glyph: Lucide.trash;
+                    kind: ButtonKind.danger;
+                    clicked => { DetailState.remove(); }
+                }
+            }
+        }
         // A failure gets the top of the panel, above the tabs, because it is
         // the answer to the question that brought someone here. The message
         // wraps rather than elides — the state column already tried eliding it,

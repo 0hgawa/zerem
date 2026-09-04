@@ -389,6 +389,54 @@ pub fn wire(
 fn wire_menu(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
     let detail = ui.global::<DetailState>();
 
+    // The three verbs, acting on the torrent this panel is about.
+    //
+    // Not on the selection: Ctrl-clicking three rows shows the first in the
+    // panel, and a Remove that took the other two with it would be acting on
+    // something nobody is looking at.
+    detail.on_toggle_running({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let Some(id) = *views.detail.shown.borrow() else { return };
+            let snapshot = state.snapshot();
+            let Some(row) = snapshot.torrents.iter().find(|t| t.id == id) else { return };
+            if row.is_active() {
+                state.engine.send(Command::Pause(id));
+                state.expect_pause(id, snapshot.seq);
+            } else {
+                state.engine.send(Command::Start(id));
+                state.expect_start(id, snapshot.seq);
+            }
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
+    detail.on_open_folder({
+        let (state, views) = (state.clone(), views.clone());
+        move || {
+            let Some(id) = *views.detail.shown.borrow() else { return };
+            let snapshot = state.snapshot();
+            let folder = snapshot.torrents.iter().find(|t| t.id == id).map(|t| t.folder.clone());
+            match folder.filter(|f| !f.is_empty()) {
+                Some(folder) => zerem_shell::reveal(std::path::Path::new(folder.as_ref())),
+                None => state.set_notice(zerem_core::tr("That torrent has no folder yet")),
+            }
+        }
+    });
+
+    detail.on_remove({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let Some(id) = *views.detail.shown.borrow() else { return };
+            // Through the same confirmation every other route uses. Removing is
+            // the one destructive thing the app does and it asks once, in one
+            // place, however it was reached.
+            super::torrents::confirm_remove(&ui, &state, vec![id]);
+        }
+    });
+
     detail.on_open_file_menu({
         let ui = ui.as_weak();
         move |index, x, y| {
@@ -469,6 +517,10 @@ fn first_selected(state: &UiState) -> Option<TorrentId> {
 }
 
 /// Push a snapshot's details into the drawer. Does nothing when it is shut.
+// The one float this app pushes, and `push!` compares before it sets. Bit
+// equality is exactly the question being asked — "is this the same value I
+// pushed last time" — and not a numeric closeness the lint assumes it is.
+#[allow(clippy::float_cmp, reason = "the comparison is `did it change`, not `is it near`")]
 pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
     let detail = ui.global::<DetailState>();
     if !detail.get_open() {
@@ -491,6 +543,21 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
         set_fault,
         row.and_then(|t| t.error.as_deref()).map_or_else(SharedString::default, Into::into)
     );
+    // How it is doing, from the same row the table draws so the two cannot
+    // disagree. Pushed rather than derived here: the formatting is already done
+    // once for the table, and doing it twice is two chances to differ.
+    if let Some(row) = row {
+        push!(detail, get_progress, set_progress, row.progress_bp() as f32 / 10_000.0);
+        push!(detail, get_progress_text, set_progress_text, fmt::progress(row.done, row.size).into());
+        push!(detail, get_state, set_state, row.status_text().into());
+        push!(detail, get_kind, set_kind, row.status_kind());
+        push!(detail, get_running, set_running, row.is_active());
+        push!(detail, get_down, set_down, fmt::speed(row.down_bps).into());
+        push!(detail, get_up, set_up, fmt::speed(row.up_bps).into());
+        push!(detail, get_eta, set_eta, fmt::eta(row.eta).into());
+        push!(detail, get_ratio, set_ratio, fmt::ratio(row.ratio_x100).into());
+        push!(detail, get_swarm, set_swarm, fmt::peers(row.peers_connected, row.peers_total).into());
+    }
     push!(detail, get_files_summary, set_files_summary, details.files.len().to_string().into());
     push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
 

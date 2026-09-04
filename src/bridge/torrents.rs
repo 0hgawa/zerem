@@ -319,7 +319,7 @@ fn wire_removing(
         move || {
             let Some(ui) = ui.upgrade() else { return };
             let targets: Vec<TorrentId> = state.selection().iter().copied().collect();
-            ask(&ui, &state, targets);
+            confirm_remove(&ui, &state, targets);
         }
     });
 
@@ -329,7 +329,7 @@ fn wire_removing(
         move |index| {
             let Some(ui) = ui.upgrade() else { return };
             let Some(id) = state.model.id_at(index.max(0) as usize) else { return };
-            ask(&ui, &state, vec![id]);
+            confirm_remove(&ui, &state, vec![id]);
         }
     });
 
@@ -366,8 +366,9 @@ fn wire_removing(
     });
 }
 
-/// Open the confirmation over `targets`. The single path to removing anything.
-fn ask(ui: &MainWindow, state: &UiState, targets: Vec<TorrentId>) {
+/// Open the confirmation over `targets`. The single path to removing anything,
+/// which is why the drawer reaches for it too rather than asking its own way.
+pub(super) fn confirm_remove(ui: &MainWindow, state: &UiState, targets: Vec<TorrentId>) {
     if !state.begin_remove(targets) {
         return;
     }
