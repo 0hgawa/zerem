@@ -199,6 +199,10 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.set_max_active(limit).await;
             Ok(())
         }
+        Command::SetAddPaused(paused) => {
+            session.set_add_paused(paused);
+            Ok(())
+        }
         // By reference so `command` survives for the error log below. The
         // clone is one PathBuf per preference change.
         Command::SetDownloadDir(ref dir) => session.set_output_dir(dir.clone()),
@@ -240,6 +244,7 @@ mod tests {
             // binaries must not fight over 6881.
             port: 0,
             max_active: 0,
+            add_paused: false,
             utp: false,
             upnp: false,
         }

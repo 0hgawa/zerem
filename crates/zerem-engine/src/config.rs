@@ -31,6 +31,8 @@ pub struct EngineConfig {
     pub port: u16,
     /// How many torrents may download at once. Zero is no limit.
     pub max_active: u32,
+    /// Whether a torrent is added stopped rather than started.
+    pub add_paused: bool,
     /// uTP alongside TCP. On by default here, off by default in librqbit.
     pub utp: bool,
     pub upnp: bool,
@@ -45,6 +47,7 @@ impl Default for EngineConfig {
             // No limit by default, so nothing changes for somebody with three
             // torrents. A queue is what you reach for when you have twenty.
             max_active: 0,
+            add_paused: false,
             utp: true,
             upnp: true,
         }

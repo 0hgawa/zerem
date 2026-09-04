@@ -4,22 +4,25 @@
 import { Theme } from "../theme.slint";
 import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind } from "../components/button.slint";
-import { Check, Field, Modal } from "../components/common.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Check, Field, Modal, NumberField, SettingsGroup } from "../components/common.slint";
 import { Prefs, TorrentList } from "../state.slint";
 
-/// Only what can change while the app runs.
+/// Everything the app will let somebody change, grouped and scrollable.
 ///
-/// The listening port, uTP and UPnP live in the settings file but not here:
-/// they are fixed when the session is built, and a control that silently does
-/// nothing until the next launch is worse than no control at all.
+/// The three restart-only settings are here now, which reverses an earlier
+/// call. The objection was right — a control that *silently* does nothing until
+/// the next launch is worse than no control — and it was an argument against
+/// the silence rather than against the control. Each of them says so on its
+/// own line, so the panel is honest instead of incomplete.
 export component Preferences inherits Modal {
-    card-width: 520px;
-    card-height: card.preferred-height;
+    card-width: 560px;
+    card-height: min(card.preferred-height, 620px);
     dismissed => { Prefs.close(); }
 
     card := VerticalLayout {
         padding: 22px;
-        spacing: 16px;
+        spacing: 14px;
 
         Text {
             text: @tr("Preferences");
@@ -29,40 +32,108 @@ export component Preferences inherits Modal {
             font-weight: 600;
         }
 
-        Field {
-            label: @tr("Save to");
-            value: Prefs.download-dir;
-            hint: @tr("Torrents already in the list keep their folder.");
-            action: @tr("Change");
-            glyph: Lucide.folder-open;
-            activated => { Prefs.pick-download-dir(); }
-        }
+        ScrollView {
+            vertical-stretch: 1;
+            viewport-width: self.width;
 
+            VerticalLayout {
+                spacing: 15px;
+                padding-right: 12px;
+                alignment: start;
 
-        Field {
-            label: @tr("Download limit");
-            value: Prefs.down-limit;
-            action: @tr("Change");
-            glyph: Lucide.arrow-down;
-            activated => { Prefs.cycle-down-limit(); }
-        }
+                SettingsGroup { text: @tr("Downloads"); }
 
-        Field {
-            label: @tr("Upload limit");
-            value: Prefs.up-limit;
-            // The one that matters day to day, so it says why.
-            hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
-            action: @tr("Change");
-            glyph: Lucide.arrow-up;
-            activated => { Prefs.cycle-up-limit(); }
-        }
+                Field {
+                    label: @tr("Save to");
+                    value: Prefs.download-dir;
+                    hint: @tr("Torrents already in the list keep their folder.");
+                    action: @tr("Change");
+                    glyph: Lucide.folder-open;
+                    activated => { Prefs.pick-download-dir(); }
+                }
 
-        if Prefs.custom-limits: Text {
-            text: @tr("A limit here was set by hand in settings.json. Changing it will step to the nearest preset.");
-            color: Theme.warn;
-            font-size: Theme.fs-label;
-            font-family: Theme.font;
-            wrap: word-wrap;
+                NumberField {
+                    label: @tr("Download at once");
+                    value: Prefs.max-active;
+                    placeholder: @tr("No limit");
+                    hint: @tr("The rest wait their turn. Seeding never waits.");
+                    committed(text) => { Prefs.set-max-active(text); }
+                }
+
+                Check {
+                    label: @tr("Add torrents stopped");
+                    checked: Prefs.add-paused;
+                    toggled(on) => { Prefs.set-add-paused(on); }
+                }
+
+                SettingsGroup { text: @tr("Speed"); }
+
+                NumberField {
+                    label: @tr("Download limit");
+                    value: Prefs.down-limit;
+                    unit: @tr("kB/s");
+                    placeholder: @tr("Unlimited");
+                    committed(text) => { Prefs.set-down-limit(text); }
+                }
+
+                NumberField {
+                    label: @tr("Upload limit");
+                    value: Prefs.up-limit;
+                    unit: @tr("kB/s");
+                    placeholder: @tr("Unlimited");
+                    // The one that matters day to day, so it says why.
+                    hint: @tr("An unlimited upload fills the uplink and stalls everything else on the connection.");
+                    committed(text) => { Prefs.set-up-limit(text); }
+                }
+
+                SettingsGroup { text: @tr("Connection"); }
+
+                NumberField {
+                    label: @tr("Listening port");
+                    value: Prefs.port;
+                    placeholder: "6881";
+                    hint: @tr("Takes effect the next time Zerem starts.");
+                    committed(text) => { Prefs.set-port(text); }
+                }
+
+                Check {
+                    label: @tr("uTP — yields to other traffic on the same line");
+                    checked: Prefs.utp;
+                    toggled(on) => { Prefs.set-utp(on); }
+                }
+
+                Check {
+                    label: @tr("Ask the router to open the port (UPnP)");
+                    checked: Prefs.upnp;
+                    toggled(on) => { Prefs.set-upnp(on); }
+                }
+
+                Text {
+                    text: @tr("Both take effect the next time Zerem starts.");
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-label;
+                    font-family: Theme.font;
+                    wrap: word-wrap;
+                }
+
+                SettingsGroup { text: @tr("Appearance"); }
+
+                Field {
+                    label: @tr("Language");
+                    value: Prefs.language;
+                    action: @tr("Change");
+                    glyph: Lucide.file-text;
+                    activated => { Prefs.cycle-language(); }
+                }
+
+                Check {
+                    label: @tr("Dark theme");
+                    checked: Theme.dark;
+                    // Through the same callback the toolbar button uses, so the
+                    // choice is written down rather than only drawn.
+                    toggled(on) => { TorrentList.toggle-theme(); }
+                }
+            }
         }
 
         HorizontalLayout {

@@ -31,12 +31,22 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 
 ## Preferências
 
-`Ctrl+,` ou o botão na barra. Pasta de destino, limite de download e limite de
-upload — aplicados na hora, sem reiniciar.
+`Ctrl+,` ou o botão na barra. Quatro grupos: **Downloads**, **Velocidade**,
+**Conexão** e **Aparência**.
+
+Os números são **digitados**, não escolhidos numa lista. Os presets que vieram
+antes eram mais rápidos de trocar e impossíveis de errar, e esse argumento só
+vale enquanto todo número que alguém quer está na lista — o que um limite de
+banda nunca é: as pessoas têm uma velocidade de linha e querem um número que se
+relacione com ela. Vazio significa sem limite, que é o que o texto de fundo diz,
+em vez de uma palavra para apagar antes de digitar.
+
+O valor entra ao apertar Enter ou ao sair do campo, **nunca a cada tecla**:
+digitar "500" caractere a caractere aplicaria 5, depois 50, e os dois primeiros
+estrangulam a conexão por um instante.
 
 O **limite de upload** é o que importa no dia a dia: sem ele o cliente enche o
-uplink e trava a navegação da casa inteira. Os limites são um menu de presets em
-vez de campo de texto — ninguém quer digitar "512".
+uplink e trava a navegação da casa inteira.
 
 Tudo vive em `%LOCALAPPDATA%\Zerem\settings.json`, escrito atomicamente e com
 debounce. **Porta de escuta, uTP e UPnP estão no arquivo mas não no painel**:

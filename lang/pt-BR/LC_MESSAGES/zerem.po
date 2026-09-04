@@ -15,9 +15,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-msgid "A limit here was set by hand in settings.json. Changing it will step to the nearest preset."
-msgstr "Um limite aqui foi definido à mão no settings.json. Alterá-lo vai saltar para o preset mais próximo."
-
 msgid "A magnet has none until its metadata arrives."
 msgstr "Um magnet não tem nenhum até a metadata chegar."
 
@@ -208,3 +205,65 @@ msgstr "Ocultar a lista de estados"
 
 msgid "Show the state list"
 msgstr "Mostrar a lista de estados"
+
+# O painel de preferências, agora com grupos e campos digitáveis.
+msgid "Downloads"
+msgstr "Downloads"
+
+msgid "Speed"
+msgstr "Velocidade"
+
+msgid "Connection"
+msgstr "Conexão"
+
+msgid "Appearance"
+msgstr "Aparência"
+
+msgid "Download at once"
+msgstr "Baixar de uma vez"
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "O resto espera a vez. Semear nunca espera."
+
+msgid "No limit"
+msgstr "Sem limite"
+
+msgid "Unlimited"
+msgstr "Sem limite"
+
+msgid "kB/s"
+msgstr "kB/s"
+
+msgid "Add torrents stopped"
+msgstr "Adicionar torrents parados"
+
+msgid "Listening port"
+msgstr "Porta de escuta"
+
+msgid "Takes effect the next time Zerem starts."
+msgstr "Vale a partir da próxima vez que o Zerem abrir."
+
+msgid "Both take effect the next time Zerem starts."
+msgstr "Os dois valem a partir da próxima vez que o Zerem abrir."
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — cede espaço para o resto do tráfego da linha"
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Pedir ao roteador para abrir a porta (UPnP)"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Dark theme"
+msgstr "Tema escuro"
+
+# Os três contadores do rodapé, em minúsculas porque são rótulos e não frases.
+msgid "active"
+msgstr "ativos"
+
+msgid "paused"
+msgstr "pausados"
+
+msgid "total"
+msgstr "total"

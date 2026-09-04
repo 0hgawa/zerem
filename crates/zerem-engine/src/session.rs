@@ -189,6 +189,8 @@ pub struct TorrentSession {
     /// What the queue paused, so a restart can tell its own work from the
     /// user's.
     queued: Roster,
+    /// Whether the next torrent added is added stopped.
+    add_paused: bool,
 }
 
 impl TorrentSession {
@@ -238,6 +240,7 @@ impl TorrentSession {
             next_back: 0,
             next_front: 0,
             queued: Roster::open(&config.state_dir, "queued.txt"),
+            add_paused: config.add_paused,
         };
         this.adopt_queue();
         this.restore_narrowed().await;
@@ -340,6 +343,7 @@ impl TorrentSession {
                     only_files,
                     overwrite: true,
                     output_folder: Some(folder),
+                    paused: self.add_paused,
                     ..Default::default()
                 }),
             )
@@ -419,6 +423,7 @@ impl TorrentSession {
                     // Passed per torrent, not taken from the session: this is
                     // what lets the download folder change without a restart.
                     output_folder: Some(folder),
+                    paused: self.add_paused,
                     ..Default::default()
                 }),
             )
@@ -647,6 +652,11 @@ impl TorrentSession {
         }
         self.enforce_queue().await;
         Ok(())
+    }
+
+    /// Whether the next torrent added is added stopped.
+    pub const fn set_add_paused(&mut self, paused: bool) {
+        self.add_paused = paused;
     }
 
     /// How many torrents may download at once. Zero is no limit.

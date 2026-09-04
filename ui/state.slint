@@ -155,11 +155,14 @@ export global DetailState {
 export global Prefs {
     in-out property <bool> open;
     in-out property <string> download-dir;
+    /// Typed, not stepped. Empty means unlimited, which is what the placeholder
+    /// says rather than a word somebody has to clear before typing a number.
     in-out property <string> down-limit;
     in-out property <string> up-limit;
-    /// Set from a hand-edited file to something that is not one of the presets,
-    /// which the menus cannot step through.
-    in-out property <bool> custom-limits;
+    in-out property <string> port;
+    in-out property <bool> add-paused;
+    in-out property <bool> utp;
+    in-out property <bool> upnp;
     /// What the language row shows — "System", or the language named in itself.
     in-out property <string> language;
     /// "No limit", or how many download at once.
@@ -172,15 +175,20 @@ export global Prefs {
     /// invoking a callback is the only handoff Slint offers that arrives with
     /// the handler's own context intact.
     callback download-dir-picked(string);
-    /// Each advances to the next preset, wrapping through unlimited.
-    callback cycle-down-limit();
-    callback cycle-up-limit();
+    /// A number the user finished typing — on Enter, or on leaving the field.
+    /// Never per keystroke: "500" typed one character at a time would apply 5,
+    /// then 50, and the first two of those throttle a connection to nothing.
+    callback set-down-limit(string);
+    callback set-up-limit(string);
+    callback set-max-active(string);
+    callback set-port(string);
+    callback set-add-paused(bool);
+    callback set-utp(bool);
+    callback set-upnp(bool);
     /// Steps to the next shipped language, wrapping through "System". The swap
     /// is live: Slint's bundled translations are a property, so every string
     /// redraws without a restart.
     callback cycle-language();
-    /// Steps to the next preset for how many download at once.
-    callback cycle-max-active();
 }
 
 export global SessionState {

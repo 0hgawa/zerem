@@ -44,6 +44,8 @@ pub enum Command {
     /// Seeding is never counted and never queued: a finished torrent costs no
     /// download bandwidth, which is the thing being rationed.
     SetMaxActive(u32),
+    /// Whether the next torrent added is added stopped.
+    SetAddPaused(bool),
     /// Global transfer caps in bytes per second. `None` is unlimited.
     ///
     /// Takes effect at once — librqbit's rate limiters are settable while the

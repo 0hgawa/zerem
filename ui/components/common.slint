@@ -62,7 +62,19 @@ export component Tick inherits Rectangle {
 export component Check inherits Rectangle {
     in-out property <bool> checked;
     in property <string> label;
-    height: 20px;
+    /// Raised after the flip, for the callers that have to write it somewhere.
+    /// A two-way binding on its own changes the box and nothing else.
+    callback toggled(bool);
+    height: 22px;
+
+    accessible-role: checkbox;
+    accessible-label: root.label;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => {
+        root.checked = !root.checked;
+        root.toggled(root.checked);
+    }
 
     HorizontalLayout {
         spacing: 8px;
@@ -82,7 +94,10 @@ export component Check inherits Rectangle {
 
     TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.checked = !root.checked; }
+        clicked => {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
+        }
     }
 }
 
@@ -401,4 +416,116 @@ export component RailItem inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { root.chosen(); }
     }
+}
+
+/// A settings row whose value is typed rather than stepped through.
+///
+/// The presets it replaces were faster to change and impossible to get wrong,
+/// and that was the whole argument for them — but it only holds while every
+/// number somebody wants is on the list. A limit is not that kind of number:
+/// people have a line speed, and they want a figure that relates to it.
+///
+/// Committed on Enter or on leaving the field, never per keystroke. Typing
+/// "500" one character at a time would apply 5, then 50, then 500, and the
+/// first two of those are a connection throttled to nothing for a moment.
+export component NumberField inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> hint;
+    in property <string> unit;
+    in property <string> placeholder;
+    in-out property <string> value;
+    callback committed(string);
+    spacing: 12px;
+
+    VerticalLayout {
+        alignment: center;
+        width: 118px;
+        Text {
+            text: root.label;
+            color: Theme.text-dim;
+            font-size: Theme.fs-body;
+            font-family: Theme.font;
+        }
+    }
+
+    VerticalLayout {
+        horizontal-stretch: 1;
+        alignment: center;
+        spacing: 3px;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            box := Rectangle {
+                width: 96px;
+                height: 32px;
+                border-radius: Theme.radius;
+                background: input.has-focus ? Theme.surface-hi : Theme.hover;
+                animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+                accessible-role: text-input;
+                accessible-label: root.label;
+                accessible-value: root.value;
+                accessible-placeholder-text: root.placeholder;
+
+                HorizontalLayout {
+                    padding-left: 9px;
+                    padding-right: 9px;
+                    input := TextInput {
+                        text <=> root.value;
+                        color: Theme.text;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                        single-line: true;
+                        // Digits only. Refusing the keystroke beats accepting it
+                        // and explaining afterwards.
+                        input-type: number;
+                        accepted => { root.committed(self.text); }
+                        changed has-focus => {
+                            if (!self.has-focus) { root.committed(self.text); }
+                        }
+                    }
+                }
+
+                if root.value == "" && !input.has-focus: Text {
+                    x: 9px;
+                    text: root.placeholder;
+                    color: Theme.idle;
+                    font-size: Theme.fs-body;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
+
+            if root.unit != "": VerticalLayout {
+                alignment: center;
+                Text {
+                    text: root.unit;
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-body;
+                    font-family: Theme.font;
+                }
+            }
+        }
+
+        if root.hint != "": Text {
+            text: root.hint;
+            color: Theme.text-dim;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
+    }
+}
+
+/// A heading inside a settings panel. Groups are what keep ten rows from
+/// reading as a list of ten unrelated things.
+export component SettingsGroup inherits Text {
+    color: Theme.text-dim;
+    font-size: Theme.fs-label;
+    font-family: Theme.font;
+    font-weight: 600;
 }

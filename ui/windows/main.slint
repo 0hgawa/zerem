@@ -14,14 +14,13 @@ import { EmptyState, RailItem, SearchField, Sparkline, Stat } from "../component
 import { ConfirmRemove, Preferences } from "dialogs.slint";
 
 component Toolbar inherits Rectangle {
-    in property <bool> has-selection;
     /// Ctrl+F lands here. The field is nested two layouts deep, so the window
     /// reaches it through the toolbar rather than through a global — an element
     /// reference is the one thing a global cannot hold.
     public function focus-search() { search.take-focus(); }
     /// Escape in the field. The window answers by taking the keyboard back.
     callback dismissed;
-    height: 44px;
+    height: 48px;
     background: Theme.surface;
 
     HorizontalLayout {
@@ -47,35 +46,15 @@ component Toolbar inherits Rectangle {
             }
         }
 
-        Rectangle { width: 10px; }
-
-        // One button, not two: what the selection is doing decides what it
-        // offers, so there is never a dead control beside a live one.
-        VerticalLayout {
-            alignment: center;
-            Button {
-                label: TorrentList.selection-running ? @tr("Pause") : @tr("Start");
-                glyph: TorrentList.selection-running ? Lucide.pause : Lucide.play;
-                enabled: root.has-selection;
-                clicked => {
-                    if (TorrentList.selection-running) {
-                        TorrentList.pause-selected();
-                    } else {
-                        TorrentList.start-selected();
-                    }
-                }
-            }
-        }
-        VerticalLayout {
-            alignment: center;
-            Button {
-                label: @tr("Remove");
-                glyph: Lucide.trash;
-                kind: ButtonKind.danger;
-                enabled: root.has-selection;
-                clicked => { TorrentList.remove-selected(); }
-            }
-        }
+        // Nothing here acts on the selection any more, and nothing here is ever
+        // disabled — which was the argument. Start/pause and Remove were both
+        // greyed out whenever nothing was selected, and nothing selected is what
+        // the window looks like most of the time.
+        //
+        // Every route to them survives: the play/pause that appears on the row
+        // under the cursor, the right-click menu, Space and Delete. And Remove
+        // is the one destructive thing the app does — parked permanently beside
+        // "Add file", it was a slip waiting to happen.
 
         Rectangle { horizontal-stretch: 1; }
 
@@ -131,7 +110,7 @@ component Toolbar inherits Rectangle {
 }
 
 component StatusBar inherits Rectangle {
-    height: 30px;
+    height: 34px;
     background: Theme.surface;
 
     HorizontalLayout {
@@ -167,9 +146,9 @@ component StatusBar inherits Rectangle {
             horizontal-stretch: 1;
         }
 
-        Stat { label: "active"; value: SessionState.active; }
-        Stat { label: "paused"; value: SessionState.paused; }
-        if SessionState.matched == "": Stat { label: "total"; value: SessionState.total; }
+        Stat { label: @tr("active"); value: SessionState.active; }
+        Stat { label: @tr("paused"); value: SessionState.paused; }
+        if SessionState.matched == "": Stat { label: @tr("total"); value: SessionState.total; }
         // Replaces the total rather than joining it, and takes the accent: what
         // it says is "you are not looking at all of them".
         if SessionState.matched != "": Stat { glyph: Lucide.search; value: SessionState.matched; tint: Theme.accent; }
@@ -282,7 +261,6 @@ export component MainWindow inherits Window {
             spacing: 0px;
 
             bar := Toolbar {
-                has-selection: root.has-selection;
                 dismissed => { keys.focus(); }
             }
 

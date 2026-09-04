@@ -21,12 +21,6 @@ const QUIET: std::time::Duration = std::time::Duration::from_millis(400);
 /// A menu rather than a text field: nobody wants to type "512", and picking from
 /// a short list is both faster and impossible to get wrong. A hand-edited file
 /// may hold any value, and the menu will show it.
-pub const SPEED_PRESETS: [u32; 8] = [0, 50, 100, 250, 500, 1_000, 2_500, 5_000];
-
-/// How many download at once. Zero is no limit, and it is first because it is
-/// the default: a queue is what somebody reaches for after they have twenty
-/// torrents, not something to impose on somebody who has three.
-pub const ACTIVE_PRESETS: [u32; 6] = [0, 1, 2, 3, 5, 8];
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -59,6 +53,11 @@ pub struct Settings {
     /// Seeding is never counted: a finished torrent costs no download
     /// bandwidth, which is the thing this rations.
     pub max_active: u32,
+    /// Whether a torrent is added stopped rather than started.
+    ///
+    /// For somebody who adds a batch and then picks: the alternative is twenty
+    /// torrents all racing before anybody has looked at them.
+    pub add_paused: bool,
     /// Which language the interface is in, as a folder name under `lang/`.
     ///
     /// Empty means "whatever the machine is set to", and is stored as empty
@@ -88,6 +87,7 @@ impl Default for Settings {
             column_widths: Vec::new(),
             column_visible: Vec::new(),
             max_active: 0,
+            add_paused: false,
             language: zerem_core::language::SYSTEM.to_owned(),
             drawer_width: crate::state::DEFAULT_DRAWER_W,
         }
@@ -138,23 +138,12 @@ impl Settings {
         std::fs::rename(&tmp, path)
     }
 
-    /// The next preset above the current value, wrapping. Off is one of them.
-    #[must_use]
-    pub fn next_speed(current: u32) -> u32 {
-        SPEED_PRESETS.iter().copied().find(|&p| p > current).unwrap_or(SPEED_PRESETS[0])
-    }
-
-    /// The next preset for how many download at once, wrapping through no limit.
-    #[must_use]
-    pub fn next_active(current: u32) -> u32 {
-        ACTIVE_PRESETS.iter().copied().find(|&p| p > current).unwrap_or(ACTIVE_PRESETS[0])
-    }
-
     #[must_use]
     pub fn to_engine_config(&self) -> zerem_engine::EngineConfig {
         zerem_engine::EngineConfig {
             download_dir: self.download_dir.clone(),
             max_active: self.max_active,
+            add_paused: self.add_paused,
             port: self.port,
             utp: self.utp,
             upnp: self.upnp,
@@ -236,7 +225,7 @@ impl Store {
 
 #[cfg(test)]
 mod tests {
-    use super::{Settings, SPEED_PRESETS};
+    use super::Settings;
 
     fn scratch(name: &str) -> std::path::PathBuf {
         let dir = std::env::temp_dir().join("zerem-settings-tests");
@@ -299,16 +288,5 @@ mod tests {
         let path = scratch("atomic.json");
         Settings::default().save(&path).expect("save");
         assert!(!path.with_extension("json.tmp").exists());
-    }
-
-    #[test]
-    fn the_speed_menu_wraps_through_unlimited() {
-        assert_eq!(Settings::next_speed(0), SPEED_PRESETS[1]);
-        assert_eq!(Settings::next_speed(SPEED_PRESETS[1]), SPEED_PRESETS[2]);
-        // Past the last preset it comes back to unlimited.
-        assert_eq!(Settings::next_speed(*SPEED_PRESETS.last().expect("presets")), 0);
-        // A hand-edited value that is not a preset still advances.
-        assert_eq!(Settings::next_speed(123), 250);
-        assert_eq!(Settings::next_speed(999_999), 0);
     }
 }
