@@ -265,80 +265,111 @@ export component MainWindow inherits Window {
             HorizontalLayout {
                 spacing: 0px;
 
-                VerticalLayout {
-                    spacing: 0px;
+                // `min-width: 0` and `clip` are what make the panel possible at
+                // all. The columns are fixed widths, so this layout's natural
+                // minimum is their sum — and a layout that cannot go below its
+                // minimum does not shrink, it pushes its sibling off the far
+                // edge of the window. The panel was being cut in half by a
+                // table refusing to give up a column it was not showing
+                // anything urgent in.
+                //
+                // So the table yields and the last columns go under the panel,
+                // which is the trade the side panel was chosen for: a panel
+                // beneath the table costs rows, a panel beside it costs the
+                // rightmost columns, and those are the least urgent ones.
+                // Narrow a column or close the panel to get them back.
+                Rectangle {
                     horizontal-stretch: 1;
+                    min-width: 240px;
+                    clip: true;
 
-                    TableHeader { }
+                    VerticalLayout {
+                        spacing: 0px;
 
-                    if TorrentList.rows.length == 0 && TorrentList.filter == "": EmptyState {
-                        glyph: Lucide.folder-open;
-                        title: "No torrents yet";
-                        detail: "Paste a magnet link with Ctrl+V, or add a .torrent file.";
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: 8px;
-                            Button {
-                                label: "Paste magnet";
-                                glyph: Lucide.clipboard;
-                                kind: ButtonKind.primary;
-                                clicked => { TorrentList.add-magnet-from-clipboard(); }
-                            }
-                            Button {
-                                label: "Add .torrent file";
-                                glyph: Lucide.plus;
-                                clicked => { TorrentList.add-torrent-file(); }
-                            }
-                        }
-                    }
+                        TableHeader { }
 
-                    // A filter that matches nothing is not an empty session,
-                    // and telling someone to paste a magnet link when they have
-                    // three hundred torrents is the app not knowing where it is.
-                    if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
-                        glyph: Lucide.search;
-                        title: "Nothing matches";
-                        detail: "No torrent's name contains every word you typed.";
-                        HorizontalLayout {
-                            alignment: center;
-                            Button {
-                                label: "Clear filter";
-                                glyph: Lucide.x;
-                                kind: ButtonKind.primary;
-                                clicked => {
-                                    TorrentList.filter = "";
-                                    TorrentList.filter-changed("");
+                        if TorrentList.rows.length == 0 && TorrentList.filter == "": EmptyState {
+                            glyph: Lucide.folder-open;
+                            title: "No torrents yet";
+                            detail: "Paste a magnet link with Ctrl+V, or add a .torrent file.";
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 8px;
+                                Button {
+                                    label: "Paste magnet";
+                                    glyph: Lucide.clipboard;
+                                    kind: ButtonKind.primary;
+                                    clicked => { TorrentList.add-magnet-from-clipboard(); }
+                                }
+                                Button {
+                                    label: "Add .torrent file";
+                                    glyph: Lucide.plus;
+                                    clicked => { TorrentList.add-torrent-file(); }
                                 }
                             }
                         }
-                    }
 
-                    if TorrentList.rows.length > 0: list := ListView {
-                        // Keeps the arrow-key row on screen. Fired by
-                        // `focus-tick` rather than by `focus-row`, so holding an
-                        // arrow at the top or bottom of the list still scrolls
-                        // when the row does not move.
-                        property <int> tick: TorrentList.focus-tick;
-                        changed tick => {
-                            if (TorrentList.focus-row >= 0) {
-                                self.viewport-y = clamp(
-                                    self.viewport-y,
-                                    self.visible-height - (TorrentList.focus-row + 1) * Theme.row-h,
-                                    -TorrentList.focus-row * Theme.row-h);
+                        // A filter that matches nothing is not an empty session,
+                        // and telling someone to paste a magnet link when they have
+                        // three hundred torrents is the app not knowing where it is.
+                        if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
+                            glyph: Lucide.search;
+                            title: "Nothing matches";
+                            detail: "No torrent's name contains every word you typed.";
+                            HorizontalLayout {
+                                alignment: center;
+                                Button {
+                                    label: "Clear filter";
+                                    glyph: Lucide.x;
+                                    kind: ButtonKind.primary;
+                                    clicked => {
+                                        TorrentList.filter = "";
+                                        TorrentList.filter-changed("");
+                                    }
+                                }
                             }
                         }
-                        for r[i] in TorrentList.rows: TableRow {
-                            data: r;
-                            index: i;
+
+                        if TorrentList.rows.length > 0: list := ListView {
+                            // Keeps the arrow-key row on screen. Fired by
+                            // `focus-tick` rather than by `focus-row`, so holding an
+                            // arrow at the top or bottom of the list still scrolls
+                            // when the row does not move.
+                            property <int> tick: TorrentList.focus-tick;
+                            changed tick => {
+                                if (TorrentList.focus-row >= 0) {
+                                    self.viewport-y = clamp(
+                                        self.viewport-y,
+                                        self.visible-height - (TorrentList.focus-row + 1) * Theme.row-h,
+                                        -TorrentList.focus-row * Theme.row-h);
+                                }
+                            }
+                            for r[i] in TorrentList.rows: TableRow {
+                                data: r;
+                                index: i;
+                            }
                         }
                     }
                 }
 
-                // Dragged, not fixed, and not a share of the window either: the
-                // window derives its own width from what its children ask for,
-                // so a child asking for a fraction of the window asks about
-                // itself. Rust owns the number, clamps it and saves it.
-                if DetailState.open: DetailDrawer { width: DetailState.width; }
+                // Dragged, not fixed, and never a share of the window: the window
+                // derives its own width from what its children ask for, so a
+                // child asking for a fraction of the window asks about itself.
+                // That is a binding loop, and Slint says so — it was tried.
+                //
+                // Bounds rather than a fixed `width`, which is what keeps the
+                // two of them inside the window without either one measuring
+                // it. The layout hands out the minimums first, grows each to
+                // what it prefers, and gives the leftover to the table, which
+                // is the one that stretches. On a window too narrow for both,
+                // the panel falls back to its floor instead of hanging off the
+                // right edge — which is what it used to do.
+                if DetailState.open: DetailDrawer {
+                    horizontal-stretch: 0;
+                    min-width: 240px;
+                    preferred-width: DetailState.width;
+                    max-width: DetailState.width;
+                }
             }
 
             StatusBar { }
