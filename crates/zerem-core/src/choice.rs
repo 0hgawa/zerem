@@ -42,16 +42,21 @@ pub fn flags(only: Option<&[usize]>, count: usize) -> Vec<bool> {
 }
 
 /// The tick list that switching files on or off would produce, or `None` when
-/// the change is refused.
+/// the change names a file the torrent does not have.
 ///
-/// `file` names one, or is `None` for every file at once — which is the only
-/// thing that makes a torrent of four thousand files editable by hand.
+/// `file` names one, or is `None` for every file at once — which is what makes
+/// a torrent of four thousand files editable by hand, and what the header tick
+/// above the list is.
 ///
-/// Refused rather than obeyed when it would leave nothing to fetch: it is the
-/// rule the add dialog already enforces with a disabled button, and a torrent
-/// downloading no files is not a state anyone reaches for on purpose. An index
-/// past the end is refused the same way — the caller knows the file count and
-/// has no business sending one.
+/// Nothing ticked is allowed, and that reverses an earlier rule. It was refused
+/// because a torrent fetching nothing looked like a state nobody reaches for on
+/// purpose — but it made the header tick a control that only worked one way,
+/// which reads as a control that does not work. Fetching nothing is a real
+/// answer: keep what is on disk, share it, take no more. The row says so
+/// instead of the click being swallowed.
+///
+/// The add dialog still refuses it, and that is not the same rule: there, zero
+/// files means not adding the torrent, and the button for that says Cancel.
 #[must_use]
 pub fn ticked(current: &[bool], file: Option<usize>, wanted: bool) -> Option<Vec<bool>> {
     let mut next = current.to_vec();
@@ -59,7 +64,7 @@ pub fn ticked(current: &[bool], file: Option<usize>, wanted: bool) -> Option<Vec
         Some(i) => *next.get_mut(i)? = wanted,
         None => next.fill(wanted),
     }
-    next.iter().any(|&w| w).then_some(next)
+    Some(next)
 }
 
 /// Which files to ask the engine for.
@@ -119,11 +124,13 @@ mod tests {
     }
 
     #[test]
-    fn a_change_that_would_fetch_nothing_is_refused() {
-        // The same rule the add dialog enforces with a disabled button. A
-        // torrent downloading no files is not a state anyone reaches for.
-        assert_eq!(ticked(&[false, true, false], Some(1), false), None);
-        assert_eq!(ticked(&[true; 3], None, false), None);
+    fn switching_everything_off_is_allowed() {
+        // It was refused once, and that made the header tick a control that
+        // only worked one way — which reads as one that does not work.
+        // Fetching nothing is a real answer: keep what is on disk, share it,
+        // take no more. The row says so rather than the click vanishing.
+        assert_eq!(ticked(&[false, true, false], Some(1), false), Some(vec![false; 3]));
+        assert_eq!(ticked(&[true; 3], None, false), Some(vec![false; 3]));
     }
 
     #[test]

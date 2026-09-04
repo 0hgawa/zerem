@@ -63,6 +63,7 @@ const TABLE: [(&str, &str); 18] = [
     ("Downloading", "Baixando"),
     ("Error", "Erro"),
     ("Fetching metadata", "Buscando metadata"),
+    ("No files selected", "Nenhum arquivo selecionado"),
     ("No limit", "Sem limite"),
     ("No one is sharing", "Ninguém está compartilhando"),
     ("No peers found", "Nenhum peer encontrado"),
@@ -74,7 +75,6 @@ const TABLE: [(&str, &str); 18] = [
     ("That drive is not available", "Essa unidade não está disponível"),
     ("The download folder is not there any more", "A pasta de destino não existe mais"),
     ("The download folder is read-only", "A pasta de destino é somente leitura"),
-    ("at least one file has to be downloaded", "pelo menos um arquivo tem de ser baixado"),
 ];
 
 /// The translation of `source`, or `source` itself.

@@ -277,15 +277,15 @@ pub fn wire(
         }
     });
 
-    detail.on_restore_all_files({
+    detail.on_set_all_files({
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
-        move || {
+        move |wanted| {
             let Some(ui) = ui.upgrade() else { return };
             views.detail.expect(state.snapshot().seq);
-            views.detail.set_wanted(None, true);
+            views.detail.set_wanted(None, wanted);
             show_choice(&ui, &views.detail);
             if let Some(id) = *views.detail.shown.borrow() {
-                state.engine.send(Command::SetFileWanted { id, file: None, wanted: true });
+                state.engine.send(Command::SetFileWanted { id, file: None, wanted });
             }
         }
     });

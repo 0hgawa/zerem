@@ -431,34 +431,61 @@ export component DetailDrawer inherits Rectangle {
         // The folder above what is inside it, the way a file manager shows one
         // — and the way the client everybody is coming from shows this.
         //
-        // The tick is the whole list at once. It only ever goes one way, which
-        // is not a gap: a torrent that fetches nothing is refused, so the other
-        // direction has no outcome but a refusal. This is the way back from
-        // having unticked too much; choosing a handful out of thousands is what
-        // the add dialog is for.
+        // Three controls in one row, and each is its own target rather than the
+        // whole line: the chevron folds the list away, the tick is every file
+        // at once, and the name is neither.
+        //
+        // The tick goes both ways now. It used to only switch everything on,
+        // because a torrent fetching nothing was refused — and a control that
+        // works in one direction reads as a control that does not work.
+        // Fetching nothing is a real answer: keep what is on disk, share it,
+        // take no more. The row says so instead of the click being swallowed.
         if DetailState.tab == "files" && DetailState.files.length > 0: Rectangle {
             height: 34px;
-            background: head.has-hover ? Theme.hover : transparent;
-            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
-
-            accessible-role: checkbox;
-            accessible-label: DetailState.files-folder;
-            accessible-checkable: true;
-            accessible-checked: !DetailState.files-partial;
-            accessible-action-default => { DetailState.restore-all-files(); }
 
             HorizontalLayout {
-                padding-left: 12px;
+                padding-left: 4px;
                 padding-right: 12px;
-                spacing: 10px;
+                spacing: 6px;
 
-                VerticalLayout {
-                    alignment: center;
-                    // Filled when everything is coming down, hollow the moment
-                    // anything is not — the mixed state a file manager shows as
-                    // a dash, said here by the tick simply not being on.
-                    Tick { on: !DetailState.files-partial; }
+                // The way out of a long list, and the reason it is first: a
+                // folder that can be folded away is a folder whose fold is the
+                // leftmost thing in it, everywhere this pattern appears.
+                fold := TouchArea {
+                    width: 22px;
+                    height: parent.height;
+                    mouse-cursor: pointer;
+                    clicked => { DetailState.files-collapsed = !DetailState.files-collapsed; }
+                    Rectangle {
+                        width: 22px;
+                        height: 22px;
+                        border-radius: 7px;
+                        background: fold.has-hover ? Theme.surface-hi : transparent;
+                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+                        Icon {
+                            glyph: DetailState.files-collapsed ? Lucide.chevron-right : Lucide.chevron-down;
+                            tint: Theme.text-dim;
+                            size: 14px;
+                        }
+                    }
                 }
+
+                tickbox := TouchArea {
+                    width: 24px;
+                    height: parent.height;
+                    mouse-cursor: pointer;
+                    // Away from everything when anything is off, everything off
+                    // when it is all on. Gmail's rule, and every list's.
+                    clicked => { DetailState.set-all-files(DetailState.files-partial); }
+                    VerticalLayout {
+                        alignment: center;
+                        HorizontalLayout {
+                            alignment: center;
+                            Tick { on: !DetailState.files-partial; }
+                        }
+                    }
+                }
+
                 VerticalLayout {
                     alignment: center;
                     Icon { glyph: Lucide.folder-open; tint: Theme.warn; size: 16px; }
@@ -479,16 +506,17 @@ export component DetailDrawer inherits Rectangle {
                 }
             }
 
-            head := TouchArea {
-                width: 38px;
-                height: parent.height;
-                mouse-cursor: pointer;
-                clicked => { DetailState.restore-all-files(); }
-            }
+            accessible-role: checkbox;
+            accessible-label: DetailState.files-folder;
+            accessible-checkable: true;
+            accessible-checked: !DetailState.files-partial;
+            accessible-expandable: true;
+            accessible-expanded: !DetailState.files-collapsed;
+            accessible-action-default => { DetailState.set-all-files(DetailState.files-partial); }
         }
 
-
-        if DetailState.tab == "files" && DetailState.files.length > 0: ListView {
+        if DetailState.tab == "files" && DetailState.files.length > 0
+            && !DetailState.files-collapsed: ListView {
             for f[i] in DetailState.files: FileLine { entry: f; index: i; }
         }
 

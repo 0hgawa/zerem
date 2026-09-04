@@ -121,8 +121,8 @@ export global DetailState {
     /// "12 files · 3.72 GB", or "3 of 12 files · 1.44 GB of 3.72 GB" once
     /// something has been left out. Built in Rust like every other number here.
     in-out property <string> files-choice;
-    /// Whether anything has been left out, which is the only state in which
-    /// there is a way back worth offering.
+    /// Whether anything has been left out — what the header tick draws, and
+    /// which way clicking it goes.
     in-out property <bool> files-partial;
     /// The folder the files sit in — the torrent's own name — and what it comes
     /// to. The header row of the list, the way a file manager shows a folder
@@ -142,10 +142,13 @@ export global DetailState {
     /// Fetch this file before the others, or stop. Same rule: applied at once,
     /// corrected by the next snapshot if the engine refused.
     callback toggle-first(int);
-    /// Put every file back. The way out of having unticked too much, and the
-    /// only whole-list action worth a button: the other direction would leave
-    /// the torrent fetching nothing, which is refused.
-    callback restore-all-files();
+    /// Every file at once, both ways — the tick above the list. Fetching
+    /// nothing is allowed and the row says so; it used to be refused, which
+    /// made this a control that only worked in one direction.
+    callback set-all-files(bool);
+    /// Whether the folder is collapsed. Not persisted: it is a way to get a
+    /// long list out of the way for a moment, not a preference.
+    in-out property <bool> files-collapsed;
     /// Try the torrent again after it failed. Starting an errored torrent is a
     /// real retry rather than a hopeful one: librqbit re-initialises it, hashes
     /// what is on disk and carries on from there.

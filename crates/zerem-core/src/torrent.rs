@@ -37,6 +37,10 @@ pub enum Stall {
     /// Connected, and nothing is arriving. Usually means no one in the swarm
     /// has the pieces still wanted.
     Idle,
+    /// Every file is switched off. Not a fault the swarm caused — the answer to
+    /// "why is nothing coming down?" is that nothing was asked for, and the row
+    /// has to say it or the header tick looks like it did nothing.
+    NoFiles,
 }
 
 impl Stall {
@@ -47,6 +51,7 @@ impl Stall {
             Self::NoPeers => "No peers found",
             Self::Connecting => "Connecting",
             Self::Idle => "No one is sharing",
+            Self::NoFiles => "No files selected",
         })
     }
 
@@ -57,7 +62,7 @@ impl Stall {
     /// orange would teach the user to ignore the colour by the third torrent.
     #[must_use]
     pub const fn is_fault(self) -> bool {
-        matches!(self, Self::NoPeers | Self::Idle)
+        matches!(self, Self::NoPeers | Self::Idle | Self::NoFiles)
     }
 }
 

@@ -596,8 +596,8 @@ impl TorrentSession {
         let count = entry.resolve_files();
         anyhow::ensure!(count > 0, "this torrent's file list has not arrived yet");
 
-        entry.wanted = zerem_core::ticked(&entry.wanted, file, wanted)
-            .context(zerem_core::tr("at least one file has to be downloaded"))?;
+        entry.wanted = zerem_core::ticked(&entry.wanted, file, wanted).context("no such file")?;
+
         // Un-ticking a file drops its pin with it: a file nobody is fetching
         // cannot be the one being fetched first.
         for (pin, want) in entry.first.iter_mut().zip(&entry.wanted) {
@@ -784,6 +784,11 @@ impl TorrentSession {
             row.folder = entry.folder.clone();
             row.info_hash = entry.info_hash.clone();
             row.content = content;
+            // Nothing was asked for. Not a fault the swarm caused, and the row
+            // has to say it or the header tick looks like it did nothing.
+            if !entry.wanted.is_empty() && !entry.wanted.iter().any(|w| *w) {
+                row.stall = Some(zerem_core::Stall::NoFiles);
+            }
             // Stopped because something else is ahead of it, not because
             // somebody stopped it. Showing both as "Paused" is how a queue
             // reads as an app that ignored the click.

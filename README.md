@@ -253,8 +253,18 @@ Cada linha do painel tem duas: o caminho ou o endereço, e os números embaixo.
 Isso lê melhor em 360 px do que uma tabela de quatro colunas jamais leu em 1180.
 
 A lista tem **a pasta no topo**, do jeito que um gerenciador de arquivos mostra
-uma pasta acima do que tem dentro — e do jeito que o cliente de onde todo mundo
-está vindo mostra isto. O tique dela é a lista inteira de uma vez.
+uma pasta acima do que tem dentro. Três controles nessa linha, cada um com o
+próprio alvo: o **chevron** dobra a lista para fora do caminho, o **tique** é
+todos os arquivos de uma vez, e o nome não é nenhum dos dois.
+
+O tique vai nos **dois sentidos**, como o do Gmail: liga tudo quando algo está
+desligado, desliga tudo quando está tudo ligado. Ele só ia num sentido antes,
+porque um torrent que não baixa nada era recusado — e um controle que funciona
+numa direção só lê como um controle que não funciona.
+
+**Não baixar nada é uma resposta de verdade**: manter o que está no disco,
+compartilhar, e não pegar mais. A coluna de estado passa a dizer
+`Nenhum arquivo selecionado` em vez de o clique sumir.
 
 Cada linha carrega **o ícone que o próprio sistema mostra** para aquele tipo de
 arquivo. Não um desenhado aqui: um `.mkv` no Zerem leva a mesma figura que leva
