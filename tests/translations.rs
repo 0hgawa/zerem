@@ -96,3 +96,65 @@ fn no_string_is_translated_twice() {
         .collect();
     assert!(repeated.is_empty(), "pt-BR translates these twice:\n  {}", repeated.join("\n  "));
 }
+
+/// Every string the Rust side passes through `tr` is actually in the catalogue.
+///
+/// The `.slint` had this covered from the start and the Rust side never did, so
+/// five status-bar messages sat in English inside an app that claims to be
+/// translated — nobody noticed because nothing looked. `tr` returns its
+/// argument when it finds no entry, which is the right behaviour and the reason
+/// the gap was silent.
+#[test]
+fn nothing_the_rust_side_says_falls_back_to_english() {
+    zerem_core::text::set("pt-BR");
+
+    let mut untranslated: Vec<String> = Vec::new();
+    for file in rust_sources(std::path::Path::new("src")) {
+        let text = std::fs::read_to_string(&file).expect("read a source file");
+        for phrase in marked_in_rust(&text) {
+            // Leaked so the borrow outlives the loop; a test process is about
+            // to end and this is a handful of short strings.
+            let phrase: &'static str = Box::leak(phrase.into_boxed_str());
+            if zerem_core::tr(phrase) == phrase {
+                untranslated.push(format!("{}: {phrase}", file.display()));
+            }
+        }
+    }
+
+    zerem_core::text::set("en");
+    assert!(
+        untranslated.is_empty(),
+        "{} strings reach the window untranslated:\n  {}",
+        untranslated.len(),
+        untranslated.join("\n  ")
+    );
+}
+
+/// Every `.rs` file under a folder, however deep.
+fn rust_sources(root: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut found = Vec::new();
+    let Ok(entries) = std::fs::read_dir(root) else { return found };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            found.extend(rust_sources(&path));
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            found.push(path);
+        }
+    }
+    found
+}
+
+/// The literals handed to `tr`, which is the only marker the Rust side has.
+fn marked_in_rust(source: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    let mut rest = source;
+    while let Some(at) = rest.find("tr(\"") {
+        rest = &rest[at + 4..];
+        if let Some(end) = rest.find('"') {
+            found.push(rest[..end].to_owned());
+            rest = &rest[end..];
+        }
+    }
+    found
+}

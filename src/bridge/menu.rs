@@ -72,7 +72,7 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
             let Some(ui) = ui.upgrade() else { return };
             match folder_of(&state) {
                 Some(folder) => zerem_shell::reveal(std::path::Path::new(&folder)),
-                None => state.set_notice("That torrent has no folder yet"),
+                None => state.set_notice(zerem_core::tr("That torrent has no folder yet")),
             }
             let _ = ui;
         }
@@ -84,10 +84,10 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
             let Some(ui) = ui.upgrade() else { return };
             match magnet_of(&state) {
                 Some(magnet) => match arboard::Clipboard::new().and_then(|mut c| c.set_text(magnet)) {
-                    Ok(()) => state.set_notice("Magnet link copied"),
-                    Err(e) => state.set_notice(&format!("Could not reach the clipboard: {e}")),
+                    Ok(()) => state.set_notice(zerem_core::tr("Magnet link copied")),
+                    Err(e) => state.set_notice(&zerem_core::text::clipboard_failed(&e.to_string())),
                 },
-                None => state.set_notice("That torrent has no infohash yet"),
+                None => state.set_notice(zerem_core::tr("That torrent has no infohash yet")),
             }
             super::refresh_now(&ui, &state, &views);
         }

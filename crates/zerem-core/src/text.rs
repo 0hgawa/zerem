@@ -56,13 +56,14 @@ pub fn current() -> Lang {
 ///
 /// Sorted, and a test says so: the lookup is a binary search, and an unsorted
 /// table would fail quietly, missing some entries while their neighbours work.
-const TABLE: [(&str, &str); 21] = [
+const TABLE: [(&str, &str); 25] = [
     ("Another program has one of the files open", "Outro programa está com um dos arquivos aberto"),
     ("Checking", "Verificando"),
     ("Connecting", "Conectando"),
     ("Downloading", "Baixando"),
     ("Error", "Erro"),
     ("Fetching metadata", "Buscando metadata"),
+    ("Magnet link copied", "Link magnet copiado"),
     ("No files selected", "Nenhum arquivo selecionado"),
     ("No limit", "Sem limite"),
     ("No one is sharing", "Ninguém está compartilhando"),
@@ -76,6 +77,9 @@ const TABLE: [(&str, &str); 21] = [
     ("That drive is not available", "Essa unidade não está disponível"),
     ("That file has not finished yet", "Esse arquivo ainda não terminou"),
     ("That file is not on disk yet", "Esse arquivo ainda não está no disco"),
+    ("That torrent has no folder yet", "Esse torrent ainda não tem pasta"),
+    ("That torrent has no infohash yet", "Esse torrent ainda não tem infohash"),
+    ("The clipboard has no magnet link in it", "Não há link magnet na área de transferência"),
     ("The download folder is not there any more", "A pasta de destino não existe mais"),
     ("The download folder is read-only", "A pasta de destino é somente leitura"),
 ];
@@ -131,6 +135,33 @@ pub fn shortfall(short: &str) -> String {
     match current() {
         Lang::En => format!("Not enough room in this folder — {short} short"),
         Lang::PtBr => format!("Não cabe nesta pasta — faltam {short}"),
+    }
+}
+
+/// The clipboard would not answer, and what it said about it.
+///
+/// A format function rather than a table row because the reason comes from the
+/// operating system and cannot be known in advance — which is exactly why it
+/// is worth showing rather than swallowing.
+#[must_use]
+pub fn clipboard_failed(why: &str) -> String {
+    match current() {
+        Lang::En => format!("Could not reach the clipboard: {why}"),
+        Lang::PtBr => format!("Não foi possível acessar a área de transferência: {why}"),
+    }
+}
+
+/// A finished download that could not be moved to where finished ones are
+/// kept, and why not.
+///
+/// The torrent has not moved and is still in the list, so this is news rather
+/// than an emergency — but the disk that filled up or the file somebody has
+/// open is something only the person at the machine can fix.
+#[must_use]
+pub fn move_failed(why: &str) -> String {
+    match current() {
+        Lang::En => format!("Could not move the finished download: {why}"),
+        Lang::PtBr => format!("Não foi possível mover o download terminado: {why}"),
     }
 }
 

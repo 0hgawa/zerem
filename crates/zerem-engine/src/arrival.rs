@@ -75,7 +75,7 @@ impl TorrentSession {
         for id in self.take_arrived() {
             if let Err(why) = self.relocate_one(id, &keep).await {
                 tracing::warn!(id = id.0, "could not move a finished torrent: {why:#}");
-                self.report(&format!("Could not move the finished download: {why}"));
+                self.report(&zerem_core::text::move_failed(&why.to_string()));
             }
         }
     }

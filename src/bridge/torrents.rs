@@ -210,7 +210,7 @@ fn wire_adding(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
                 Some(text) => add(&state, &text),
                 // Said in the status bar rather than a popup: a failed paste
                 // should not interrupt anything.
-                None => state.set_notice("The clipboard has no magnet link in it"),
+                None => state.set_notice(zerem_core::tr("The clipboard has no magnet link in it")),
             }
             super::refresh_now(&ui, &state, &views);
         }
