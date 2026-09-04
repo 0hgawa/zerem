@@ -254,6 +254,12 @@ export component MainWindow inherits Window {
                 TorrentList.remove-selected();
                 return accept;
             }
+            // The same thing double-clicking a file does everywhere else. It is
+            // the last of the four verbs the list offers to reach the keyboard.
+            if (e.text == Key.Return && root.has-selection) {
+                TorrentList.open-folder();
+                return accept;
+            }
             if (e.text == "t") { TorrentList.toggle-theme(); return accept; }
             return reject;
         }

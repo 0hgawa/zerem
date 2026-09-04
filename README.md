@@ -47,7 +47,7 @@ tolerado.
 
 | | Alvo | Medido |
 |---|---|---|
-| Binário | ≤ 16 MB | **15,09 MB** — o librqbit responde por 4,7 |
+| Binário | ≤ 16 MB | **15,13 MB** — o librqbit responde por 4,7 |
 | Working set, sessão viva | — | **60 MB** |
 | Working set, 2000 linhas (Fase 1) | ≤ 60 MB | **31,9 MB** |
 | CPU baixando | ≤ 1,5 % de um núcleo por MB/s | **1,45 %** |
@@ -108,6 +108,7 @@ $env:ZEREM_LOG = "debug"   # imprime o custo de cada tick
 | `Ctrl+F` | vai para o filtro; `Esc` volta para a lista |
 | `Ctrl+I` | abre ou fecha o painel de detalhes — clicar numa linha também abre |
 | `Espaço` | pausa ou inicia a seleção |
+| `Enter` | abre a pasta da seleção |
 | `Delete` | remove a seleção — **pergunta antes** |
 | `↑` `↓` | anda pela lista; com `Shift` estende a seleção |
 | `Home` `End` | topo e fim |
@@ -125,6 +126,16 @@ redimensiona a coluna. `Ctrl` alterna a seleção, `Shift` seleciona intervalo.
 Age só naquela linha e não mexe na seleção — é o caminho curto para a ação mais
 comum, sem selecionar antes nem subir até a barra.
 Um `.torrent` ou magnet passado na linha de comando é aberto no arranque.
+
+**Quando um torrent falha**, a coluna de estado diz o quê em palavras e não em
+número: o que chega do engine termina em `(os error 112)`, que é um fato sobre o
+kernel e não sobre o download. Sem espaço, sem permissão, pasta sumiu, arquivo
+aberto por outro programa — os códigos que valem viram frase, e o que não é
+reconhecido passa intacto, porque tradução errada é pior que código cru.
+
+O painel mostra a mensagem inteira acima das abas, com **Try again** ao lado.
+É retentativa de verdade: dar start num torrent em erro faz o librqbit
+re-inicializar, conferir o que está no disco e seguir dali.
 
 **Remover é a única coisa destrutiva que o app faz, e a única que pergunta.**
 A caixa "mover os dados para a lixeira" começa desmarcada toda vez — a escolha

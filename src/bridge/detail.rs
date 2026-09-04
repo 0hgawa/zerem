@@ -219,6 +219,18 @@ pub fn wire(
         }
     });
 
+    detail.on_retry({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            let Some(id) = *views.detail.shown.borrow() else { return };
+            // A real retry: librqbit re-initialises an errored torrent, hashes
+            // what is on disk and carries on from there.
+            state.engine.send(Command::Start(id));
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
     detail.on_toggle_first({
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
         move |index| {
@@ -298,12 +310,17 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
         return;
     };
 
-    let name = snapshot
-        .torrents
-        .iter()
-        .find(|t| t.id == details.id)
-        .map_or_else(SharedString::default, |t| t.name.as_ref().into());
+    let row = snapshot.torrents.iter().find(|t| t.id == details.id);
+    let name = row.map_or_else(SharedString::default, |t| t.name.as_ref().into());
     push!(detail, get_title, set_title, name);
+    // The state column already carries this, elided into whatever fits. Here
+    // there is room to read it, and the one button that acts on it beside it.
+    push!(
+        detail,
+        get_fault,
+        set_fault,
+        row.and_then(|t| t.error.as_deref()).map_or_else(SharedString::default, Into::into)
+    );
     push!(detail, get_files_summary, set_files_summary, details.files.len().to_string().into());
     push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
 

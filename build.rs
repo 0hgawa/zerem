@@ -1,5 +1,20 @@
+/// How much stack the Slint compiler gets.
+///
+/// Its passes recurse over the element tree, so the stack it needs grows with
+/// how deeply the `.slint` nests — and the main thread of a build script gets
+/// the default 8 MB on Linux but only 1 MB on Windows. Adding a wrapper around
+/// the details panel was enough to overflow it, in release and not in debug,
+/// which is a build that fails on one profile for a reason nothing in the
+/// source hints at. A thread we own does not have that ceiling.
+const COMPILER_STACK: usize = 32 * 1024 * 1024;
+
 fn main() {
-    slint_build::compile("ui/app.slint").expect("compile ui/app.slint");
+    std::thread::Builder::new()
+        .stack_size(COMPILER_STACK)
+        .spawn(|| slint_build::compile("ui/app.slint").expect("compile ui/app.slint"))
+        .expect("spawn the Slint compiler")
+        .join()
+        .expect("the Slint compiler panicked");
 
     #[cfg(windows)]
     embed_windows_resources();

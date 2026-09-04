@@ -312,6 +312,46 @@ export component DetailDrawer inherits Rectangle {
             }
         }
 
+        // A failure gets the top of the panel, above the tabs, because it is
+        // the answer to the question that brought someone here. The message
+        // wraps rather than elides — the state column already tried eliding it,
+        // and that is what this is for.
+        //
+        // Try again is a real retry, not a hopeful one: starting an errored
+        // torrent makes librqbit re-initialise it, hash what is on disk and
+        // carry on. Whatever went wrong has to be fixed first, which is why the
+        // button says what it does and does not pretend to fix it.
+        if DetailState.fault != "": Rectangle {
+            background: Theme.danger.with-alpha(0.12);
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: start;
+                        Icon { glyph: Lucide.triangle-alert; tint: Theme.danger; size: 15px; }
+                    }
+                    Text {
+                        text: DetailState.fault;
+                        color: Theme.danger;
+                        font-size: Theme.fs-body;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                        horizontal-stretch: 1;
+                    }
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    Button {
+                        label: "Try again";
+                        glyph: Lucide.play;
+                        clicked => { DetailState.retry(); }
+                    }
+                }
+            }
+        }
+
         Rectangle {
             height: 34px;
             HorizontalLayout {

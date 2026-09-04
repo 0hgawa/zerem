@@ -7,6 +7,7 @@
 pub mod choice;
 pub mod content;
 pub mod detail;
+pub mod fault;
 pub mod filter;
 pub mod fmt;
 pub mod history;
@@ -19,6 +20,7 @@ pub mod torrent;
 pub use choice::{flags, is_narrowed, ticked, to_fetch};
 pub use content::Content;
 pub use detail::{Details, FileRow, PeerRow, Transport};
+pub use fault::explain;
 pub use filter::Filter;
 pub use history::{History, Spark};
 pub use pending::{Pending, PendingFile};

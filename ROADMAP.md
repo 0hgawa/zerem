@@ -37,7 +37,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 
 | Métrica | Alvo | Medido (Fase 0) |
 |---|---|---|
-| Binário (exe, sem instalador) | ≤ 16 MB | **15,09 MB** ⚠️ (era 13,32 na Fase 1) |
+| Binário (exe, sem instalador) | ≤ 16 MB | **15,13 MB** ⚠️ (era 13,32 na Fase 1) |
 | RAM ociosa — 10 torrents parados | ≤ 60 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — 1000 torrents na lista | ≤ 80 MB WS | **31,9 MB** ✅ (a 2000) |
 | RAM — semeando 20 torrents ativos | ≤ 100 MB WS | — |
@@ -50,7 +50,7 @@ depois de medir: o piso não era a lista, era o renderizador. O tamanho do biná
 | Scroll com 2000 torrents | 60 fps sem queda | ⏳ verificação manual |
 | Resposta de qualquer clique | < 100 ms visível | ✅ atualização otimista |
 
-O binário é o número a vigiar: 15,09 MB deixa menos de 1 MB de folga, e o custo
+O binário é o número a vigiar: 15,13 MB deixa menos de 1 MB de folga, e o custo
 não foi a sparkline — trocá-la por um retângulo devolve 10 KB. A conta subiu ao
 longo das Fases 1 e 2, e caber no orçamento por pouco é caber. Fechar a Fase 3
 com uma medição de onde os 15 MB estão é trabalho da tabela de benchmarks.
@@ -363,10 +363,29 @@ o resto dele, e **não custou dependência nova** — o `windows` já estava lá
 feature certa. No Linux responde `None`, porque `statvfs` significa `libc` e essa
 dependência entra com o build Linux, não antes.
 
-⏳ **Falta a metade reativa:** um torrent que falha no meio já mostra a mensagem
-do librqbit na coluna de estado em vez da palavra "Error", mas não tem botão ao
-lado. "Sem espaço em disco" com **Escolher outra pasta** ali mesmo continua em
-aberto.
+✅ **E a metade reativa.** Um torrent que falha mostra a mensagem no lugar da
+palavra "Error" — e agora **em palavras, não em número**. O que chega do engine
+termina em `(os error 112)`, que é um fato sobre o kernel e não sobre o
+download; os códigos que valem a pena viram frase: sem espaço, sem permissão,
+pasta sumiu, arquivo aberto por outro programa, pasta somente leitura, unidade
+indisponível.
+
+Os códigos são por plataforma de propósito — `ENOSPC` é 28 e `ERROR_DISK_FULL`
+é 112, a mesma falha com dois números. Casar pelo texto seria pior: o Windows
+traduz as mensagens dele, então funcionaria numa instalação em inglês e pararia
+de funcionar numa em português. O que não é reconhecido passa intacto: uma
+tradução errada é pior que um código cru, que pelo menos dá para pesquisar.
+
+A ação fica no painel, acima das abas: a mensagem quebrando linha — a coluna de
+estado já tentou reticenciar, e é para isso que o painel serve — e **Try again**
+ao lado. É retentativa de verdade: dar start num torrent em erro faz o librqbit
+re-inicializar, conferir o que está no disco e seguir dali. Verificado no código
+dele, não suposto.
+
+⏸ **"Escolher outra pasta" não entra**, e não é esquecimento: o librqbit fixa a
+pasta de saída no momento em que o torrent é adicionado e não expõe como movê-la
+depois. O que o app pode fazer sobre espaço em disco ele faz antes, no diálogo
+de adição.
 
 ✅ **Números estáveis.** A taxa que o librqbit informa já é uma média de cinco
 segundos; o que sobra de ruído é a janela dela, um segundo entrando e um saindo.
@@ -379,9 +398,9 @@ A zona morta paga duas vezes: uma taxa que não muda deixa a linha idêntica byt
 a byte entre dois tiques, e o diff do modelo pula a linha inteira. **Suavizar
 sai mais barato que não suavizar.**
 
-**Teclado completo.** ✅ Setas, `Space` pausa, `Del` remove, `Ctrl+V` cola magnet,
-`Ctrl+F` vai para o filtro e `Esc` volta para a lista. ⏳ `Enter` abre a pasta, e
-rebindável no molde do `keybindings.rs` do Vayou.
+**Teclado completo.** ✅ Setas, `Space` pausa, `Del` remove, `Enter` abre a pasta,
+`Ctrl+V` cola magnet, `Ctrl+F` vai para o filtro e `Esc` volta para a lista.
+⏳ Rebindável no molde do `keybindings.rs` do Vayou.
 
 ✅ **Movimento com propósito.** Dois tokens de duração e duas curvas no
 [`theme.slint`](ui/theme.slint), e nada mais: o M3 publica uma dúzia de cada, e

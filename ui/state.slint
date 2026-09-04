@@ -116,6 +116,11 @@ export global DetailState {
     /// Whether anything has been left out, which is the only state in which
     /// there is a way back worth offering.
     in-out property <bool> files-partial;
+    /// Why this torrent stopped, when it has. Empty means it has not.
+    ///
+    /// The state column carries it too, elided into whatever fits; here there
+    /// is room to read it and, next to it, the one button that acts on it.
+    in-out property <string> fault;
 
     callback close();
     callback pick-tab(string);
@@ -129,6 +134,10 @@ export global DetailState {
     /// only whole-list action worth a button: the other direction would leave
     /// the torrent fetching nothing, which is refused.
     callback restore-all-files();
+    /// Try the torrent again after it failed. Starting an errored torrent is a
+    /// real retry rather than a hopeful one: librqbit re-initialises it, hashes
+    /// what is on disk and carries on from there.
+    callback retry();
     /// Dragging the drawer's left edge. Same shape as the column handles: the
     /// press records where it started, and every pixel of the drag reports its
     /// distance from there rather than an absolute width.

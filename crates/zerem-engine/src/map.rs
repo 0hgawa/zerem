@@ -103,8 +103,10 @@ pub fn to_row(
 
     if row.state == State::Error {
         // Never the bare word "Error": without librqbit's own message there is
-        // nothing for the user to act on.
-        row.error = Some(Arc::from(stats.error.as_deref().unwrap_or("stopped for an unreported reason")));
+        // nothing for the user to act on. And never a bare `(os error 112)`
+        // either — that is a fact about the kernel, not about the download.
+        let raw = stats.error.as_deref().unwrap_or("stopped for an unreported reason");
+        row.error = Some(Arc::from(zerem_core::explain(raw).unwrap_or(raw)));
     }
 
     if let Some(live) = &stats.live {
