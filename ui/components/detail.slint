@@ -477,31 +477,9 @@ export component DetailDrawer inherits Rectangle {
             height: 34px;
 
             HorizontalLayout {
-                padding-left: 4px;
-                padding-right: 12px;
+                padding-left: 8px;
+                padding-right: 8px;
                 spacing: 6px;
-
-                // The way out of a long list, and the reason it is first: a
-                // folder that can be folded away is a folder whose fold is the
-                // leftmost thing in it, everywhere this pattern appears.
-                fold := TouchArea {
-                    width: 22px;
-                    height: parent.height;
-                    mouse-cursor: pointer;
-                    clicked => { DetailState.files-collapsed = !DetailState.files-collapsed; }
-                    Rectangle {
-                        width: 22px;
-                        height: 22px;
-                        border-radius: 7px;
-                        background: fold.has-hover ? Theme.surface-hi : transparent;
-                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
-                        Icon {
-                            glyph: DetailState.files-collapsed ? Lucide.chevron-right : Lucide.chevron-down;
-                            tint: Theme.text-dim;
-                            size: 14px;
-                        }
-                    }
-                }
 
                 tickbox := TouchArea {
                     width: 24px;
@@ -536,6 +514,41 @@ export component DetailDrawer inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     DetailCell { text: DetailState.files-choice; }
+                }
+
+                // The fold, at the right-hand end.
+                //
+                // It was first in the row, on the reasoning that a fold belongs
+                // at the leftmost edge of what it folds. True of a tree, and
+                // this is not one: it is a header over a flat list, and putting
+                // the chevron ahead of the tick pushed that tick a chevron's
+                // width to the right of every tick below it. Children sitting
+                // to the *left* of their parent is hierarchy read backwards,
+                // and it was the first thing anyone noticed about this panel.
+                //
+                // Indenting the files instead would have squared it, and cost
+                // twenty-four pixels of name on every row in a panel where the
+                // names already elide. Windows 11 puts an expander's chevron on
+                // the right; this row is an expander; so does this.
+                fold := TouchArea {
+                    width: 24px;
+                    height: parent.height;
+                    mouse-cursor: pointer;
+                    clicked => { DetailState.files-collapsed = !DetailState.files-collapsed; }
+                    Rectangle {
+                        width: 22px;
+                        height: 22px;
+                        border-radius: 7px;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        background: fold.has-hover ? Theme.surface-hi : transparent;
+                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+                        Icon {
+                            glyph: DetailState.files-collapsed ? Lucide.chevron-right : Lucide.chevron-down;
+                            tint: Theme.text-dim;
+                            size: 14px;
+                        }
+                    }
                 }
             }
 
