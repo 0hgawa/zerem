@@ -20,7 +20,9 @@ export struct Row {
     // string where there used to be a Size column and a percentage.
     progress-text: string,
     state: string,
-    // 0 paused · 1 downloading · 2 seeding · 3 checking · 4 error — mirrors State::kind()
+    // 0 paused · 1 downloading · 2 seeding · 3 checking · 4 error · 5 stalled
+    // — mirrors TorrentRow::status-kind(), which is State::kind() until a
+    // running torrent stops moving and the row has to stop looking healthy.
     kind: int,
     // Whether it is transferring, which is what the hover action offers to
     // change. Carried rather than derived from `kind` here, because deciding it

@@ -21,8 +21,8 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 > preferências e o estado da tabela sobrevivem a fechar e reabrir; há bandeja com
 > instância única, limites de banda e painel de detalhes. O diálogo de adição
 > escolhe os arquivos antes de começar, e a aba de Arquivos os troca depois. O
-> filtro responde a cada tecla, os números pararam de tremer e o rodapé desenha
-> o último minuto. O que falta é o resto da Fase 3 — erros recuperáveis,
+> filtro responde a cada tecla, um torrent que empaca diz por quê, os números
+> pararam de tremer e o rodapé desenha o último minuto. O que falta é o resto da Fase 3 — erros recuperáveis,
 > movimento, acessibilidade, i18n — e o auto-update da Fase 4; a ordem está no
 > [roadmap](ROADMAP.md).
 
@@ -168,6 +168,34 @@ como um cliente queima um núcleo sem mover um byte.
 A coluna de transporte é o único lugar onde o uTP aparece. Trackers ainda não
 têm aba: o librqbit expõe as URLs e nada mais — sem estado de anúncio, seeds ou
 leechers — e uma aba que lista URLs não se sustenta.
+
+## Quando nada acontece
+
+A coluna de estado de um torrent que está rodando e não anda **diz por quê**, no
+lugar da palavra "Downloading" — que sobre uma barra que não enche não significa
+nada, e é o spinner eterno que todo cliente tem.
+
+| O que aparece | O que aconteceu |
+|---|---|
+| `Fetching metadata` | magnet cuja lista de arquivos ainda não voltou do enxame |
+| `No peers found` | nunca achou ninguém |
+| `Connecting` | achou peers e não conectou em nenhum |
+| `No one is sharing` | conectou, e nada está chegando |
+
+As três últimas esperam **dez segundos parado** antes de aparecer. Peers vão e
+vêm e uma peça demora para cair; anunciar falha aos dois segundos é o que ensina
+a pessoa a parar de ler a coluna. `Fetching metadata` é imediato — é a diferença
+entre "está trabalhando" e "quebrou".
+
+Só as duas que são falha de fato repintam a linha de **laranja**. Buscar
+metadata e conectar é o que um torrent saudável faz nos primeiros segundos, e
+pintar isso de alerta ensina a ignorar a cor no terceiro torrent.
+
+**O que o app não diz, e por quê.** "Tracker fora do ar" e "porta fechada" não
+são visíveis daqui — o librqbit não expõe estado de anúncio nem alcançabilidade,
+a mesma lacuna que deixou os Trackers sem aba. O que está escrito é exatamente o
+que as contagens de peers sustentam. Um palpite vestido de diagnóstico é pior
+que a palavra "Downloading".
 
 ## Números que ficam parados
 

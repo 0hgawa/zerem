@@ -82,6 +82,7 @@ export component ProgressCell inherits Rectangle {
                 height: parent.height;
                 border-radius: parent.border-radius;
                 background: root.kind == 4 ? Theme.danger
+                    : root.kind == 5 ? Theme.warn
                     : root.kind == 2 ? Theme.seeding
                     : root.kind == 1 ? Theme.accent
                     : root.kind == 3 ? Theme.warn
@@ -147,11 +148,13 @@ export component TableRow inherits Rectangle {
         }
         // A failure puts its own message in this cell instead of the word
         // "Error" — the colour already says something is wrong, so the text is
-        // free to say what.
+        // free to say what. A running torrent that is standing still does the
+        // same: it says why, in the warning colour rather than the healthy one.
         if TorrentList.col-visible[2]: Cell {
             width: TorrentList.col-w[2];
             text: data.state;
             fg: data.kind == 4 ? Theme.danger
+                : data.kind == 5 ? Theme.warn
                 : data.kind == 2 ? Theme.seeding
                 : data.kind == 1 ? Theme.accent
                 : Theme.text-dim;

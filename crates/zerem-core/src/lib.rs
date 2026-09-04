@@ -22,4 +22,4 @@ pub use history::{History, Spark};
 pub use pending::{Pending, PendingFile};
 pub use rate::Rate;
 pub use sort::Sort;
-pub use torrent::{SessionStats, State, TorrentId, TorrentRow};
+pub use torrent::{SessionStats, Stall, State, TorrentId, TorrentRow};

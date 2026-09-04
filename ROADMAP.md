@@ -302,8 +302,31 @@ no tick seguinte. Pausar nunca espera a rede.
 **Estados desenhados.** ✅ Lista vazia mostra as duas formas de adicionar, não a
 frase "nenhum torrent", e um filtro que não casa com nada diz isso e oferece
 limpá-lo — não repete o convite de colar magnet para quem já tem trezentos.
-⏳ Torrent sem peers ainda não diz *por quê* (tracker fora do ar, porta fechada,
-sem seeds).
+
+✅ **Torrent parado diz por quê**, na própria coluna de estado e no lugar da
+palavra "Downloading" — que sobre uma barra que não enche não significa nada.
+Quatro respostas, e nenhuma delas é um palpite: `Fetching metadata` para um
+magnet cuja lista de arquivos ainda não voltou do enxame, `No peers found` para
+quem nunca achou ninguém, `Connecting` para quem achou e não conectou, e
+`No one is sharing` para quem conectou e não recebe nada.
+
+As três últimas só aparecem depois de **dez segundos parado**. Peers vão e vêm e
+uma peça demora para cair; anunciar falha aos dois segundos é o que ensina a
+pessoa a parar de ler a coluna. `Fetching metadata` é imediato: é a diferença
+entre "está trabalhando" e "quebrou", e é o que alguém quer saber no segundo
+seguinte a colar o link.
+
+Uma **falha** vale mais que uma parada e continua ganhando a coluna: a parada é
+o sintoma, o erro é a causa. E as duas que são falha de fato — `No peers found`
+e `No one is sharing` — repintam a linha de laranja; `Fetching metadata` e
+`Connecting` não, porque é o que um torrent saudável faz nos primeiros segundos
+e pintar isso de alerta ensina a ignorar a cor no terceiro torrent.
+
+⏸ **O roadmap pedia mais do que dá para dizer.** "Tracker fora do ar" e "porta
+fechada" não são visíveis daqui: o librqbit não reporta estado de anúncio nem
+alcançabilidade da porta — a mesma lacuna que já tinha cortado a aba de
+Trackers. O que está escrito é exatamente o que as contagens de peers sustentam.
+Um palpite vestido de diagnóstico é pior que a palavra "Downloading".
 
 ⏳ **Erros legíveis e recuperáveis.** "Sem espaço em disco — faltam 2,3 GB" com o
 botão **Escolher outra pasta** ao lado. Nunca um código de erro sozinho, nunca um

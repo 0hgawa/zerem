@@ -162,7 +162,7 @@ fn build(t: &TorrentRow, selected: bool) -> Row {
         progress: t.progress_bp() as f32 / 10_000.0,
         progress_text: fmt::progress(t.done, t.size).into(),
         state: t.status_text().into(),
-        kind: t.state.kind(),
+        kind: t.status_kind(),
         active: t.is_active(),
         down: fmt::speed(t.down_bps).into(),
         up: fmt::speed(t.up_bps).into(),

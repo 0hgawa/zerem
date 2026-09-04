@@ -15,6 +15,52 @@ use crate::content::Content;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct TorrentId(pub u32);
 
+/// Why a running torrent is not moving.
+///
+/// Worth a column because "Downloading" over a row that has transferred
+/// nothing for a minute is a lie, and a progress bar that never fills with no
+/// word of explanation is the spinner-forever that this exists to replace.
+///
+/// Deliberately short of everything one might want to say. Whether the tracker
+/// answered, and whether the listening port is reachable from outside, are both
+/// invisible from here — librqbit reports neither — so this says exactly what
+/// the peer counts support and stops. A guess dressed up as a diagnosis is
+/// worse than the word "Downloading".
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Stall {
+    /// A magnet whose file list has not come back from the swarm yet.
+    Metadata,
+    /// Nobody has been found at all — no tracker, no DHT, no exchange.
+    NoPeers,
+    /// Peers are known, and none of them is connected.
+    Connecting,
+    /// Connected, and nothing is arriving. Usually means no one in the swarm
+    /// has the pieces still wanted.
+    Idle,
+}
+
+impl Stall {
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Metadata => "Fetching metadata",
+            Self::NoPeers => "No peers found",
+            Self::Connecting => "Connecting",
+            Self::Idle => "No one is sharing",
+        }
+    }
+
+    /// Whether this is something wrong or something in progress.
+    ///
+    /// Only a fault takes the warning colour. Fetching metadata and connecting
+    /// are what a healthy torrent does in its first seconds, and painting those
+    /// orange would teach the user to ignore the colour by the third torrent.
+    #[must_use]
+    pub const fn is_fault(self) -> bool {
+        matches!(self, Self::NoPeers | Self::Idle)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum State {
     Paused,
@@ -106,6 +152,13 @@ pub struct TorrentRow {
     /// — the whole reason it is resolved in the engine rather than recomputed
     /// from the file list on every tick.
     pub content: Content,
+    /// Why this torrent is not moving, when it should be and is not.
+    ///
+    /// Decided in the engine rather than here, because the honest answer needs
+    /// to know how long the torrent has been still — and a row is one tick by
+    /// definition. `None` on anything that is transferring, seeding, hashing,
+    /// paused or failed.
+    pub stall: Option<Stall>,
 }
 
 impl TorrentRow {
@@ -144,6 +197,7 @@ impl TorrentRow {
             folder: Arc::from(""),
             info_hash: Arc::from(""),
             content: Content::Unknown,
+            stall: None,
         }
     }
 
@@ -171,13 +225,28 @@ impl TorrentRow {
         self.error = Some(reason.into());
     }
 
-    /// What the state column shows.
+    /// What the state column shows, in order of how much it says.
     ///
     /// A failure shows its message rather than the word "Error": the colour
-    /// already says something is wrong, so the text is free to say what.
+    /// already says something is wrong, so the text is free to say what. A
+    /// torrent that is running but standing still says why instead of
+    /// "Downloading", which over an empty progress bar means nothing.
     #[must_use]
     pub fn status_text(&self) -> &str {
-        self.error.as_deref().unwrap_or_else(|| self.state.label())
+        self.error.as_deref().or_else(|| self.stall.map(Stall::label)).unwrap_or_else(|| self.state.label())
+    }
+
+    /// The discriminant the state column and the progress bar colour by.
+    ///
+    /// Its own value rather than [`State::kind`] so a stalled download stops
+    /// reading as a healthy one: the words say something is wrong and the row
+    /// has to agree with them. Only a fault takes it — see [`Stall::is_fault`].
+    #[must_use]
+    pub const fn status_kind(&self) -> i32 {
+        match self.stall {
+            Some(stall) if stall.is_fault() => 5,
+            _ => self.state.kind(),
+        }
     }
 
     #[must_use]
@@ -217,6 +286,9 @@ impl TorrentRow {
         // `error` only means anything alongside `State::Error`. Leaving it set
         // would show a stale failure under a torrent that is merely stopped.
         self.error = None;
+        // Same for the stall: a stopped torrent is not failing to move, it is
+        // not trying.
+        self.stall = None;
     }
 
     /// Start this torrent. What it becomes depends on whether it already has
@@ -255,7 +327,7 @@ impl SessionStats {
 
 #[cfg(test)]
 mod tests {
-    use super::{SessionStats, State, TorrentId, TorrentRow};
+    use super::{SessionStats, Stall, State, TorrentId, TorrentRow};
 
     fn row(id: u32, name: &str, size: u64) -> TorrentRow {
         TorrentRow::new(TorrentId(id), name, size)
@@ -373,6 +445,54 @@ mod tests {
         t.done = 1000;
         t.resume();
         assert_eq!(t.state, State::Seeding, "a complete torrent seeds, it does not download");
+    }
+
+    #[test]
+    fn a_stalled_download_says_why_instead_of_saying_it_is_downloading() {
+        // The spinner-forever this replaces: a progress bar that never fills,
+        // under the word "Downloading", with nothing to act on.
+        let mut t = row(1, "x", 1000);
+        t.resume();
+        assert_eq!(t.status_text(), "Downloading");
+
+        t.stall = Some(Stall::NoPeers);
+        assert_eq!(t.status_text(), "No peers found");
+    }
+
+    #[test]
+    fn a_failure_outranks_a_stall_because_it_is_the_reason_for_it() {
+        let mut t = row(1, "x", 1000);
+        t.stall = Some(Stall::Idle);
+        t.fail("no space left on device");
+        assert_eq!(t.status_text(), "no space left on device");
+    }
+
+    #[test]
+    fn only_a_fault_recolours_the_row() {
+        // Fetching metadata and connecting are what a healthy torrent does in
+        // its first seconds. Painting those orange would teach the user to
+        // ignore the colour by the third torrent.
+        let mut t = row(1, "x", 1000);
+        t.resume();
+        for waiting in [Stall::Metadata, Stall::Connecting] {
+            t.stall = Some(waiting);
+            assert_eq!(t.status_kind(), State::Downloading.kind(), "{waiting:?} is not a fault");
+        }
+        for fault in [Stall::NoPeers, Stall::Idle] {
+            t.stall = Some(fault);
+            assert_eq!(t.status_kind(), 5, "{fault:?} is one");
+        }
+    }
+
+    #[test]
+    fn pausing_clears_the_stall_it_no_longer_has() {
+        // A stopped torrent is not failing to move, it is not trying. Leaving
+        // the reason set would put "No peers found" under the word Paused.
+        let mut t = row(1, "x", 1000);
+        t.stall = Some(Stall::NoPeers);
+        t.pause();
+        assert_eq!(t.stall, None);
+        assert_eq!(t.status_text(), "Paused");
     }
 
     #[test]

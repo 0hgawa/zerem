@@ -22,17 +22,66 @@
 use std::sync::Arc;
 
 use librqbit::{TorrentStats, TorrentStatsState};
-use zerem_core::{Details, FileRow, PeerRow, Rate, State, TorrentId, TorrentRow, Transport};
+use zerem_core::{Details, FileRow, PeerRow, Rate, Stall, State, TorrentId, TorrentRow, Transport};
 
-/// One torrent's smoothed rates.
+/// How long a running download has to move nothing before the row says so.
 ///
-/// Held by the caller across ticks — a filter with no memory is not a filter,
-/// and a row is one tick by definition. See [`zerem_core::rate`] for why the
+/// Ten seconds, not one. Peers come and go and a piece can take a moment to
+/// land; a client that announces "no one is sharing" during a two-second lull
+/// is noise, and noise is what teaches people to stop reading the column. Long
+/// enough that seeing it means something, short enough to be there when
+/// someone goes looking for why nothing is happening.
+const STILL_TICKS: u8 = 10;
+
+/// What one torrent has been doing lately.
+///
+/// Everything here is state that spans ticks and therefore cannot live on a
+/// row, which is one tick by definition: the smoothed rates, and how long the
+/// transfer has been standing still. See [`zerem_core::rate`] for why the
 /// figures are filtered at all.
 #[derive(Clone, Copy, Default, Debug)]
-pub struct Rates {
+pub struct Trend {
     down: Rate,
     up: Rate,
+    still: u8,
+}
+
+impl Trend {
+    /// Why this row is not moving, if it is not.
+    ///
+    /// Takes the row it is about to annotate rather than the raw stats: by
+    /// this point the rate is the *published* one, and diagnosing off a raw
+    /// figure that the column does not show would mean explaining a number
+    /// nobody can see.
+    fn stall(&mut self, row: &TorrentRow) -> Option<Stall> {
+        // A magnet whose file list has not come back from the swarm. Said at
+        // once rather than after a wait: it is the difference between "working
+        // on it" and "broken", and it is the first thing anyone wants to know
+        // after pasting a link.
+        if row.size == 0 && row.is_active() {
+            return Some(Stall::Metadata);
+        }
+
+        // Only a download can stall. Seeding with nobody to talk to is the
+        // normal condition of a seed; hashing moves nothing over the network by
+        // definition; paused and failed are not trying to move at all.
+        if row.state != State::Downloading || row.down_bps > 0 {
+            self.still = 0;
+            return None;
+        }
+
+        self.still = self.still.saturating_add(1);
+        if self.still < STILL_TICKS {
+            return None;
+        }
+        // `peers_total` is what librqbit has ever seen, so it only grows: the
+        // first arm is "nobody was ever found", not "nobody right now".
+        Some(match (row.peers_total, row.peers_connected) {
+            (0, _) => Stall::NoPeers,
+            (_, 0) => Stall::Connecting,
+            _ => Stall::Idle,
+        })
+    }
 }
 
 /// Build a domain row from one librqbit torrent.
@@ -45,7 +94,7 @@ pub fn to_row(
     name: &Arc<str>,
     name_key: &Arc<str>,
     stats: &TorrentStats,
-    rates: &mut Rates,
+    trend: &mut Trend,
 ) -> TorrentRow {
     let mut row = TorrentRow::shared(id, name.clone(), name_key.clone(), stats.total_bytes);
     row.done = stats.progress_bytes;
@@ -60,8 +109,8 @@ pub fn to_row(
 
     if let Some(live) = &stats.live {
         // as_bytes(), not the raw `mbps` field — see the module note.
-        row.down_bps = rates.down.update(live.download_speed.as_bytes());
-        row.up_bps = rates.up.update(live.upload_speed.as_bytes());
+        row.down_bps = trend.down.update(live.download_speed.as_bytes());
+        row.up_bps = trend.up.update(live.upload_speed.as_bytes());
 
         let peers = &live.snapshot.peer_stats;
         row.peers_connected = peers.live;
@@ -77,10 +126,13 @@ pub fn to_row(
         // Not live, so nothing is moving. Said explicitly rather than left
         // alone: the filters have to start clean for the next time it runs,
         // or resuming would ease up out of a speed from minutes ago.
-        rates.down.update(0);
-        rates.up.update(0);
+        trend.down.update(0);
+        trend.up.update(0);
     }
 
+    // Last, because it reads the finished row: the state, the size, the
+    // published rate and the peer counts all have to be settled first.
+    row.stall = trend.stall(&row);
     row
 }
 
@@ -215,8 +267,87 @@ fn ratio_x100(uploaded: u64, total: u64) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{eta_secs, ratio_x100, transport_of};
-    use zerem_core::Transport;
+    use super::{eta_secs, ratio_x100, transport_of, Trend, STILL_TICKS};
+    use zerem_core::{Stall, State, TorrentId, TorrentRow, Transport};
+
+    /// A torrent that is running and has moved nothing.
+    fn stuck(peers_total: u32, peers_connected: u32) -> TorrentRow {
+        let mut row = TorrentRow::new(TorrentId(1), "x", 4_000_000_000);
+        row.state = State::Downloading;
+        row.peers_total = peers_total;
+        row.peers_connected = peers_connected;
+        row
+    }
+
+    /// Feed the same row until the rule has made up its mind.
+    fn after(trend: &mut Trend, row: &TorrentRow, ticks: usize) -> Option<Stall> {
+        (0..ticks).map(|_| trend.stall(row)).last().flatten()
+    }
+
+    #[test]
+    fn a_lull_is_not_a_diagnosis() {
+        // Peers come and go and a piece takes a moment to land. Announcing a
+        // fault two seconds in is what teaches people to stop reading the
+        // column at all.
+        let mut trend = Trend::default();
+        assert_eq!(after(&mut trend, &stuck(30, 4), usize::from(STILL_TICKS) - 1), None);
+        assert_eq!(trend.stall(&stuck(30, 4)), Some(Stall::Idle), "and then it says so");
+    }
+
+    #[test]
+    fn one_byte_arriving_clears_the_count() {
+        // Otherwise a slow torrent accumulates its way to a fault it does not
+        // have, purely because the ticks add up.
+        let mut trend = Trend::default();
+        after(&mut trend, &stuck(30, 4), usize::from(STILL_TICKS) - 1);
+
+        let mut moving = stuck(30, 4);
+        moving.down_bps = 1;
+        assert_eq!(trend.stall(&moving), None);
+
+        assert_eq!(after(&mut trend, &stuck(30, 4), 2), None, "the count started over");
+    }
+
+    #[test]
+    fn the_reason_is_whichever_the_peer_counts_support() {
+        // `peers_total` is what librqbit has ever seen, so nothing found means
+        // nothing was *ever* found — not "nobody right now".
+        let ticks = usize::from(STILL_TICKS);
+        assert_eq!(after(&mut Trend::default(), &stuck(0, 0), ticks), Some(Stall::NoPeers));
+        assert_eq!(after(&mut Trend::default(), &stuck(30, 0), ticks), Some(Stall::Connecting));
+        assert_eq!(after(&mut Trend::default(), &stuck(30, 4), ticks), Some(Stall::Idle));
+    }
+
+    #[test]
+    fn a_magnet_without_its_file_list_says_so_at_once() {
+        // No waiting: it is the difference between "working on it" and
+        // "broken", and it is what someone wants the second after pasting.
+        let mut row = stuck(0, 0);
+        row.size = 0;
+        assert_eq!(Trend::default().stall(&row), Some(Stall::Metadata));
+    }
+
+    #[test]
+    fn a_seed_with_nobody_to_talk_to_is_not_a_fault() {
+        // It is the normal condition of a seed. Warning about it would put an
+        // orange row under every finished torrent in the list.
+        let mut row = stuck(0, 0);
+        row.state = State::Seeding;
+        row.done = row.size;
+        assert_eq!(after(&mut Trend::default(), &row, 60), None);
+    }
+
+    #[test]
+    fn hashing_and_stopping_are_never_diagnosed() {
+        // Checking moves nothing over the network by definition, and a paused
+        // torrent is not failing to move — it is not trying.
+        let ticks = usize::from(STILL_TICKS) * 2;
+        for state in [State::Checking, State::Paused, State::Error] {
+            let mut row = stuck(0, 0);
+            row.state = state;
+            assert_eq!(after(&mut Trend::default(), &row, ticks), None, "{state:?}");
+        }
+    }
 
     #[test]
     fn no_rate_means_no_estimate_rather_than_zero() {

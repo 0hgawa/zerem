@@ -35,9 +35,10 @@ struct Entry {
     /// thousand of them per row per second would be the most expensive thing
     /// in the tick by a wide margin.
     content: Option<Content>,
-    /// The smoothed download and upload figures. Filter state spans ticks, so
-    /// it lives with the torrent rather than on the row it produces.
-    rates: map::Rates,
+    /// What this torrent has been doing lately — the smoothed figures, and how
+    /// long it has been standing still. State that spans ticks lives with the
+    /// torrent rather than on the row it produces.
+    trend: map::Trend,
 }
 
 impl Entry {
@@ -49,7 +50,7 @@ impl Entry {
             name: None,
             name_key: None,
             content: None,
-            rates: map::Rates::default(),
+            trend: map::Trend::default(),
         }
     }
 
@@ -437,7 +438,7 @@ impl TorrentSession {
             // Bound first: `stats()` borrows the handle, and the rates it feeds
             // are a sibling field of the same entry.
             let stats = entry.handle.stats();
-            let mut row = map::to_row(*id, &name, &name_key, &stats, &mut entry.rates);
+            let mut row = map::to_row(*id, &name, &name_key, &stats, &mut entry.trend);
             row.folder = entry.folder.clone();
             row.info_hash = entry.info_hash.clone();
             row.content = content;
