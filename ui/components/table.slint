@@ -37,7 +37,8 @@ export component NameCell inherits Rectangle {
     in property <int> content;
     clip: true;
     HorizontalLayout {
-        padding-left: 9px;
+        // The room the start/pause button takes at the front of the row.
+        padding-left: 34px;
         padding-right: 10px;
         spacing: 7px;
         VerticalLayout {
@@ -195,85 +196,85 @@ export component TableRow inherits Rectangle {
         double-clicked => { TorrentList.open-row-folder(root.index); }
     }
 
-    // The row's own actions, on hover, at the right edge.
+    // Start and pause leads, at the very front of the row.
     //
-    // Right rather than in the icon slot: identity on the left and actions on
-    // the right is where a list puts them, and it keeps the type icon visible
-    // while the cursor is on the row. Both act on the row under the pointer and
-    // leave the selection alone — no selecting first, and no chance of hitting
-    // a torrent the cursor is not on.
+    // It was at the far right, beside Remove, and that was the wrong end. It is
+    // the commonest action in the app, and on a wide window the name being read
+    // is a thousand pixels away from the button that acts on it. At the front it
+    // sits at a fixed x, so a run of rows can be paused without the hand moving
+    // sideways at all — and it is where the eye already is, because the eye is
+    // on the names.
     //
-    // Remove sits furthest out, a gap away from start, so the destructive one
-    // is never the near miss of the other. It still asks before it acts.
+    // Remove stays at the far right, and that split is the point rather than an
+    // inconsistency: what is done constantly goes where the hand is, and what
+    // cannot be undone goes as far from it as the row allows. They are no
+    // longer neighbours, so the destructive one is never the near miss of the
+    // other.
     //
-    // Declared after `ta` so they take the click, and always present rather
-    // than conditional: an area that appears and disappears under the cursor is
-    // an area that can appear and disappear under the cursor. Only the paint is
-    // conditional, and neither is reachable without hovering the row anyway.
-    Rectangle {
-        width: 48px;
-        height: 24px;
-        x: parent.width - self.width - 6px;
+    // Both act on the row under the pointer and leave the selection alone — no
+    // selecting first, and no chance of hitting a torrent the cursor is not on.
+    // Declared after `ta` so they take their own clicks.
+    run := TouchArea {
+        x: 6px;
         y: (parent.height - self.height) / 2;
-        border-radius: 7px;
-        // A surface of its own, because it floats over whatever the last column
-        // is showing. It reads as a small raised group rather than as icons
-        // scattered on top of a number.
-        background: Theme.surface;
-        opacity: root.hovered ? 1 : 0;
-        animate opacity { duration: Theme.quick; easing: Theme.ease-standard(); }
-
-        run := TouchArea {
-            x: 3px;
-            y: 2px;
-            width: 20px;
-            height: 20px;
-            mouse-cursor: pointer;
-            clicked => {
-                if (data.active) {
-                    TorrentList.pause-row(root.index);
-                } else {
-                    TorrentList.start-row(root.index);
-                }
-            }
-            pointer-event(e) => {
-                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
-                    root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                }
-            }
-            Rectangle {
-                border-radius: 6px;
-                background: run.pressed ? Theme.selected : run.has-hover ? Theme.hover : transparent;
-                Icon {
-                    glyph: data.active ? Lucide.pause : Lucide.play;
-                    tint: Theme.text;
-                    size: 12px;
-                }
+        width: 22px;
+        height: 22px;
+        mouse-cursor: pointer;
+        clicked => {
+            if (data.active) {
+                TorrentList.pause-row(root.index);
+            } else {
+                TorrentList.start-row(root.index);
             }
         }
-
-        del := TouchArea {
-            x: 25px;
-            y: 2px;
-            width: 20px;
-            height: 20px;
-            mouse-cursor: pointer;
-            clicked => { TorrentList.remove-row(root.index); }
-            pointer-event(e) => {
-                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
-                    root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
             }
-            Rectangle {
-                border-radius: 6px;
-                background: del.pressed ? Theme.selected : del.has-hover ? Theme.hover : transparent;
-                Icon {
-                    // Red only under the cursor. A permanently red icon on
-                    // every row turns the list into a wall of warnings.
-                    glyph: Lucide.trash;
-                    tint: del.has-hover ? Theme.danger : Theme.text-dim;
-                    size: 12px;
-                }
+        }
+        Rectangle {
+            border-radius: 7px;
+            background: run.pressed ? Theme.selected
+                : run.has-hover ? Theme.surface-hi
+                : transparent;
+            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+            Icon {
+                glyph: data.active ? Lucide.pause : Lucide.play;
+                // Dim until the row is under the cursor. Present, but not
+                // twenty black triangles down the side of a full window.
+                tint: root.hovered ? Theme.text : Theme.text-dim;
+                size: 13px;
+            }
+        }
+    }
+
+    del := TouchArea {
+        x: parent.width - self.width - 6px;
+        y: (parent.height - self.height) / 2;
+        width: 22px;
+        height: 22px;
+        mouse-cursor: pointer;
+        clicked => { TorrentList.remove-row(root.index); }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                root.menu-at(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+        Rectangle {
+            border-radius: 7px;
+            // A surface of its own, because it floats over whatever the last
+            // column is showing rather than sitting in a gutter of its own.
+            background: del.pressed ? Theme.selected
+                : del.has-hover ? Theme.hover
+                : root.hovered ? Theme.surface-hi
+                : Theme.surface;
+            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+            Icon {
+                // Red only under the cursor. A permanently red icon on every
+                // row turns the list into a wall of warnings.
+                glyph: Lucide.trash;
+                tint: del.has-hover ? Theme.danger : Theme.text-dim;
+                size: 12px;
             }
         }
     }

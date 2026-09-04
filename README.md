@@ -181,9 +181,18 @@ de apagar o errado.
 Clique no cabeçalho ordena, clique de novo inverte. A alça na borda direita
 redimensiona a coluna. `Ctrl` alterna a seleção, `Shift` seleciona intervalo.
 
-**Passar o cursor** sobre uma linha troca o ícone de tipo por iniciar/pausar.
-Age só naquela linha e não mexe na seleção — é o caminho curto para a ação mais
-comum, sem selecionar antes nem subir até a barra.
+**Cada linha tem os próprios botões, sempre visíveis.** Iniciar/pausar **na
+frente**, antes do nome; remover **no fim**, do outro lado da linha.
+
+Essa separação é o ponto, não uma inconsistência: **o que se faz o tempo todo
+fica onde a mão está, e o que não dá para desfazer fica o mais longe dela que a
+linha permite**. Na frente, o botão de pausar fica num x fixo — dá para pausar
+uma sequência de linhas sem a mão andar de lado — e é onde o olho já está,
+porque o olho está nos nomes. E os dois deixaram de ser vizinhos, então o
+destrutivo nunca é o erro de mira do outro.
+
+Os dois agem só na linha sob o cursor e não mexem na seleção: sem selecionar
+antes, e sem chance de acertar um torrent que o cursor não está em cima.
 Um `.torrent` ou magnet passado na linha de comando é aberto no arranque.
 
 **Quando um torrent falha**, a coluna de estado diz o quê em palavras e não em
