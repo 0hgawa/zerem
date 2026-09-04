@@ -19,21 +19,20 @@ use crate::model::{ApplyStats, TorrentModel};
 pub const MIN_COL_W: f32 = 48.0;
 pub const MAX_COL_W: f32 = 640.0;
 
-/// The details drawer, in pixels — M3's own side-sheet measurements.
-///
-/// 360 is the standard side sheet, 256 and 400 the range the spec gives it.
-/// Taken rather than invented: a panel beside a list has no proportion of its
-/// own to be derived from — deriving one from the window is a binding loop,
-/// which Slint says out loud — so the honest source is the design system this
-/// app already follows everywhere else.
+/// The details drawer, in pixels.
 ///
 /// It was 330, then 440 while a layout bug was making the panel look narrow
-/// when it was really being cut off. With the table yielding properly, 440 is
-/// simply too much: past 400 the panel stops being beside the list and starts
-/// competing with it.
+/// when it was really being cut off, then 256–400 around M3's standard side
+/// sheet once the table yielded properly.
+///
+/// 400 was too low. The saved width sat exactly on that ceiling, which is what
+/// somebody who wanted more room and ran out of it leaves behind — the panel
+/// carries a file tree with a fold arrow, a tick, an icon, a path and a size on
+/// one line, and M3's standard sheet was measured for a list of labels. So the
+/// ceiling moves to M3's *large* sheet instead, and the default with it.
 pub const MIN_DRAWER_W: f32 = 256.0;
-pub const MAX_DRAWER_W: f32 = 400.0;
-pub const DEFAULT_DRAWER_W: f32 = 360.0;
+pub const MAX_DRAWER_W: f32 = 480.0;
+pub const DEFAULT_DRAWER_W: f32 = 420.0;
 
 const DEFAULT_WIDTHS: [f32; 8] = [300.0, 200.0, 108.0, 96.0, 96.0, 84.0, 84.0, 66.0];
 

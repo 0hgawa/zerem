@@ -1,0 +1,17 @@
+# Builds the IP-to-country table that ships inside Zerem.
+#
+# Its own workspace, like `spikes/`, so nothing it needs reaches the app: this
+# runs on a developer's machine when the table is refreshed, and its output —
+# `assets/geoip.bin` — is what the binary actually carries.
+[workspace]
+
+[package]
+name = "zerem-geo-build"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# None, on purpose. Parsing five text files and writing one binary needs no
+# crate, and a generator with a dependency tree is a generator nobody can run
+# in two years.
+[dependencies]
