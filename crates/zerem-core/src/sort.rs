@@ -117,6 +117,7 @@ pub fn order(rows: &[TorrentRow], sort: Sort, out: &mut Vec<usize>) {
 mod tests {
     use super::{order, Sort, COLUMNS};
     use crate::torrent::{State, TorrentId, TorrentRow};
+    use std::sync::Arc;
 
     /// Names chosen so a raw byte sort and a case-insensitive one disagree.
     fn fixture() -> Vec<TorrentRow> {
@@ -202,5 +203,50 @@ mod tests {
         for col in 2..COLUMNS {
             assert!(Sort::first_click(col).is_volatile(), "column {col} changes every tick");
         }
+    }
+    /// Ten times the rows costs about eighteen times the work, not a hundred.
+    ///
+    /// A ratio and not a stopwatch, because a stopwatch on a shared CI runner
+    /// measures the runner. Sorting is n log n, so ten times the input is
+    /// 10 × log₂(10) ≈ 33 times the comparisons and, measured, about 18 times
+    /// the wall clock. Quadratic would be a hundred. Thirty-five is the line:
+    /// far enough above the truth to survive a noisy machine, far enough below
+    /// a hundred to catch somebody putting a `contains` inside the comparator.
+    ///
+    /// That is the regression worth a test. Ten per cent slower is what the
+    /// criterion benches in `benches/ordering.rs` are for, and it is not
+    /// something CI can tell you.
+    #[test]
+    fn sorting_stays_n_log_n() {
+        fn rows(count: usize) -> Vec<TorrentRow> {
+            (0..count)
+                .map(|i| {
+                    let name = format!("Some.Release.Name.S{:02}E{:02}.1080p.WEB-DL.x265", i % 40, i % 24);
+                    TorrentRow::shared(
+                        TorrentId(i as u32),
+                        Arc::from(name.as_str()),
+                        Arc::from(name.to_lowercase().as_str()),
+                        ((i * 7919) % 100_000) as u64,
+                    )
+                })
+                .collect()
+        }
+        fn micros(rows: &[TorrentRow]) -> u128 {
+            let mut out = Vec::with_capacity(rows.len());
+            // Warm, so the first run's page faults are not the measurement.
+            order(rows, Sort::default(), &mut out);
+            let at = std::time::Instant::now();
+            for _ in 0..3 {
+                order(rows, Sort::default(), &mut out);
+            }
+            at.elapsed().as_micros().max(1)
+        }
+
+        let (small, large) = (rows(2_000), rows(20_000));
+        let ratio = micros(&large) as f64 / micros(&small) as f64;
+        assert!(
+            ratio < 35.0,
+            "ten times the rows cost {ratio:.0} times the work — sorting is no longer n log n"
+        );
     }
 }

@@ -87,6 +87,34 @@ ZEREM_LOG=debug ./target/release/zerem.exe 2>&1 \
   | sed 's/\x1b\[[0-9;]*m//g' | grep -oE "micros=[0-9]+"
 ```
 
-A partir da Fase 4 isto vira regressão no CI — criterion sobre o limitador, o
-diff do modelo e a ordenação, mais uma checagem de RAM ociosa. Sem isso, "10 em
-performance" volta a ser opinião em três meses.
+
+## Regressão no CI
+
+A partir da Fase 4 isto virou duas coisas separadas, porque medir e *travar*
+não são o mesmo trabalho.
+
+**Medir** é `cargo bench -p zerem-core`, com criterion sobre as três coisas que
+percorrem toda linha a cada tick: a ordenação, o filtro e a suavização de taxa.
+Nada mais no app tem esse formato — o resto é por clique ou por torrent — então
+são essas três que transformam uma lista grande numa lista lenta.
+
+Nesta máquina:
+
+| | 200 | 2 000 | 20 000 |
+|---|---|---|---|
+| Ordenar por nome | 10,5 µs | 183 µs | 3,25 ms |
+| Filtrar 3 palavras | — | — | 595 µs |
+| Suavizar taxa | — | — | 109 µs |
+
+Dez vezes as linhas custa 17,7 vezes o tempo nas duas faixas, que é n log n.
+
+**Travar** é o teste `sorting_stays_n_log_n`, e ele compara duas medições entre
+si em vez de olhar o relógio. Um cronômetro num runner compartilhado mede o
+runner. Uma razão entre dois tamanhos medidos em seguida, não: n log n dá ~18×,
+quadrático daria 100×, e o limite está em 35 — longe o bastante da verdade para
+sobreviver a uma máquina ruidosa, longe o bastante de cem para pegar alguém
+colocando um `contains` dentro do comparador.
+
+Dez por cento mais lento é o que os benches servem para ver, e não é algo que um
+CI consiga dizer. O CI só compila os benches, para eles não apodrecerem enquanto
+ninguém roda.

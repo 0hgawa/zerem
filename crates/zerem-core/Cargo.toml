@@ -13,3 +13,13 @@ description = "Zerem core — domain types, ordering and display formatting. No 
 
 [lints]
 workspace = true
+
+# Criterion only, and only for benches. The library's own dependency list stays
+# empty — that is the rule this crate exists under, and a dev-dependency does
+# not reach the shipped binary.
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "ordering"
+harness = false

@@ -46,6 +46,14 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
+      # Compiled and not run. Criterion needs a stored baseline to say anything
+      # about a regression, and a wall-clock threshold on a shared runner
+      # measures the runner rather than the code — so what CI guards is the
+      # scaling test in sort.rs, which compares two sizes against each other.
+      # This step exists so the benches cannot rot while nobody runs them.
+      - name: Benchmarks compile
+        run: cargo bench --workspace --no-run
+
       # The binary is part of the product. The budget was 12 MB while the engine was
       # synthetic, then 16 once librqbit's 4.7 MB was real. It is 17 now: the country
       # table and the flags are 608 KiB of deliberate weight and they are the feature,
