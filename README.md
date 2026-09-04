@@ -285,6 +285,21 @@ errada. O que sobrevive é a *seleção* que a marca estreitou — anotada em
 devolver, para que um processo morto no meio não volte com onze de doze arquivos
 desligados e nenhuma explicação.
 
+**Cada torrent com mais de um arquivo ganha uma pasta com o nome dele**, dentro
+da pasta de destino — como em qualquer outro cliente. Um torrent de arquivo
+único vai direto: pasta com um arquivo dentro é pasta que ninguém pediu.
+
+Essa regra é do librqbit, e ele a aplica sozinho — **até alguém dizer onde
+escrever**. Passar `output_folder` explícito leva ao ramo que pula a subpasta
+inteira. E o Zerem precisa passar: a pasta de destino muda com o app rodando, e
+o librqbit fixa a dele na construção, sem setter. Então a regra é reimplementada
+em [`folder.rs`](crates/zerem-core/src/folder.rs), onde dá para testá-la.
+
+O nome do torrent vem de um estranho, então um nome que não seja **exatamente um
+componente de caminho** — `..\..\Windows`, `C:\`, qualquer barra — perde a
+subpasta em vez de derrubar o torrent: os arquivos caem soltos num lugar
+inofensivo em vez de num lugar escolhido por quem montou o torrent.
+
 ## Antes de encher o disco
 
 O diálogo de adição pergunta ao volume de destino quanto cabe, e avisa **antes**

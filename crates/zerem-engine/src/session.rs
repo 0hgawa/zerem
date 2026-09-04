@@ -299,7 +299,9 @@ impl TorrentSession {
     /// Accept what `inspect` found.
     pub async fn confirm_add(&mut self, only_files: Option<Vec<usize>>) -> anyhow::Result<()> {
         let bytes = self.pending_bytes.take().context("nothing was read to add")?;
-        let source = self.pending.take().map_or_else(String::new, |p| p.source.to_string());
+        let pending = self.pending.take().context("nothing was read to add")?;
+        let source = pending.source.to_string();
+        let folder = self.folder_for(&pending.name, pending.files.len());
 
         // From the bytes `inspect` already has, so a magnet is not fetched from
         // the swarm a second time.
@@ -310,7 +312,7 @@ impl TorrentSession {
                 Some(AddTorrentOptions {
                     only_files,
                     overwrite: true,
-                    output_folder: Some(self.output_dir.to_string_lossy().into_owned()),
+                    output_folder: Some(folder),
                     ..Default::default()
                 }),
             )
@@ -325,6 +327,20 @@ impl TorrentSession {
         Ok(())
     }
 
+    /// Where this torrent writes: the download folder, and inside it a folder of
+    /// the torrent's own when it holds more than one file.
+    ///
+    /// librqbit does this itself — until it is told where to write, which takes
+    /// the branch that skips the subfolder entirely. Zerem has to tell it,
+    /// because the download folder changes while the app runs and librqbit
+    /// fixes its own at construction with no setter. So the rule is ours, and
+    /// it lives in [`zerem_core::folder`] where it can be tested.
+    fn folder_for(&self, name: &str, files: usize) -> String {
+        let root = zerem_core::subfolder(name, files)
+            .map_or_else(|| self.output_dir.clone(), |sub| self.output_dir.join(sub));
+        root.to_string_lossy().into_owned()
+    }
+
     /// Throw away what `inspect` found.
     pub fn cancel_add(&mut self) {
         self.pending = None;
@@ -333,14 +349,39 @@ impl TorrentSession {
 
     /// Add without asking. Used for what arrives on the command line, where
     /// there is no dialog to answer.
+    ///
+    /// Read first, then added — the same two steps the dialog takes, for a
+    /// reason that has nothing to do with dialogs: the folder a multi-file
+    /// torrent goes in is its own name, and its name is in the metadata. For a
+    /// magnet that means waiting on the swarm, which is what adding it was
+    /// going to cost anyway.
     pub async fn add(&mut self, source: &str) -> anyhow::Result<()> {
-        let add = AddTorrent::from_cli_argument(source)
+        let read = AddTorrent::from_cli_argument(source)
             .context("that is not a magnet link, a URL, or a .torrent file")?;
+        let listed = match self
+            .session
+            .add_torrent(read, Some(AddTorrentOptions { list_only: true, ..Default::default() }))
+            .await
+            .context("reading the torrent")?
+        {
+            AddTorrentResponse::ListOnly(listed) => listed,
+            // Already in the list. Not a failure worth a red row: nothing is
+            // added twice and the user is told.
+            AddTorrentResponse::AlreadyManaged(..) | AddTorrentResponse::Added(..) => {
+                anyhow::bail!("that torrent is already in the list")
+            }
+        };
+
+        let name = listed.info.name().unwrap_or_default().to_string();
+        let files = listed.info.iter_file_details().count();
+        let folder = self.folder_for(&name, files);
 
         let handle = self
             .session
             .add_torrent(
-                add,
+                // From the bytes just read, so a magnet is not fetched from the
+                // swarm a second time.
+                AddTorrent::from_bytes(listed.torrent_bytes.to_vec()),
                 Some(AddTorrentOptions {
                     // Not optional, whatever the default says. From librqbit's
                     // own docs: "Even when all the torrent pieces have been
@@ -350,7 +391,7 @@ impl TorrentSession {
                     overwrite: true,
                     // Passed per torrent, not taken from the session: this is
                     // what lets the download folder change without a restart.
-                    output_folder: Some(self.output_dir.to_string_lossy().into_owned()),
+                    output_folder: Some(folder),
                     ..Default::default()
                 }),
             )
