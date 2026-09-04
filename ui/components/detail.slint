@@ -32,9 +32,23 @@ component Tab inherits Rectangle {
     accessible-item-selected: root.active;
     accessible-action-default => { DetailState.pick-tab(root.id); }
 
-    height: 26px;
+    // A filled pill was here, and at the width the panel has now it stretched
+    // into a slab that was the loudest thing on screen — a tab strip announcing
+    // itself over the file list it is a label for. Windows draws this as a
+    // short bar under the chosen tab and nothing else, which is the quietest
+    // way to say the same thing.
+    height: 30px;
+    background: ta.has-hover ? Theme.hover : transparent;
     border-radius: Theme.radius;
-    background: active ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+
+    if root.active: Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        x: 10px;
+        width: parent.width - 20px;
+        border-radius: 1px;
+        background: Theme.accent-fill;
+    }
 
     HorizontalLayout {
         spacing: 7px;
@@ -91,7 +105,7 @@ component DetailCell inherits Text {
 component FileLine inherits Rectangle {
     in property <FileEntry> entry;
     in property <int> index;
-    height: 42px;
+    height: 28px;
 
     // A checkbox, because that is what it is: the whole line toggles whether
     // the file is being fetched. The path is the label; the tick is the state.
@@ -108,8 +122,6 @@ component FileLine inherits Rectangle {
     HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        padding-top: 5px;
-        padding-bottom: 5px;
         spacing: 10px;
 
         VerticalLayout {
@@ -132,56 +144,55 @@ component FileLine inherits Rectangle {
             }
         }
 
-        VerticalLayout {
-            spacing: 3px;
+        // One line, not two. The size used to sit on a second row under the
+        // name, which doubled the row height, pushed the list to half as many
+        // files on screen, and put a number nowhere near the right edge that
+        // every other list in this app puts numbers at. It also left the ticks
+        // as a tall column of blue with nothing beside them, which is why the
+        // panel read as a checkbox list rather than a file list.
+        DetailCell {
+            text: entry.path;
+            font-size: Theme.fs-body;
             horizontal-stretch: 1;
+            // A file that is not coming down dims rather than disappears: it is
+            // still in the torrent, it is just not being fetched. A finished
+            // one stops competing with the ones still moving.
+            color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+        }
 
-            DetailCell {
-                text: entry.path;
-                font-size: Theme.fs-body;
-                // A file that is not coming down dims rather than disappears:
-                // it is still in the torrent, it is just not being fetched. A
-                // finished one stops competing with the ones still moving.
-                color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+        // What it is doing, in the slot before the size, so the sizes stay in
+        // one column whatever each file happens to be up to.
+        if !entry.wanted: DetailCell {
+            text: @tr("not downloading");
+            color: Theme.idle;
+        }
+        if entry.wanted && entry.complete: VerticalLayout {
+            alignment: center;
+            Icon { glyph: Lucide.check; tint: Theme.seeding; size: 12px; }
+        }
+        if entry.wanted && !entry.complete: VerticalLayout {
+            alignment: center;
+            width: 54px;
+            Rectangle {
+                height: 4px;
+                border-radius: 2px;
+                background: Theme.track;
+                Rectangle {
+                    x: 0;
+                    width: parent.width * entry.progress;
+                    height: parent.height;
+                    border-radius: parent.border-radius;
+                    background: Theme.accent-fill;
+                }
             }
+        }
 
-            HorizontalLayout {
-                spacing: 8px;
-                DetailCell { text: entry.size; }
-                // Nothing to say about the progress of a file nobody asked for.
-                if !entry.wanted: DetailCell {
-                    text: @tr("not downloading");
-                    color: Theme.idle;
-                    horizontal-stretch: 1;
-                }
-                if entry.wanted && entry.complete: VerticalLayout {
-                    alignment: center;
-                    horizontal-stretch: 1;
-                    HorizontalLayout {
-                        alignment: start;
-                        Icon { glyph: Lucide.check; tint: Theme.seeding; size: 12px; }
-                    }
-                }
-                if entry.wanted && !entry.complete: VerticalLayout {
-                    alignment: center;
-                    horizontal-stretch: 1;
-                    Rectangle {
-                        height: 4px;
-                        border-radius: 2px;
-                        background: Theme.track;
-                        Rectangle {
-                            x: 0;
-                            width: parent.width * entry.progress;
-                            height: parent.height;
-                            border-radius: parent.border-radius;
-                            background: Theme.accent-fill;
-                        }
-                    }
-                }
-                if entry.wanted && !entry.complete: DetailCell {
-                    text: entry.pct;
-                    horizontal-alignment: right;
-                }
+        VerticalLayout {
+            alignment: center;
+            width: 68px;
+            DetailCell {
+                text: entry.size;
+                horizontal-alignment: right;
             }
         }
     }
@@ -427,13 +438,15 @@ export component DetailDrawer inherits Rectangle {
             }
         }
 
+        // Left-aligned and hugging their labels. They used to share the width
+        // between them, which made two tabs into two half-panel buttons.
         Rectangle {
             height: 34px;
             HorizontalLayout {
                 padding-left: 8px;
                 padding-right: 8px;
-                padding-bottom: 6px;
-                spacing: 4px;
+                spacing: 2px;
+                alignment: start;
                 Tab { label: @tr("Files"); id: "files"; glyph: Lucide.file; count: DetailState.files-summary; }
                 Tab { label: @tr("Peers"); id: "peers"; glyph: Lucide.users; count: DetailState.peers-summary; }
             }
