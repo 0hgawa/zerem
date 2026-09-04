@@ -12,15 +12,22 @@
 
 /// Where a file lives, and what it is called.
 ///
-/// The folder comes back with a separator already in it, ready to draw, and
-/// empty for a file that sits at the top of the torrent. Separators are
-/// normalised on the way through: torrents are made on every platform and the
-/// two spellings are the same shape.
+/// The folder comes back with a chevron already in it, ready to draw, and empty
+/// for a file that sits at the top of the torrent.
+///
+/// What counts as a separator is asked of the platform rather than assumed. A
+/// backslash divides folders on Windows and is a perfectly legal character in a
+/// filename on Linux — librqbit hands over a `PathBuf` joined with whatever the
+/// platform uses, so a hard-coded backslash would cut a Linux filename in half.
+/// `is_separator` knows both answers.
 #[must_use]
 pub fn split(path: &str) -> (String, &str) {
-    path.rfind(['/', '\\']).map_or_else(
+    path.rfind(std::path::is_separator).map_or_else(
         || (String::new(), path),
-        |at| (path[..at].replace(['\\', '/'], " › ") + " › ", &path[at + 1..]),
+        |at| {
+            let folder: Vec<&str> = path[..at].split(std::path::is_separator).collect();
+            (folder.join(" › ") + " › ", &path[at + 1..])
+        },
     )
 }
 
@@ -39,9 +46,12 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn a_windows_separator_reads_the_same_as_a_unix_one() {
-        // Torrents are made on every platform, and a backslash printed raw in
-        // a list of names looks like an escape somebody forgot to handle.
+        // A backslash printed raw in a list of names looks like an escape
+        // somebody forgot to handle. Windows only, and that is the point: on
+        // Linux a backslash is a character in a filename, not a folder
+        // boundary, and cutting there would rename the file on screen.
         assert_eq!(split("Featurettes\\Trailer.mkv"), ("Featurettes › ".to_owned(), "Trailer.mkv"));
     }
 
@@ -51,7 +61,15 @@ mod tests {
             split("Season 1/Extras/Deleted/a.mkv"),
             ("Season 1 › Extras › Deleted › ".to_owned(), "a.mkv")
         );
-        assert_eq!(split("Season 1\\Extras\\a.mkv"), ("Season 1 › Extras › ".to_owned(), "a.mkv"));
+    }
+
+    #[test]
+    #[cfg(not(windows))]
+    fn a_backslash_is_part_of_the_name_where_the_platform_says_so() {
+        // The other half of the same claim. Cutting here would rename the file
+        // on screen, and the name on screen is what somebody matches against
+        // what they came looking for.
+        assert_eq!(split("odd\\name.mkv"), (String::new(), "odd\\name.mkv"));
     }
 
     #[test]
