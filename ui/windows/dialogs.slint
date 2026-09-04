@@ -17,10 +17,16 @@ import { Prefs, TorrentList } from "../state.slint";
 /// own line, so the panel is honest instead of incomplete.
 export component Preferences inherits Modal {
     card-width: 560px;
-    card-height: min(card.preferred-height, 620px);
+    // Stated, not asked. Everything else in the app sizes to its content, and
+    // this one cannot: the panel is a ScrollView, and a ScrollView reports a
+    // small preferred height on purpose — hugging its content is the one thing
+    // it exists not to do. Asking it collapsed the card to a title, a sliver of
+    // list and the Done button. The Modal still clamps this against the window,
+    // so a short desktop gets a shorter dialog rather than one off the edge.
+    card-height: 620px;
     dismissed => { Prefs.close(); }
 
-    card := VerticalLayout {
+    VerticalLayout {
         padding: 22px;
         spacing: 14px;
 
