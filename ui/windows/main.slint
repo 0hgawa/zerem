@@ -119,13 +119,11 @@ component Toolbar inherits Rectangle {
         }
     }
 
-    Rectangle { y: parent.height - 1px; height: 1px; background: Theme.border; }
 }
 
 component StatusBar inherits Rectangle {
     height: 30px;
     background: Theme.surface;
-    Rectangle { y: 0; height: 1px; background: Theme.border; }
 
     HorizontalLayout {
         padding-left: 12px;

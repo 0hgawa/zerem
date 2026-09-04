@@ -82,6 +82,7 @@ export component ProgressCell inherits Rectangle {
                 height: parent.height;
                 border-radius: parent.border-radius;
                 background: root.kind == 4 ? Theme.danger
+                    : root.kind == 6 ? Theme.idle
                     : root.kind == 5 ? Theme.warn
                     : root.kind == 2 ? Theme.seeding
                     : root.kind == 1 ? Theme.accent
@@ -316,13 +317,6 @@ export component HeaderCell inherits Rectangle {
         }
     }
 
-    Rectangle {
-        x: parent.width - 1px;
-        width: 1px;
-        height: parent.height;
-        background: Theme.border;
-    }
-
     // Last, so it sits above the sort TouchArea and wins the grip strip.
     TouchArea {
         x: parent.width - 4px;
@@ -365,10 +359,5 @@ export component TableHeader inherits Rectangle {
                 }
             }
         }
-    }
-    Rectangle {
-        y: parent.height - 1px;
-        height: 1px;
-        background: Theme.border;
     }
 }

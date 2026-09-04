@@ -185,8 +185,10 @@ export component AddDialog inherits Modal {
             if !AddState.fetching && AddState.files.length > 0: Rectangle {
                 vertical-stretch: 1;
                 border-radius: Theme.radius;
-                border-width: 1px;
-                border-color: Theme.border;
+                // A filled well rather than an outlined box: Fluent separates
+                // by layer and not by stroke, and a rule drawn around a list
+                // that already has its own rows is a line drawing a line.
+                background: Theme.bg;
                 clip: true;
                 ListView {
                     for f[i] in AddState.files: FileLine { entry: f; index: i; }

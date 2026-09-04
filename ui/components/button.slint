@@ -43,9 +43,9 @@ export component Button inherits Rectangle {
         : kind == ButtonKind.danger ? Theme.danger
         : Theme.text;
 
-    height: 28px;
-    width: row.preferred-width + 24px;
-    border-radius: 14px;
+    height: 32px;
+    width: row.preferred-width + 26px;
+    border-radius: 16px;
     background: !enabled ? transparent
         : filled ? (ta.pressed ? Theme.accent.darker(15%) : Theme.accent)
         : ta.pressed ? Theme.selected

@@ -19,6 +19,13 @@ export global Theme {
     in-out property <bool> dark: true;
 
     // --- surfaces ---
+    //
+    // Layers, not strokes. The window, the bars and the panels are told apart
+    // by what they are filled with, which is how Fluent does it and how Edge
+    // looks: a rule under a toolbar that is already a different colour from
+    // the list below it is a line drawing a line. `border` survives for the
+    // one place a line still means something — the separator between groups
+    // in a menu, where merging "pause" into "remove" would be dangerous.
     out property <brush> bg: dark ? #121216 : #f7f7fa;
     out property <brush> surface: dark ? #1a1a1f : #ffffff;
     out property <brush> surface-hi: dark ? #22222a : #eeeef3;
@@ -38,10 +45,21 @@ export global Theme {
     out property <brush> idle: dark ? #6a6a78 : #75757f;
 
     // --- type ---
-    out property <string> font: "Segoe UI";
-    out property <length> fs-label: 11px;
-    out property <length> fs-body: 12px;
-    out property <length> fs-title: 13px;
+    //
+    // Fluent 2, which is what Windows 11 and Edge are drawn in: caption 12,
+    // body 14, and 16 for the one line that is a heading. It was 11/12/13 in
+    // plain Segoe UI, which is the Windows 10 ramp — close enough to look
+    // deliberate and far enough to look like a different application sitting
+    // on the desktop.
+    //
+    // Segoe UI Variable ships as three optical sizes — Small for 8–12, Text
+    // for 12–18, Display for 18 and up — and the whole ramp above lives inside
+    // Text's range, so there is one family here rather than a token per size
+    // and a choice at every call site.
+    out property <string> font: "Segoe UI Variable Text";
+    out property <length> fs-label: 12px;
+    out property <length> fs-body: 14px;
+    out property <length> fs-title: 16px;
 
     // --- motion ---
     //
@@ -61,7 +79,11 @@ export global Theme {
     public pure function ease-emphasized() -> easing { return cubic-bezier(0.05, 0.7, 0.1, 1.0); }
 
     // --- metrics ---
-    out property <length> row-h: 28px;
-    out property <length> header-h: 30px;
+    // 32 and not 28: a 14 px line in a 28 px row is Fluent's own minimum with
+    // nothing left over, and the row is the thing the cursor has to hit. It
+    // costs about one row in eight on a full window, which is the price of the
+    // list reading like the rest of the system.
+    out property <length> row-h: 32px;
+    out property <length> header-h: 32px;
     out property <length> radius: 6px;
 }
