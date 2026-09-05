@@ -175,18 +175,6 @@ component StatusBar inherits Rectangle {
             tint: Theme.seeding;
         }
 
-        // Beside the numbers it changes.
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.turtle;
-                diameter: 24px;
-                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
-                tint: Prefs.alt-speed ? Theme.warn : Theme.idle;
-                clicked => { Prefs.toggle-alt-speed(); }
-            }
-        }
-
         // Beside the two figures it plots, not off in a corner: the line is
         // what the numbers mean over time, and reading them together is the
         // whole point of drawing it at all.
@@ -238,6 +226,32 @@ component StatusBar inherits Rectangle {
             value: SessionState.matched;
             hint: @tr("Matching the filter");
             tint: Theme.accent;
+        }
+
+        // The one thing in this bar that can be pressed, at the end and behind
+        // a line. It sat between the speeds it changes, which put a control in
+        // the middle of a row of readouts with nothing to tell them apart —
+        // every other icon here is a number's label. Position says it now, the
+        // way it does for the window's own buttons in the header.
+        VerticalLayout {
+            alignment: center;
+            padding-left: 8px;
+            padding-right: 6px;
+            Rectangle {
+                width: 1px;
+                height: 16px;
+                background: Theme.border;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.turtle;
+                diameter: 26px;
+                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
+                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
+                clicked => { Prefs.toggle-alt-speed(); }
+            }
         }
     }
 }
