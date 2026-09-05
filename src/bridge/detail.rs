@@ -216,9 +216,16 @@ impl Models {
     /// Light or unlight one pin without waiting for the engine. Same optimistic
     /// rule the ticks follow.
     fn set_first(&self, index: usize, first: bool) {
-        let mut pins = self.pins.borrow_mut();
-        let Some(slot) = pins.get_mut(index) else { return };
-        *slot = first;
+        // The borrow ends before the model is touched, and that is not
+        // fussiness: writing a row notifies whoever is watching it, and a
+        // notification that came back into this type while the borrow was still
+        // live would be a panic rather than a compile error. The model diff
+        // learnt the same lesson and says so where it notifies.
+        {
+            let mut pins = self.pins.borrow_mut();
+            let Some(slot) = pins.get_mut(index) else { return };
+            *slot = first;
+        }
         if let Some(mut row) = self.files.row_data(index) {
             row.first = first;
             self.files.set_row_data(index, row);
