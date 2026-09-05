@@ -1,6 +1,7 @@
-# What this copy of librqbit changes
+# What these copies of librqbit change
 
-`vendor/librqbit` is **librqbit 9.0.1 from crates.io with a patch applied**, and
+Two crates are vendored, and this file covers both. `vendor/librqbit` is
+**librqbit 9.0.1 from crates.io with a patch applied**, and
 `[patch.crates-io]` in the workspace manifest is what makes the build use it.
 
 Read this file before taking a new upstream release. Everything below is marked
@@ -83,3 +84,55 @@ Nothing outstanding on the encryption.
 3. `cargo test --workspace`, and check that `zerem-mse`'s own tests still pass —
    they are what says the protocol is right, and nothing in this directory
    tests it.
+
+---
+
+# `vendor/librqbit-dualstack-sockets`
+
+**librqbit-dualstack-sockets 0.7.0 from crates.io, with one call added.** It is
+the crate every UDP socket in the tree is born in — the DHT's, uTP's, the
+trackers', local discovery's — which is why the fix belongs here and not in any
+one of them.
+
+## The bug it fixes
+
+Windows answers an inbound ICMP "port unreachable" by failing the **next**
+`recv_from` on the socket that sent the datagram, with `WSAECONNRESET`. Nothing
+was connected and nothing was reset; it is behaviour from the nineties that
+survives for compatibility.
+
+A DHT bootstrap fires at a table full of nodes and some of them are gone. One
+ICMP came back, the next read failed, and `librqbit-dht` treats a read error as
+the end of the DHT:
+
+```text
+21:21:06.870950  INFO  DHT listening on [::]:58485
+21:21:06.873392  ERROR dht: dht finished with error: framer failed: Recv(Os { code: 10054 })
+```
+
+Two milliseconds of DHT, every launch, on every Windows machine. Everything
+after it logged `dht is dead`. A magnet whose trackers answer is unaffected —
+which is why this hid for so long — but one whose trackers are down or slow then
+has nowhere left to ask, and the window sits on *Fetching the file list from the
+swarm…* until the person gives up. That is the report this came from.
+
+## The change
+
+| File | What |
+| --- | --- |
+| `Cargo.toml` | `windows-sys` on Windows targets. Already in the tree at 0.59, so the build compiles nothing new. |
+| `src/lib.rs` | Declares `mod connreset`. |
+| `src/connreset.rs` | **New.** Clears `SIO_UDP_CONNRESET`, and is a no-op everywhere else. |
+| `src/socket.rs` | `bind_udp` calls it, before the socket can be read from. |
+| `src/error.rs` | `Error::UdpConnReset`, so a failing ioctl is named rather than guessed at. |
+| `src/bind_device.rs` | An underscore on an unused argument in a Windows stub. Upstream's warning, which `--cap-lints` hid while this came from the registry; CI builds with `-D warnings` and a path dependency has no such cover. |
+| `.github/` | **Deleted.** Upstream's own test workflow. GitHub only reads `.github` at the root of a repository, so a nested copy never runs; what it would do is sit in the tree looking like ours. |
+
+## What it measures
+
+Same machine, same seconds after launch, one build apart:
+
+| | DHT died | `dht is dead` | Distinct nodes answering |
+| --- | --- | --- | --- |
+| Before | 2 ms in | 16 | 0 |
+| After | no | 0 | 298 |

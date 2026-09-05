@@ -62,6 +62,14 @@ jobs:
         working-directory: vendor/librqbit
         run: cargo test --lib -- --test-threads=1
 
+      # The other vendored crate, excluded for the same reason. Its patch is
+      # three lines of Windows socket option, so it runs only there; its own
+      # tests are what say the option did not break binding.
+      - name: The patched sockets
+        if: runner.os == 'Windows'
+        working-directory: vendor/librqbit-dualstack-sockets
+        run: cargo test
+
       # Compiled and not run. Criterion needs a stored baseline to say anything
       # about a regression, and a wall-clock threshold on a shared runner
       # measures the runner rather than the code — so what CI guards is the

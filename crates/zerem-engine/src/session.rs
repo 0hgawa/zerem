@@ -1097,3 +1097,54 @@ mod tests {
         assert_eq!(super::port_in_use(port), Some("UDP, so uTP is off"));
     }
 }
+
+/// The stuck-magnet reproduction, run by hand.
+///
+/// Not part of the suite: it needs a swarm, a network and up to a minute, and a
+/// test that fails because somebody's wifi dropped is a test people learn to
+/// ignore. It exists because "paste a magnet and the dialog never fills" is a
+/// report that cannot be chased any other way — it is exactly the two calls the
+/// window makes, timed.
+///
+/// ```text
+/// cargo test -p zerem-engine --lib inspecting_a_magnet -- --ignored --nocapture
+/// ```
+#[cfg(test)]
+mod swarm {
+    /// Sintel, the Blender Foundation's open film. A magnet with a live swarm
+    /// and no question about who may distribute it.
+    const SINTEL: &str = "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10\
+        &tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce\
+        &tr=udp%3A%2F%2Fexplodie.org%3A6969\
+        &tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A6969%2Fannounce";
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "asks a real swarm for a real file list"]
+    async fn inspecting_a_magnet_finishes() {
+        let scratch = std::env::temp_dir().join(format!("zerem-swarm-{}", std::process::id()));
+        let config = crate::EngineConfig {
+            download_dir: scratch.join("downloads"),
+            state_dir: scratch.join("state"),
+            port: 0,
+            ..crate::EngineConfig::default()
+        };
+
+        let mut session = super::TorrentSession::start(&config).await.expect("the session should start");
+
+        let began = std::time::Instant::now();
+        session.begin_inspect(SINTEL);
+        assert!(session.publish().pending.as_ref().is_some_and(|p| p.fetching), "it did not say so");
+
+        session.finish_inspect(SINTEL).await;
+        let took = began.elapsed();
+
+        let snapshot = session.publish();
+        let pending = snapshot.pending.as_ref().expect("something should be pending");
+        println!("took {took:.1?}, {} files, error: {:?}", pending.files.len(), pending.error);
+        assert!(pending.error.is_none(), "the swarm was asked and answered: {:?}", pending.error);
+        assert!(!pending.fetching, "it is still saying it is fetching");
+        assert!(!pending.files.is_empty(), "a file list with no files in it");
+
+        let _ = std::fs::remove_dir_all(&scratch);
+    }
+}

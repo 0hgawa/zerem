@@ -37,6 +37,17 @@ exclude = ["vendor"]
 [patch.crates-io]
 librqbit = { path = "vendor/librqbit" }
 
+# The socket crate underneath it, patched for one line of Windows.
+#
+# Windows fails the next `recv_from` on a UDP socket when a datagram it sent
+# earlier drew an ICMP unreachable. A DHT bootstrap fires at a table full of
+# nodes and some of them are gone, so this happened two milliseconds into every
+# launch, and librqbit-dht treats a read error as the end of the DHT. A magnet
+# whose trackers were slow then had nowhere to ask and never filled its file
+# list. `SIO_UDP_CONNRESET` turns the report off; it has to be set on the socket
+# itself, and this crate is where every UDP socket in the tree is made.
+librqbit-dualstack-sockets = { path = "vendor/librqbit-dualstack-sockets" }
+
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
