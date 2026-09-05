@@ -1,4 +1,8 @@
-#[cfg(test)]
+// NOT UPSTREAM: `not(windows)` added. Every test in there is itself
+// `cfg(not(windows))`, so on Windows the module compiled down to unused
+// imports and an unused helper -- three warnings, which the release gate turns
+// into errors now that this crate is a path dependency rather than a download.
+#[cfg(all(test, not(windows)))]
 pub(crate) mod tests;
 
 use crate::Error;

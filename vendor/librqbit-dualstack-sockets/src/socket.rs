@@ -279,7 +279,7 @@ impl MaybeDualstackSocket<tokio::net::UdpSocket> {
         // NOT UPSTREAM. Before anyone can read from it: on Windows an ICMP
         // unreachable from one dead peer fails the next read on the whole
         // socket, and callers reasonably treat a read error as fatal.
-        crate::connreset::ignore_icmp_unreachable(&sock.socket).map_err(Error::UdpConnReset)?;
+        crate::icmp::quiet_stale_reports(&sock.socket).map_err(Error::UdpStaleReports)?;
 
         debug!(addr=?sock.bind_addr(), requested_addr=?addr, dualstack = sock.is_dualstack(), "listening on UDP");
 
@@ -291,8 +291,20 @@ impl MaybeDualstackSocket<tokio::net::UdpSocket> {
     }
 
     pub async fn recv_from(&self, buf: &mut [u8]) -> std::io::Result<(usize, SocketAddr)> {
-        let (size, addr) = self.socket.recv_from(buf).await?;
-        Ok((size, addr.try_to_ipv4()))
+        // NOT UPSTREAM. A read can fail over a datagram this socket *sent*,
+        // to a peer that turned out to be gone. That is one queued report and
+        // not the state of anything, so it is skipped and the read reissued;
+        // callers treat a read error as the end of the socket, and for the DHT
+        // that meant one dead peer ended it for the session. See crate::icmp.
+        loop {
+            match self.socket.recv_from(buf).await {
+                Ok((size, addr)) => return Ok((size, addr.try_to_ipv4())),
+                Err(error) if crate::icmp::is_a_stale_report(&error) => {
+                    trace!(?error, "a stale report about a peer, reading again");
+                }
+                Err(error) => return Err(error),
+            }
+        }
     }
 
     pub async fn send_to(&self, buf: &[u8], target: SocketAddr) -> std::io::Result<usize> {

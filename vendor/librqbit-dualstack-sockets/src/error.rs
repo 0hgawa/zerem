@@ -53,8 +53,8 @@ pub enum Error {
     #[error("error connecting: {0:#}")]
     Connect(std::io::Error),
     // NOT UPSTREAM.
-    #[error("error clearing SIO_UDP_CONNRESET: {0:#}")]
-    UdpConnReset(std::io::Error),
+    #[error("error clearing SIO_UDP_CONNRESET/NETRESET: {0:#}")]
+    UdpStaleReports(std::io::Error),
 }
 
 pub type Result<T> = core::result::Result<T, Error>;

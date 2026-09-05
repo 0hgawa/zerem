@@ -121,12 +121,32 @@ swarm…* until the person gives up. That is the report this came from.
 | File | What |
 | --- | --- |
 | `Cargo.toml` | `windows-sys` on Windows targets. Already in the tree at 0.59, so the build compiles nothing new. |
-| `src/lib.rs` | Declares `mod connreset`. |
-| `src/connreset.rs` | **New.** Clears `SIO_UDP_CONNRESET`, and is a no-op everywhere else. |
-| `src/socket.rs` | `bind_udp` calls it, before the socket can be read from. |
-| `src/error.rs` | `Error::UdpConnReset`, so a failing ioctl is named rather than guessed at. |
+| `src/lib.rs` | Declares `mod icmp`. |
+| `src/icmp.rs` | **New.** Clears `SIO_UDP_CONNRESET` and `SIO_UDP_NETRESET`, tells a queued report apart from the state of a socket, and is where the reasoning lives. Three tests, one of them the bug itself: send to a port that was just closed, and read. |
+| `src/socket.rs` | `bind_udp` clears the two before the socket can be read from, and `recv_from` skips a stale report and reads again instead of returning it. |
+| `src/error.rs` | `Error::UdpStaleReports`, so a failing ioctl is named rather than guessed at. |
+| `src/bind_device/tests.rs` | Its `mod` declaration gained `not(windows)`. Every test in it is already `cfg(not(windows))`, so on Windows it compiled to three warnings -- which the gate turns into errors now that this is a path dependency. |
 | `src/bind_device.rs` | An underscore on an unused argument in a Windows stub. Upstream's warning, which `--cap-lints` hid while this came from the registry; CI builds with `-D warnings` and a path dependency has no such cover. |
 | `.github/` | **Deleted.** Upstream's own test workflow. GitHub only reads `.github` at the root of a repository, so a nested copy never runs; what it would do is sit in the tree looking like ours. |
+
+## Why two halves
+
+The ioctls are Windows-only and the problem is not. Linux delivers the same
+ICMP as `ECONNREFUSED` and macOS as `EHOSTUNREACH`, so a client that only
+clears the ioctls has fixed one platform of three. `recv_from` therefore skips
+these and reads again, which is what libtorrent does in `udp_socket` -- the same
+layer as this one, and for the same reason: it is the only place that knows the
+socket is connectionless.
+
+Skipping cannot spin. Each of these errors **is** one queued report, consumed by
+the call that returns it, and tokio clears the socket's readiness along with it,
+so the next read waits for a real event. What is skipped is an event; a state --
+`NetworkDown` -- goes to the caller untouched, and the two tests in `icmp.rs`
+are that line drawn on both sides.
+
+Only the reader needed it. `librqbit-dht`'s writer already logs a failed send
+and carries on, which is why the DHT died on the way in and never on the way
+out.
 
 ## What it measures
 
@@ -135,4 +155,4 @@ Same machine, same seconds after launch, one build apart:
 | | DHT died | `dht is dead` | Distinct nodes answering |
 | --- | --- | --- | --- |
 | Before | 2 ms in | 16 | 0 |
-| After | no | 0 | 298 |
+| After | no | 0 | 311 |

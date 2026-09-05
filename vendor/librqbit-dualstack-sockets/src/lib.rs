@@ -2,10 +2,10 @@
 mod tests;
 
 mod bind_device;
-// NOT UPSTREAM.
 mod connect;
-mod connreset;
 mod error;
+// NOT UPSTREAM. Read it before touching any UDP path in this crate.
+mod icmp;
 mod multicast;
 mod traits;
 pub use error::{Error, Result};
