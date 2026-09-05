@@ -218,27 +218,11 @@ component StatusBar inherits Rectangle {
                     up: SessionState.spark-up;
                 }
             }
-        }
 
-        // Errors that belong to no row land here rather than in a popup: a
-        // failed paste should not interrupt anything. It is also the gap — the
-        // one thing in the bar allowed to take the width nothing else wants.
-        Text {
-            text: SessionState.notice;
-            color: Theme.danger;
-            font-size: Theme.fs-label;
-            font-family: Theme.font;
-            vertical-alignment: center;
-            overflow: elide;
-            horizontal-stretch: 1;
-            horizontal-alignment: center;
-        }
-
-        // --- how many there are, and the one control ---
-        HorizontalLayout {
-            horizontal-stretch: 0;
-            spacing: 14px;
-
+            // The counts, with the speeds. Every one of these is a number to
+            // read, and the rule this bar keeps now is that the left side is
+            // read and the right side is pressed.
+            //
             // The same three marks the list already uses for these states, so
             // the bar is read with knowledge the table has taught.
             Stat {
@@ -267,30 +251,38 @@ component StatusBar inherits Rectangle {
                 hint: @tr("Matching the filter");
                 tint: Theme.accent;
             }
+        }
 
-            // The one thing in this bar that can be pressed, last and behind a
-            // line. Every other icon here is a number's label, and a control
-            // among them with nothing to tell them apart is one found by
-            // accident. Position says it, the way it does for the window's own
-            // buttons in the header.
-            VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 1px;
-                    height: 16px;
-                    background: Theme.border;
-                }
-            }
-            VerticalLayout {
-                alignment: center;
-                IconButton {
-                    glyph: Lucide.gauge-low;
-                    diameter: 26px;
-                    label: Prefs.alt-speed ? @tr("Back to the full speed limits")
-                        : @tr("Switch to the slow limits");
-                    tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
-                    clicked => { Prefs.toggle-alt-speed(); }
-                }
+        // Errors that belong to no row land here rather than in a popup: a
+        // failed paste should not interrupt anything. It is also the gap — the
+        // one thing in the bar allowed to take the width nothing else wants.
+        Text {
+            text: SessionState.notice;
+            color: Theme.danger;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            horizontal-alignment: center;
+        }
+
+        // --- and the one thing that can be pressed ---
+        //
+        // On its own, which is what makes it obvious. It had a hairline in
+        // front of it while it shared this side with the counts; with the
+        // counts gone to the readouts where they belong, the gap is the
+        // separator and a line as well would be saying it twice.
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            IconButton {
+                glyph: Lucide.gauge-low;
+                diameter: 26px;
+                label: Prefs.alt-speed ? @tr("Back to the full speed limits")
+                    : @tr("Switch to the slow limits");
+                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
+                clicked => { Prefs.toggle-alt-speed(); }
             }
         }
     }
