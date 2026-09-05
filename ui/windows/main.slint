@@ -318,6 +318,51 @@ export component MainWindow inherits Window {
     property <float> reveal: DetailState.open ? 1.0 : 0.0;
     animate reveal { duration: Theme.panel; easing: Theme.ease-emphasized(); }
 
+    /// How wide the band holding the rail, the list and the panel turned out
+    /// to be, reported rather than asked for.
+    ///
+    /// The window derives its own width from what its children ask for, so a
+    /// child that reads it to decide its preferred width is a child asking
+    /// about itself -- a binding loop, and Slint says so; it was tried. This
+    /// arrives through a `changed` handler, which is imperative and so never
+    /// joins the graph that produced it. Zero until the first layout, which is
+    /// why every use of it below is guarded.
+    property <length> room;
+
+    /// The narrowest the panel is worth drawing at all.
+    ///
+    /// Under this it is a column of ellipses: every path elided, every address
+    /// cut, and the buttons wrapped onto each other. Better to put it over the
+    /// list at a width it can use than beside it at a width it cannot.
+    property <length> panel-floor: 300px;
+
+    /// What the list needs before the panel may take anything: its own floor
+    /// plus the gap between the two cards.
+    property <length> list-floor: 248px;
+
+    property <length> rail-room: TorrentList.rail-open ? 174px : 0px;
+
+    /// Whether the panel has to go over the list instead of beside it.
+    ///
+    /// This is the fix for a real defect rather than a flourish. The sheet
+    /// inside the panel is laid out once at its full width and slid past a
+    /// clip, which is what keeps text from re-eliding on every frame of the
+    /// slide -- and it means a slot narrower than that width does not shrink
+    /// the panel, it *cuts* it. On a window between about seven hundred and
+    /// eight hundred pixels the layout handed the panel less than it had asked
+    /// for, and the title, the buttons and the file names were sliced off at
+    /// both edges.
+    property <bool> compact: root.room > 0 && root.room - root.rail-room - root.list-floor < root.panel-floor;
+
+    /// How wide the panel actually gets, which is not always how wide it was
+    /// dragged. Beside the list it is the dragged width, cut down to what is
+    /// left after the list has its floor; over the list it is nearly the whole
+    /// band, less a strip that keeps the list visible underneath -- which is
+    /// what says the sheet is covering something rather than replacing it.
+    property <length> panel-width: root.compact
+        ? max(root.panel-floor, root.room - 40px)
+        : clamp(DetailState.width, root.panel-floor, max(root.panel-floor, root.room - root.rail-room - root.list-floor));
+
     keys := FocusScope {
         key-pressed(e) => {
             // Whatever is modal owns the keyboard: nothing behind it should
@@ -449,6 +494,7 @@ export component MainWindow inherits Window {
             // list keeps every row it had.
             HorizontalLayout {
                 spacing: 8px;
+                changed width => { root.room = self.width; }
 
                 // The rail. Where a browser puts its sidebar and where every
                 // other client puts this, so it is where the hand goes looking.
@@ -662,6 +708,36 @@ export component MainWindow inherits Window {
                             }
                         }
                     }
+
+                    // The panel, on a window with no room to put it beside the
+                    // list. Inside this card rather than over the window, so
+                    // it covers the list and nothing else: the toolbar and the
+                    // status bar stay live, and the card's own clip gives the
+                    // sheet the same rounded edge it has in the other mode.
+                    //
+                    // A hard swap between the two placements, with no
+                    // animation across it. The mode changes while somebody is
+                    // dragging the window edge, and that gesture is already the
+                    // motion -- a panel easing itself between two homes in the
+                    // middle of a resize is noise, not feedback.
+                    if root.compact && root.reveal > 0: Rectangle {
+                        // Dims what the sheet is over, and takes the click that
+                        // closes it. Only here: beside the list the panel
+                        // covers nothing, and dimming what is still usable
+                        // would be a lie about it.
+                        background: #00000080.with-alpha(root.reveal * 0.5);
+                        TouchArea {
+                            clicked => { DetailState.open = false; }
+                        }
+                    }
+                    if root.compact: DetailDrawer {
+                        // Pinned to the right edge, so the slide is the same
+                        // motion whichever side of the breakpoint it lands on.
+                        x: parent.width - self.width;
+                        width: root.reveal * root.panel-width;
+                        height: parent.height;
+                        full-width: root.panel-width;
+                    }
                 }
 
                 // Dragged, not fixed, and never a share of the window: the window
@@ -680,15 +756,21 @@ export component MainWindow inherits Window {
                 // existence. Closed is `reveal` at zero, which is a slot of no
                 // width — the engine still stops building the lists inside, so
                 // what stays is an empty shell, not a hidden panel.
-                DetailDrawer {
+                if !root.compact: DetailDrawer {
                     // Same reason, from the other side: the panel keeps the full
                     // height whatever is or is not inside it.
                     vertical-stretch: 1;
                     horizontal-stretch: 0;
-                    min-width: root.reveal * 240px;
-                    preferred-width: root.reveal * DetailState.width;
-                    max-width: root.reveal * DetailState.width;
-                    full-width: DetailState.width;
+                    // All four the same number, and that is the point. The floor
+                    // used to be 240 while the sheet inside was laid out at the
+                    // dragged width, so a slot that came out between the two cut
+                    // the sheet instead of narrowing it. `panel-width` is already
+                    // what fits, so there is nothing left for the layout to
+                    // decide -- and nothing left for it to get wrong.
+                    min-width: root.reveal * root.panel-width;
+                    preferred-width: root.reveal * root.panel-width;
+                    max-width: root.reveal * root.panel-width;
+                    full-width: root.panel-width;
                 }
             }
 
