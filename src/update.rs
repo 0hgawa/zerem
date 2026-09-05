@@ -60,7 +60,7 @@ pub const HANDOFF: &str = "ZEREM_RELAUNCH_AFTER";
 const PATIENCE: Duration = Duration::from_secs(30);
 
 /// A newer release: the version, where its binary is, and its signature.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Available {
     pub version: String,
     url: String,
@@ -111,11 +111,27 @@ pub fn check() -> Result<Option<Available>, String> {
         return Err(format!("the update server answered {}", response.status().as_u16()));
     }
     let body = response.text().map_err(|e| e.to_string())?;
-    let feed: serde_json::Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
+    newest(&body, env!("CARGO_PKG_VERSION"))
+}
+
+/// What a feed offers a build of `running`, if anything.
+///
+/// Its own function because everything above it is a socket and everything in
+/// it is a decision — and the decision is the part that can be wrong in a way
+/// nobody sees until a release day. A feed is read once in the life of a
+/// version, by a machine that is not this one, and there is no second chance to
+/// notice that the field was called something else.
+///
+/// # Errors
+///
+/// When the feed is not JSON, names no version, or has no build for this
+/// platform.
+fn newest(body: &str, running: &str) -> Result<Option<Available>, String> {
+    let feed: serde_json::Value = serde_json::from_str(body).map_err(|e| e.to_string())?;
 
     let version =
         feed.get("version").and_then(serde_json::Value::as_str).ok_or("the feed names no version")?;
-    if !is_newer(version, env!("CARGO_PKG_VERSION")) {
+    if !is_newer(version, running) {
         return Ok(None);
     }
     let platform = feed
@@ -164,6 +180,10 @@ fn verify(bytes: &[u8], signature: &str) -> Result<(), String> {
     use minisign_verify::{PublicKey, Signature};
     let key = PublicKey::from_base64(PUBKEY).map_err(|e| format!("the built-in key is unusable: {e}"))?;
     let signature = Signature::decode(signature).map_err(|e| format!("the signature is malformed: {e}"))?;
+    // `false` refuses a legacy, non-prehashed signature. That is the stricter
+    // of the two and the one the release signs with -- see the `-H` in
+    // `.github/workflows/release.yml`, which is load-bearing for exactly this
+    // reason and says so.
     key.verify(bytes, &signature, false)
         .map_err(|_| "the download is not signed by Zerem — it has not been installed".to_owned())
 }
@@ -175,7 +195,14 @@ pub fn release_page() {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_newer, semver, PUBKEY};
+    use super::{is_newer, newest, semver, verify, PLATFORM, PUBKEY};
+
+    /// A feed of the shape the release workflow writes.
+    fn feed(version: &str) -> String {
+        format!(
+            r#"{{"version":"{version}","platforms":{{"{PLATFORM}":{{"url":"https://example.invalid/zerem","signature":"untrusted comment: x\nsig\n"}}}}}}"#
+        )
+    }
 
     #[test]
     fn a_tag_parses_with_or_without_its_decoration() {
@@ -220,6 +247,93 @@ mod tests {
         // The feed is compared against exactly this constant, so a typo that
         // made it unparseable would make every published version look newer.
         assert!(semver(env!("CARGO_PKG_VERSION")) > (0, 0, 0), "the crate version does not parse");
+    }
+
+    /// A file signed with the real release key, and its signature.
+    ///
+    /// The signature is public and belongs in the repository; the key that made
+    /// it does not, and is not here. What this pins is the pair of things that
+    /// only ever meet on somebody else's machine: the key compiled into this
+    /// build, and a signature made by the tool that signs a release. Getting
+    /// that pair wrong is a release every installed copy downloads and then
+    /// refuses, and there is no way to find out beforehand except this.
+    const FIXTURE: &[u8] = b"zerem update fixture v1";
+    const FIXTURE_SIG: &str = "untrusted comment: signature from rsign secret key\n\
+        RUQ23v5aafPrajLtDYcNJ1PppppS7XML/PaltHHXmV0//u93qGv4JL3zTn6snEdHptmCxGy5XwUYeiB6MvR3ju9CF81wndBJMg0=\n\
+        trusted comment: timestamp:1788639641\tfile:C:/Users/mochi/AppData/Local/Temp/fixture.bin\tprehashed\n\
+        jcsT2quKcNIVjwOdlfpMdF+Iz+VyacYXQXjl4tEh6fpp6FtWBVa5QS7hx3SCUBdEiHBtaKn90SEsXmZSJ3PaBQ==\n";
+
+    #[test]
+    fn a_real_signature_from_the_real_key_is_accepted() {
+        // The one thing about this feature that cannot be checked by reading
+        // it. Everything else here is arithmetic; this is two pieces of
+        // cryptography agreeing about a format, and they agree or they do not.
+        verify(FIXTURE, FIXTURE_SIG).expect("the release key signed this");
+    }
+
+    #[test]
+    fn a_byte_out_of_place_is_refused() {
+        // What the signature is for. A download altered anywhere -- a release
+        // asset replaced, a proxy that rewrites, a disk that lied -- fails
+        // before it goes near the running program.
+        let mut tampered = FIXTURE.to_vec();
+        tampered[0] ^= 1;
+        assert!(verify(&tampered, FIXTURE_SIG).is_err(), "a changed file was accepted");
+
+        let mut longer = FIXTURE.to_vec();
+        longer.push(0);
+        assert!(verify(&longer, FIXTURE_SIG).is_err(), "an appended byte was accepted");
+    }
+
+    #[test]
+    fn a_signature_from_some_other_key_is_refused() {
+        // The whole point of pinning one key: HTTPS says the bytes arrived
+        // unaltered and says nothing about who put them there.
+        let forged =
+            FIXTURE_SIG.replace("RUQ23v5aafPrajLtDYcNJ1PppppS7XML", "RUQ23v5aafPrajLtDYcNJ1PppppS7XMK");
+        assert!(verify(FIXTURE, &forged).is_err(), "a doctored signature was accepted");
+    }
+
+    #[test]
+    fn a_newer_release_is_read_out_of_the_feed() {
+        let found = newest(&feed("9.9.9"), "0.1.0").expect("a well-formed feed").expect("something newer");
+        assert_eq!(found.version, "9.9.9");
+    }
+
+    #[test]
+    fn a_feed_that_offers_nothing_newer_offers_nothing() {
+        // The answer on almost every launch, and the one a wrong comparison
+        // turns into an install loop.
+        assert!(newest(&feed("0.1.0"), "0.1.0").expect("well-formed").is_none());
+        assert!(newest(&feed("0.0.9"), "0.1.0").expect("well-formed").is_none());
+    }
+
+    #[test]
+    fn a_feed_with_no_build_for_this_platform_says_so() {
+        let other = r#"{"version":"9.9.9","platforms":{"sparc-solaris":{"url":"x","signature":"y"}}}"#;
+        let why = newest(other, "0.1.0").expect_err("there is no build for us");
+        assert!(why.contains(PLATFORM), "the message does not name the platform: {why}");
+    }
+
+    #[test]
+    fn a_feed_missing_a_field_is_an_error_and_not_a_guess() {
+        // Each of these is a release published wrong. Reading past one and
+        // installing whatever was there is the failure this refuses.
+        let no_version = r#"{"platforms":{}}"#;
+        assert!(newest(no_version, "0.1.0").is_err());
+
+        let no_url = format!(r#"{{"version":"9.9.9","platforms":{{"{PLATFORM}":{{"signature":"y"}}}}}}"#);
+        assert!(newest(&no_url, "0.1.0").is_err());
+
+        let no_signature = format!(r#"{{"version":"9.9.9","platforms":{{"{PLATFORM}":{{"url":"x"}}}}}}"#);
+        assert!(newest(&no_signature, "0.1.0").is_err(), "an unsigned release was offered");
+    }
+
+    #[test]
+    fn something_that_is_not_a_feed_is_not_read_as_one() {
+        // A proxy's login page, an error page, an empty body.
+        assert!(newest("<html>who are you</html>", "0.1.0").is_err());
+        assert!(newest("", "0.1.0").is_err());
     }
 
     #[test]
