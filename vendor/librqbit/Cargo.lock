@@ -4919,7 +4919,6 @@ dependencies = [
  "num-bigint",
  "ring",
  "tokio",
- "tracing",
 ]
 
 [[package]]

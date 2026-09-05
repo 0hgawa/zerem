@@ -751,6 +751,9 @@ export component MainWindow inherits Window {
                         width: root.reveal * root.panel-width;
                         height: parent.height;
                         full-width: root.panel-width;
+                        // Nothing to drag: over the list the width is the
+                        // card`s, and the dragged one is not read at all.
+                        resizable: false;
                     }
                 }
 

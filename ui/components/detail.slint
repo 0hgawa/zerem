@@ -379,6 +379,12 @@ export component DetailDrawer inherits Rectangle {
     /// instead would re-elide every path and every address on every frame, and
     /// text jumping between two elisions is not motion, it is a glitch.
     in property <length> full-width;
+    /// Whether the edge can be dragged.
+    ///
+    /// False where the panel is a sheet over the list: there its width comes
+    /// from the card it is drawn in, so a drag would change a number nothing
+    /// reads and the edge would sit under a resize cursor doing nothing.
+    in property <bool> resizable: true;
     background: Theme.surface;
     // A card of its own, like everything else in the window. The clip that
     // makes the slide work rounds the corners too, which is why the radius
@@ -402,7 +408,7 @@ export component DetailDrawer inherits Rectangle {
     // declared before the content so a control inside the panel still wins its
     // own clicks. Inside the sheet rather than over the seam: a touch area
     // hanging outside a clipping parent is not reliably hit.
-    TouchArea {
+    if root.resizable: TouchArea {
         x: 0;
         width: 8px;
         height: parent.height;

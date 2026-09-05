@@ -97,12 +97,18 @@ impl Engine {
         }
     }
 
-    /// Stop advancing the session.
+    /// Stop handing snapshots to the window.
     ///
-    /// Set while the window is not visible. This is not "tick more slowly" — a
-    /// paused engine publishes nothing and the UI redraws nothing, which Phase 0
-    /// measured at 0.000 % CPU. Transfers keep running: pausing the *view* must
-    /// not pause the downloads.
+    /// Set while the window is not visible. The UI then redraws nothing, which
+    /// is where the CPU went: Phase 0 measured the pair at 0.000 %.
+    ///
+    /// The session itself keeps advancing, and that is the part worth being
+    /// exact about. It still builds a snapshot every tick and throws it away,
+    /// because building one is also how it notices a torrent finishing — so a
+    /// download that completes while the window is in the tray is still moved
+    /// to where finished downloads are kept, and is still announced when the
+    /// window comes back. Pausing the *view* must not pause anything else, and
+    /// for a while it quietly did.
     pub fn set_paused(&self, paused: bool) {
         self.paused.store(paused, Ordering::Relaxed);
     }
@@ -166,6 +172,18 @@ async fn run(
         let is_paused = paused.load(Ordering::Relaxed);
         if is_paused && !acted {
             was_paused = true;
+            // Built and thrown away, which is less odd than it looks: building
+            // the snapshot is also how the session *notices* a torrent
+            // finishing. It is where `was_complete` flips, where a finished id
+            // joins the queue the mover reads on the next turn of this loop,
+            // and where a name joins the list the window announces.
+            //
+            // Skipping it altogether was cheaper and wrong. Move-on-complete
+            // did nothing while the window was hidden -- which is precisely
+            // when a long download ends, and precisely how this app expects to
+            // be used, since closing it hides rather than quits. What is thrown
+            // away here is only the view, and there is no view to hand it to.
+            drop(session.publish());
             continue;
         }
         // Nothing was sampled while the window was away, so the footer's minute

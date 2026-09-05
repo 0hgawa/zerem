@@ -46,6 +46,22 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
+      # The patched engine, which `cargo test --workspace` does not reach: it is
+      # excluded from the workspace so our lints do not run over somebody else's
+      # code. That exclusion also takes with it the only test that proves
+      # protocol encryption works on a wire -- two sessions, both refusing to
+      # speak in the clear, downloading from each other. The crate's tests bind
+      # fixed ports, so they cannot share a machine with each other.
+      #
+      # Windows only, deliberately. The encryption is platform-independent and
+      # its own nineteen tests run everywhere through the workspace; what this
+      # adds is the integration, and running that twice buys a second copy of
+      # the same answer for several minutes of build.
+      - name: The patched engine
+        if: runner.os == 'Windows'
+        working-directory: vendor/librqbit
+        run: cargo test --lib -- --test-threads=1
+
       # Compiled and not run. Criterion needs a stored baseline to say anything
       # about a regression, and a wall-clock threshold on a shared runner
       # measures the runner rather than the code — so what CI guards is the

@@ -38,10 +38,14 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 
 ## Preferências
 
-`Ctrl+,` ou o botão na barra. Quatro salas — **Downloads**, **Velocidade**,
-**Conexão** e **Aparência** — num trilho à esquerda, com o painel à direita. Era
-um scroll só com quatro títulos dentro, o que fazia o caminho até a porta de
-escuta passar por cima dos limites de banda.
+`Ctrl+,` ou o botão na barra. Cinco salas — **Geral**, **Downloads**,
+**Velocidade**, **Conexão** e **Sobre** — num trilho à esquerda, com o painel à
+direita. Era um scroll só com títulos dentro, o que fazia o caminho até a porta
+de escuta passar por cima dos limites de banda.
+
+Não há botão *Pronto*. Cada mudança é escrita no instante em que acontece, então
+não existe nada pendente que um botão pudesse concluir — só o × no canto, onde
+toda janela deste desktop guarda o dela.
 
 Dentro de uma sala as linhas ficam em cards, e cada linha diz o que é à esquerda
 e carrega o que a muda à direita. É a forma de toda tela de configuração deste
@@ -68,8 +72,8 @@ voltar, e um par só significa redigitar os números de verdade de memória toda
 vez. E fica a um clique de distância de propósito — o momento em que alguém quer
 a linha de volta não é um momento em que essa pessoa quer abrir um painel.
 
-**Porta de escuta, uTP e UPnP estão no painel** e dizem, uma vez para os três,
-que valem a partir do próximo lançamento. Isso reverte uma decisão anterior de
+**Porta de escuta, uTP, UPnP e criptografia estão no painel** e dizem, uma vez
+para todos, que valem a partir do próximo lançamento. Isso reverte uma decisão anterior de
 escondê-los: a objeção estava certa — um controle que *silenciosamente* não faz
 nada até reabrir é pior que controle nenhum — e ela era um argumento contra o
 silêncio, não contra o controle.
@@ -580,6 +584,56 @@ cinquenta gigabytes de volta depois de se mover, e aparece como **Verificando**
 até terminar. Não há como contornar isso de fora da biblioteca. Paga-se uma vez,
 depois de o download já ter acabado, sem ninguém esperando pelo conteúdo.
 
+## Pasta vigiada
+
+Um `.torrent` largado numa pasta escolhida é adicionado sem ninguém abrir a
+janela — de um navegador, de um script, de um compartilhamento de rede. É a
+automação mais antiga que um cliente de torrent tem, e é o que faz dele um
+serviço em vez de um aplicativo.
+
+O arquivo é **renomeado, nunca apagado**: `.torrent.added` quando entrou,
+`.torrent.failed` quando não. O segundo nome importa mais do que parece — um
+arquivo quebrado deixado onde estava é recolhido de novo na varredura seguinte,
+falha de novo e reclama de novo, para sempre.
+
+A varredura acontece a cada quatro tiques e não a cada um: uma listagem de
+diretório por segundo numa pasta que quase sempre está vazia é uma chamada de
+sistema gasta em nada, e quatro segundos estão muito dentro do tempo que alguém
+leva para notar que um download não começou.
+
+Só o final exato `.torrent` é recolhido, o que também é o que mantém um arquivo
+pela metade de fora: um navegador baixa para `algo.torrent.crdownload` e só
+renomeia quando os bytes chegaram todos.
+
+## Assistir antes de terminar
+
+**Play now** no menu de um arquivo de vídeo pede as peças daquele arquivo na
+ordem e abre um servidor no loopback, numa porta que o sistema escolhe. O player
+recebe uma URL comum, com `Range` e `206`, então qualquer coisa que toque vídeo
+pela rede serve — e o motor prioriza as peças que o fluxo está pedindo.
+
+O caminho é `/t/{id}/{índice}`: um **índice numérico**, não um caminho de
+arquivo. Travessia de diretório é impossível por construção, não por filtro.
+
+## Atualizações
+
+Em **Sobre**, e conferidas sozinhas alguns segundos depois de abrir. O app lê um
+feed publicado com cada release, baixa só o binário novo, **confere a assinatura
+minisign** contra uma chave compilada dentro dele e troca o executável no lugar.
+Um download que não passa na assinatura é descartado antes de tocar o disco.
+
+HTTPS diria que os bytes vieram do GitHub sem alteração e não diria quem os pôs
+lá — que é a única pergunta que importa quando a resposta decide o que roda como
+você na próxima vez que abrir o app.
+
+A checagem automática **cala a boca quando falha**. Um notebook aberto antes do
+wifi associar não tem nada a dizer, e "erro ao enviar requisição" é resposta a
+uma pergunta que ninguém fez. Só o botão reporta erro.
+
+E o botão não aparece onde não funcionaria: numa cópia instalada para todos, ele
+diria de onde vêm as atualizações em vez de baixar, verificar e falhar no sistema
+de arquivos de quem clicou.
+
 ## Bandeja
 
 **Fechar a janela esconde, não encerra.** Um cliente que para de semear porque a
@@ -588,6 +642,16 @@ janela incomodava está fazendo a coisa errada. Sair é pelo menu da bandeja.
 Isso só é aceitável por causa do trabalho já feito: com a janela escondida o
 tick da UI **para** — a Fase 0 mediu esse estado em 0,000 % de CPU — enquanto a
 engine continua transferindo. Clique esquerdo no ícone alterna a janela.
+
+A engine continua fazendo mais do que transferir, e isso é preciso ser exato: ela
+segue montando um retrato a cada segundo e jogando fora, porque montá-lo também é
+como ela **percebe que um torrent terminou**. Um download que acaba com a janela
+na bandeja é movido para onde os concluídos ficam, e é anunciado quando a janela
+volta. Pular esse passo era mais barato e estava errado.
+
+E se a bandeja não subir — no Windows a área de notificação some por um segundo
+sempre que o shell reinicia — **o botão fechar encerra em vez de esconder**.
+Esconder sem ter de onde voltar deixa alguém com um processo que não alcança.
 
 Abrir o Zerem de novo enquanto ele já roda **não abre uma segunda cópia**: a
 nova entrega o que recebeu à instância viva e sai. Sem isso, duas cópias abririam
@@ -602,7 +666,13 @@ Tudo isto tem de passar antes de qualquer merge — é o que o
 cargo fmt --all --check
 cargo clippy --workspace --all-targets    # pedantic + nursery, -D warnings
 cargo test --workspace
+cd vendor/librqbit; cargo test --lib -- --test-threads=1   # o motor patcheado
 ```
+
+O último é à parte porque o `vendor/` está fora do workspace — nossos lints não
+têm o que fazer sobre código de terceiros. Ele carrega o único teste que prova a
+criptografia numa rede: duas sessões, ambas recusando texto claro, baixando uma
+da outra. As portas são fixas, então os testes não dividem máquina entre si.
 
 O compilador é fixado em [`rust-toolchain.toml`](rust-toolchain.toml): sem isso,
 cada versão nova do Rust deixa o CI vermelho em código que ninguém tocou.
@@ -612,24 +682,29 @@ cada versão nova do Rust deixa o CI vermelho em código que ninguém tocou.
 | Componente | Termos |
 |---|---|
 | **Slint** (toolkit de UI) | Licenciamento próprio — GPLv3, royalty-free desktop, ou comercial. Um binário distribuído tem de estar coberto por uma delas; ver [slint.dev](https://slint.dev). **A escolha para o Zerem é decisão da Fase 4, antes do primeiro release.** |
-| **librqbit** (engine BitTorrent) | Apache-2.0. Fonte em [github.com/ikatson/rqbit](https://github.com/ikatson/rqbit). |
+| **librqbit** (engine BitTorrent) | Apache-2.0. Fonte em [github.com/ikatson/rqbit](https://github.com/ikatson/rqbit). **Uma cópia patcheada vive em [`vendor/librqbit`](vendor/librqbit)** — ele não tem costura por onde passar criptografia de protocolo, e [`vendor/CHANGES.md`](vendor/CHANGES.md) lista cada alteração. |
 
 ## Limitações conhecidas
 
+**A criptografia de protocolo é só sobre TCP.** Ela existe — está em
+[`crates/zerem-mse`](crates/zerem-mse), com a troca de chaves, o RC4 e o aperto
+de mão dos dois lados, e o download cifrado ponta a ponta é provado por um teste
+no motor vendorizado. Mas sobre uTP o aperto de mão completa e o fluxo de
+mensagens trava, e a causa não foi encontrada. Então o uTP é desligado enquanto a
+criptografia estiver ligada, e o painel de Conexão diz isso na própria linha.
+
+Por isso ela vem **desligada por padrão**. Oferecê-la não custa peers — cai para
+texto claro com quem não aceita — mas custa o uTP, que é o que impede o cliente
+de tomar a linha inteira. Ligue-a se o seu provedor molda BitTorrent ou se um
+tracker exige.
+
 **Trackers privados filtram por `peer_id`**, e um cliente próprio não passa no
-whitelist deles. Isso é uma limitação do projeto, não um bug — se você usa
-tracker privado, o Zerem não substitui o seu cliente atual.
+whitelist deles. A criptografia removeu um dos dois motivos pelos quais eles
+recusariam o Zerem; o `peer_id` continua sendo o outro.
 
-**Não há criptografia de protocolo (MSE/PE).** O librqbit não a implementa — não
-há RC4 nem Diffie-Hellman em lugar nenhum da árvore de dependências. A
-consequência é direta: todo peer configurado como *require encryption*, que é um
-ajuste comum em qBittorrent e Deluge, **recusa a conexão**. E onde o provedor faz
-DPI em BitTorrent, o tráfego é moldado. É a maior diferença de velocidade em
-relação ao qBittorrent e não é corrigível no código do Zerem.
-
-Duas outras ficam no mesmo lugar, também dentro do motor: a escolha de peças é
-por ordem de arquivo e **não rarest-first**, e não há *fast extension*. Nenhuma
-das três é uma decisão deste projeto; são o que o librqbit cobre hoje.
+Duas limitações ficam dentro do motor: a escolha de peças é por ordem de arquivo
+e **não rarest-first**, e não há *fast extension*. Nenhuma das duas é uma decisão
+deste projeto; são o que o librqbit cobre hoje.
 
 ## Licença
 
