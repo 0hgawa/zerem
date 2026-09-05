@@ -114,6 +114,14 @@ export component IconButton inherits Rectangle {
     /// So the window draws it, at the top of everything, like every other
     /// floating thing here already is.
     property <bool> settled;
+    /// What this button last put on screen.
+    ///
+    /// Not `label`, and that is the bug this exists for: the slow-limits
+    /// button says one thing when the limits are full and another when they
+    /// are not, so clicking it while its tooltip was up changed `label` under
+    /// the comparison below — the tooltip stopped being recognised as this
+    /// button's and stayed on screen for the rest of the session.
+    property <string> published;
     wait := Timer {
         // Six hundred was too long to be discovered. Windows waits about four,
         // and a tooltip nobody stays still for is a tooltip nobody has read —
@@ -124,6 +132,7 @@ export component IconButton inherits Rectangle {
             root.settled = true;
             self.running = false;
             if (root.label != "") {
+                root.published = root.label;
                 Hint.text = root.label;
                 Hint.at-x = root.absolute-position.x + root.width / 2;
                 Hint.at-y = root.absolute-position.y + root.height + 5px;
@@ -151,7 +160,17 @@ export component IconButton inherits Rectangle {
 
     ta := TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.clicked(); }
+        clicked => {
+            // A click is a decision, so the label explaining the choice has
+            // done its job. It also stops a button whose words change on
+            // click from leaving the old ones on screen.
+            if (Hint.text == root.published) {
+                Hint.text = "";
+            }
+            root.settled = false;
+            wait.running = false;
+            root.clicked();
+        }
         changed has-hover => {
             if (self.has-hover) {
                 wait.running = true;
@@ -161,7 +180,7 @@ export component IconButton inherits Rectangle {
                 // Only if it is still mine. Moving from one button to the next
                 // fires this after the other one has already asked, and
                 // clearing then would take the new tooltip down with the old.
-                if (Hint.text == root.label) {
+                if (Hint.text == root.published) {
                     Hint.text = "";
                 }
             }
