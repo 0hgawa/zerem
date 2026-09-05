@@ -32,13 +32,21 @@ component Toolbar inherits Rectangle {
 
     HorizontalLayout {
         padding-left: 10px;
-        spacing: 6px;
-        // No alignment, which is the whole of the fix and not an omission.
-        // `alignment: start` packs every child at its preferred width and
-        // ignores `horizontal-stretch` entirely — so the spacer below stopped
-        // spacing and the window controls came to rest wherever the left-hand
-        // group happened to end, halfway across the bar. The default hands the
-        // leftover width to whatever asks for it, which is what the spacer is.
+        // Two groups and a gap, stated rather than hoped for.
+        //
+        // Neither way of aligning one flat row does what a bar with a left and
+        // a right side needs. `alignment: start` packs everything left and
+        // ignores stretch, so the right-hand group rested in the middle;
+        // removing the alignment lets Slint hand spare width to every child
+        // that will take it, which spreads the whole bar out. So the two sides
+        // are groups that cannot grow, and one element between them whose only
+        // job is to be the leftover.
+        spacing: 0px;
+
+        // --- the app, and what is added to it ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 6px;
 
         // The app's mark, and the first thing in the window. It exists — it is
         // in the taskbar and the `.ico` — and the window never wore it, which
@@ -102,7 +110,15 @@ component Toolbar inherits Rectangle {
         // is the one destructive thing the app does — parked permanently beside
         // "Add file", it was a slip waiting to happen.
 
+        }
+
+        // The gap, and the only thing allowed to have it.
         Rectangle { horizontal-stretch: 1; }
+
+        // --- looking, and the window itself ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 6px;
 
         VerticalLayout {
             alignment: center;
@@ -146,7 +162,8 @@ component Toolbar inherits Rectangle {
         // The three, hard against the right edge and the full height of the
         // bar, which is where every window on this desktop keeps them. No gap
         // before them and none after: the corner itself is the target.
-        WindowControls { }
+            WindowControls { }
+        }
     }
 
 }
@@ -156,44 +173,56 @@ component StatusBar inherits Rectangle {
     background: Theme.surface;
     border-radius: Theme.radius-float;
 
+    // Two groups and a gap, stated rather than hoped for.
+    //
+    // This was one flat row, and neither way of aligning a flat row does what a
+    // status bar needs. `alignment: start` packs everything left and ignores
+    // stretch entirely, so the right-hand group came to rest in the middle.
+    // Removing it lets Slint hand the spare width to *every* child that will
+    // take it, which spread the whole bar out with gaps between the numbers.
+    //
+    // So: a left group, a right group, and one element between them whose only
+    // job is to be the leftover. Nothing else can grow, so nothing else does.
     HorizontalLayout {
         padding-left: 12px;
         // Small, because the last thing in the bar is a round button and the
-        // room around its circle is the padding.
+        // room around its circle is its own padding.
         padding-right: 4px;
-        spacing: 14px;
-        // No alignment. The same mistake the toolbar had: `alignment: start`
-        // packs every child at its preferred width and ignores
-        // `horizontal-stretch`, so the notice in the middle stopped pushing and
-        // the whole right-hand group came to rest halfway across the bar — the
-        // button among them looking like it was in the middle because it was.
-        Stat {
-            glyph: Lucide.arrow-down;
-            value: SessionState.down;
-            hint: @tr("Download speed");
-            tint: Theme.accent;
-        }
-        Stat {
-            glyph: Lucide.arrow-up;
-            value: SessionState.up;
-            hint: @tr("Upload speed");
-            tint: Theme.seeding;
-        }
+        spacing: 0px;
 
-        // Beside the two figures it plots, not off in a corner: the line is
-        // what the numbers mean over time, and reading them together is the
-        // whole point of drawing it at all.
-        if SessionState.spark-down != "": VerticalLayout {
-            alignment: center;
-            Sparkline {
-                down: SessionState.spark-down;
-                up: SessionState.spark-up;
+        // --- what the session is doing ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 14px;
+
+            Stat {
+                glyph: Lucide.arrow-down;
+                value: SessionState.down;
+                hint: @tr("Download speed");
+                tint: Theme.accent;
+            }
+            Stat {
+                glyph: Lucide.arrow-up;
+                value: SessionState.up;
+                hint: @tr("Upload speed");
+                tint: Theme.seeding;
+            }
+
+            // Beside the two figures it plots, not off in a corner: the line is
+            // what the numbers mean over time, and reading them together is the
+            // whole point of drawing it at all.
+            if SessionState.spark-down != "": VerticalLayout {
+                alignment: center;
+                Sparkline {
+                    down: SessionState.spark-down;
+                    up: SessionState.spark-up;
+                }
             }
         }
-        Rectangle { width: 6px; }
 
         // Errors that belong to no row land here rather than in a popup: a
-        // failed paste should not interrupt anything.
+        // failed paste should not interrupt anything. It is also the gap — the
+        // one thing in the bar allowed to take the width nothing else wants.
         Text {
             text: SessionState.notice;
             color: Theme.danger;
@@ -202,60 +231,66 @@ component StatusBar inherits Rectangle {
             vertical-alignment: center;
             overflow: elide;
             horizontal-stretch: 1;
+            horizontal-alignment: center;
         }
 
-        // The same three marks the list already uses for these states, so the
-        // bar is read with knowledge the table has taught.
-        Stat {
-            glyph: Lucide.play;
-            value: SessionState.active;
-            hint: @tr("Active");
-            tint: Theme.text-dim;
-        }
-        Stat {
-            glyph: Lucide.pause;
-            value: SessionState.paused;
-            hint: @tr("Paused");
-            tint: Theme.text-dim;
-        }
-        if SessionState.matched == "": Stat {
-            glyph: Lucide.files;
-            value: SessionState.total;
-            hint: @tr("Total");
-            tint: Theme.text-dim;
-        }
-        // Replaces the total rather than joining it, and takes the accent: what
-        // it says is "you are not looking at all of them".
-        if SessionState.matched != "": Stat {
-            glyph: Lucide.search;
-            value: SessionState.matched;
-            hint: @tr("Matching the filter");
-            tint: Theme.accent;
-        }
+        // --- how many there are, and the one control ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 14px;
 
-        // The one thing in this bar that can be pressed, at the end and behind
-        // a line. It sat between the speeds it changes, which put a control in
-        // the middle of a row of readouts with nothing to tell them apart —
-        // every other icon here is a number's label. Position says it now, the
-        // way it does for the window's own buttons in the header.
-        VerticalLayout {
-            alignment: center;
-            padding-left: 8px;
-            padding-right: 6px;
-            Rectangle {
-                width: 1px;
-                height: 16px;
-                background: Theme.border;
+            // The same three marks the list already uses for these states, so
+            // the bar is read with knowledge the table has taught.
+            Stat {
+                glyph: Lucide.play;
+                value: SessionState.active;
+                hint: @tr("Active");
+                tint: Theme.text-dim;
             }
-        }
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.turtle;
-                diameter: 26px;
-                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
-                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
-                clicked => { Prefs.toggle-alt-speed(); }
+            Stat {
+                glyph: Lucide.pause;
+                value: SessionState.paused;
+                hint: @tr("Paused");
+                tint: Theme.text-dim;
+            }
+            if SessionState.matched == "": Stat {
+                glyph: Lucide.files;
+                value: SessionState.total;
+                hint: @tr("Total");
+                tint: Theme.text-dim;
+            }
+            // Replaces the total rather than joining it, and takes the accent:
+            // what it says is "you are not looking at all of them".
+            if SessionState.matched != "": Stat {
+                glyph: Lucide.search;
+                value: SessionState.matched;
+                hint: @tr("Matching the filter");
+                tint: Theme.accent;
+            }
+
+            // The one thing in this bar that can be pressed, last and behind a
+            // line. Every other icon here is a number's label, and a control
+            // among them with nothing to tell them apart is one found by
+            // accident. Position says it, the way it does for the window's own
+            // buttons in the header.
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 1px;
+                    height: 16px;
+                    background: Theme.border;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                IconButton {
+                    glyph: Lucide.turtle;
+                    diameter: 26px;
+                    label: Prefs.alt-speed ? @tr("Back to the full speed limits")
+                        : @tr("Switch to the slow limits");
+                    tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
+                    clicked => { Prefs.toggle-alt-speed(); }
+                }
             }
         }
     }
