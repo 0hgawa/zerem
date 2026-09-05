@@ -82,12 +82,18 @@ export component ProgressCell inherits Rectangle {
                 width: parent.width * root.progress;
                 height: parent.height;
                 border-radius: parent.border-radius;
+                // The same palette, in the same order, as the bar in the
+                // detail panel: one torrent seen twice should not be two
+                // colours. Downloading is `accent-fill` rather than `accent`
+                // -- they are a true blue and a violet-blue, and side by side
+                // the difference reads as a second meaning that is not there.
+                // Stalled and queued are the two states the panel never has to
+                // draw, because it is only ever showing one torrent.
                 background: root.kind == 4 ? Theme.danger
-                    : root.kind == 6 ? Theme.idle
-                    : root.kind == 5 ? Theme.warn
                     : root.kind == 2 ? Theme.seeding
-                    : root.kind == 1 ? Theme.accent
-                    : root.kind == 3 ? Theme.warn
+                    : root.kind == 3 ? Theme.idle
+                    : root.kind == 5 ? Theme.warn
+                    : root.kind == 1 ? Theme.accent-fill
                     : Theme.idle;
                 // Sits behind the figures, so it has to stay quiet enough to
                 // read through: it is a gauge, not a highlight.
