@@ -1,0 +1,95 @@
+name: Release
+
+# Tag-driven, because a release is a thing with a version and the tag is where
+# that version is decided. Nothing here reads Cargo.toml for it: the two would
+# disagree eventually, and the one the user sees is whichever the feed carries.
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # The same gate every commit passes. A tag is not a reason to skip it —
+      # it is the one build nobody can fix after the fact, because it is the one
+      # that installs itself on other people's machines.
+      - name: Gate
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets
+          cargo test --workspace
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Sign it and build the update feed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The key exactly as it lives in .keys/zerem.key. Its passphrase is
+          # empty, which is what lets this run without a person present; the
+          # redirect below feeds a bare newline, because minisign reads the
+          # passphrase from stdin and offers no flag for it.
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [ -n "${MINISIGN_SECRET_KEY:-}" ] || { echo 'MINISIGN_SECRET_KEY is not set' >&2; exit 1; }
+
+          curl -sSfL -o minisign.zip \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-win64.zip
+          unzip -q minisign.zip
+          ms=$(find . -name minisign.exe -print -quit)
+          [ -x "$ms" ] || { echo 'no minisign in the archive' >&2; exit 1; }
+
+          # Both files land outside the checkout, so no later upload glob can
+          # sweep a signing key into a release asset.
+          key="$RUNNER_TEMP/signing.key"
+          pw="$RUNNER_TEMP/signing.pw"
+          printf '%s' "$MINISIGN_SECRET_KEY" > "$key"
+          printf '%s\n' "${MINISIGN_PASSWORD:-}" > "$pw"
+          trap 'rm -f "$key" "$pw"' EXIT
+
+          exe=target/release/zerem.exe
+          "$ms" -S -s "$key" -m "$exe" < "$pw"
+
+          # Verified against the very key the app has compiled in, read out of
+          # the source rather than repeated here. A second copy of it is a
+          # second thing to forget on a rotation, and what that buys is a
+          # release every installed client rejects — after downloading it.
+          pub=$(grep -oP 'PUBKEY:\s*&str\s*=\s*"\K[^"]+' src/update.rs)
+          echo "verifying against the key in src/update.rs: $pub"
+          "$ms" -V -P "$pub" -m "$exe"
+
+          # The feed src/update.rs reads: `signature` is the whole .minisig
+          # text, `version` is compared with semver against the running build,
+          # and the platform key is the one that build looks itself up under.
+          tag='${{ github.ref_name }}'
+          repo='${{ github.repository }}'
+          jq -n \
+            --arg v "${tag#v}" \
+            --arg url "https://github.com/$repo/releases/latest/download/zerem.exe" \
+            --arg sig "$(cat "$exe.minisig")" \
+            '{version: $v, platforms: {"windows-x86_64": {url: $url, signature: $sig}}}' \
+            > latest.json
+
+          # A draft, so the feed only goes live when a person publishes it.
+          # `releases/latest/download/` resolves to the newest *published*
+          # release, which means a draft cannot offer a half-finished build to
+          # everybody already running the app.
+          gh release create "$tag" --draft --title "Zerem $tag" --generate-notes \
+            "$exe" "$exe.minisig" latest.json

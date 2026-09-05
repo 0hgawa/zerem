@@ -7,6 +7,23 @@
 // carry data — `DetailState` and `Prefs` arrive with the panels that need them,
 // not before.
 
+/// Where the update check or the install has got to.
+///
+/// `installed` is not the end of anything: the new binary is on disk but the
+/// old one is still the process that is running, and it stays that way until
+/// somebody restarts. Naming that state is what lets the button change from
+/// "Install" to "Restart now" rather than going quiet and leaving the user to
+/// guess whether anything happened.
+export enum UpdateState {
+    idle,
+    checking,
+    current,
+    available,
+    installing,
+    installed,
+    failed,
+}
+
 /// One formatted row. Every field is a finished string: Rust builds this only
 /// for rows that actually changed, and the `.slint` never formats anything.
 export struct Row {
@@ -337,6 +354,25 @@ export global Prefs {
     /// Filled once at startup — neither changes while the app runs.
     in-out property <string> version;
     in-out property <string> engine;
+
+    /// Where the update check has got to. An enum rather than the integer codes
+    /// the other two apps carry: `update-status == 3` in a `.slint` is a number
+    /// somebody has to go and look up, and getting it wrong puts the wrong
+    /// sentence in front of the user instead of failing to build.
+    in-out property <UpdateState> update: UpdateState.idle;
+    /// The version on offer, or why the check or the install failed — whichever
+    /// `update` is currently pointing at.
+    in-out property <string> update-detail;
+    /// Whether this copy can replace its own binary: "self", or "managed" when
+    /// a package manager owns it, or "sandboxed" when a runtime does. Settled
+    /// once at startup, because a running program does not move.
+    in-out property <string> install-kind;
+    callback check-update();
+    callback install-update();
+    /// Quit, and come back as the build that was just installed.
+    callback relaunch();
+    callback open-releases();
+
     /// Put every setting back to what it was on the first launch.
     callback reset-all();
     /// Raised by the picker thread once the user has chosen, not by anything in

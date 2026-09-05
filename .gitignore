@@ -1,2 +1,6 @@
 target/
 *.log
+
+# The release signing key. Its public half is compiled into src/update.rs;
+# this is the half that must never be anywhere but a backup and a CI secret.
+.keys/

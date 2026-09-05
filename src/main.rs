@@ -37,6 +37,7 @@ mod model;
 mod settings;
 mod state;
 mod tray;
+mod update;
 
 use state::UiState;
 
@@ -63,6 +64,13 @@ fn main() -> Result<(), slint::PlatformError> {
     // hands over a double-clicked `.torrent`, and how a `magnet:` handler will.
     // Flags are skipped so a future `--something` is not mistaken for a torrent.
     let opening: Vec<String> = std::env::args().skip(1).filter(|a| !a.starts_with('-')).collect();
+
+    // Before the guard below, which is most of why it is worth waiting at all.
+    // A build that has just replaced another one has to see that one gone before
+    // it asks for the instance name, or it is told a copy is already running --
+    // by the copy it replaced, on its way out -- and exits, leaving the user
+    // with no window and, as far as they can tell, no update.
+    shell::update::settle(update::HANDOFF);
 
     // Before anything is opened and before the engine touches the disk. A second
     // copy would share this one's session folder and download folder — two
@@ -148,6 +156,8 @@ fn main() -> Result<(), slint::PlatformError> {
     // the first frame, before the engine's first heartbeat.
     let _tray = tray::install(&ui);
     let _tick = bridge::start_tick(&ui, &state, &views);
+    // A fourth: the one-shot that looks for a newer build a few seconds in.
+    let _updates = bridge::updates::watch_for_new_builds(&ui);
 
     // After the window exists, not before: asked any earlier it has no size to
     // read and the preferred one is applied afterwards, over the top of the

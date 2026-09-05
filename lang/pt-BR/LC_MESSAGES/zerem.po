@@ -390,3 +390,48 @@ msgstr "Motor"
 
 msgid "librqbit, and the flags come from what the five internet registries publish."
 msgstr "librqbit, e as bandeiras vêm do que os cinco registros da internet publicam."
+
+msgid "Updates"
+msgstr "Atualizações"
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Instalado em uma sandbox — as atualizações vêm junto com o runtime."
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Instalado para todos nesta máquina — as atualizações vêm do seu gerenciador de pacotes."
+
+msgid "Looking…"
+msgstr "Procurando…"
+
+msgid "This is the newest version."
+msgstr "Esta é a versão mais recente."
+
+msgid "Version {} is ready to install."
+msgstr "A versão {} está pronta para instalar."
+
+msgid "Downloading, and checking who signed it…"
+msgstr "Baixando, e conferindo quem assinou…"
+
+msgid "Installed. Restart to run it."
+msgstr "Instalada. Reinicie para executá-la."
+
+msgid "Could not update: {}"
+msgstr "Não foi possível atualizar: {}"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Procurada automaticamente a cada vez que o app abre."
+
+msgid "Releases"
+msgstr "Versões"
+
+msgid "Restart now"
+msgstr "Reiniciar agora"
+
+msgid "Install"
+msgstr "Instalar"
+
+msgid "Installing…"
+msgstr "Instalando…"
+
+msgid "Check now"
+msgstr "Procurar agora"

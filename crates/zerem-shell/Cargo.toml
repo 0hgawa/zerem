@@ -13,6 +13,8 @@ description = "Desktop plumbing — single instance, and the rest of what an ins
 [dependencies]
 tracing.workspace = true
 dirs = "5"
+# Swapping the running binary for a newer one. Same crate Clipo and Vayou use.
+self-replace = "1"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.59", features = [

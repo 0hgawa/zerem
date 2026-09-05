@@ -21,6 +21,7 @@ pub mod menu;
 pub mod prefs;
 mod shell;
 pub mod torrents;
+pub mod updates;
 
 /// The models the UI owns, in one place.
 ///
@@ -48,6 +49,7 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings::St
     detail::wire(ui, state, store, views);
     menu::wire(ui, state, views);
     add::wire(ui, state, store, views);
+    updates::wire(ui);
 }
 
 /// Faster than the engine publishes, deliberately.

@@ -8,7 +8,7 @@ import { ScrollView } from "std-widgets.slint";
 import {
     Check, Divider, Dropdown, Modal, NumberBox, RadioCard, RailItem, SettingsCard, SettingsGroup, SettingsRow, Toggle
 } from "../components/common.slint";
-import { Prefs, TorrentList } from "../state.slint";
+import { Prefs, TorrentList, UpdateState } from "../state.slint";
 
 /// Everything the app will let somebody change, one subject at a time.
 ///
@@ -391,6 +391,82 @@ export component Preferences inherits Modal {
                                     font-size: Theme.fs-label;
                                     font-family: Theme.font;
                                     vertical-alignment: center;
+                                }
+                            }
+                            Divider { }
+                            SettingsRow {
+                                title: @tr("Updates");
+                                // One line that always says where things stand,
+                                // rather than a label that never changes and a
+                                // result that turns up somewhere else. The two
+                                // install kinds come first: for those there is
+                                // nothing a check could tell anybody, because
+                                // the answer is already known and it is no.
+                                subtitle: Prefs.install-kind == "sandboxed"
+                                        ? @tr("Installed in a sandbox — updates arrive with the runtime.")
+                                    : Prefs.install-kind == "managed"
+                                        ? @tr("Installed for everybody on this machine — updates come from your package manager.")
+                                    : Prefs.update == UpdateState.checking
+                                        ? @tr("Looking…")
+                                    : Prefs.update == UpdateState.current
+                                        ? @tr("This is the newest version.")
+                                    : Prefs.update == UpdateState.available
+                                        ? @tr("Version {} is ready to install.", Prefs.update-detail)
+                                    : Prefs.update == UpdateState.installing
+                                        ? @tr("Downloading, and checking who signed it…")
+                                    : Prefs.update == UpdateState.installed
+                                        ? @tr("Installed. Restart to run it.")
+                                    : Prefs.update == UpdateState.failed
+                                        ? @tr("Could not update: {}", Prefs.update-detail)
+                                    : @tr("Looked for automatically each time the app opens.");
+
+                                HorizontalLayout {
+                                    spacing: 6px;
+
+                                    // Offered when the app cannot install an
+                                    // update itself, and when one failed — the
+                                    // two cases where the next step is a
+                                    // browser rather than this window.
+                                    if Prefs.install-kind != "self" || Prefs.update == UpdateState.failed: Button {
+                                        label: @tr("Releases");
+                                        glyph: Lucide.external-link;
+                                        kind: ButtonKind.text;
+                                        clicked => { Prefs.open-releases(); }
+                                    }
+
+                                    // Only a copy that can rewrite its own
+                                    // binary gets this. Anywhere else it would
+                                    // download, verify, and then fail on the
+                                    // user's own filesystem — which is worse
+                                    // than never offering an update at all.
+                                    if Prefs.install-kind == "self": Button {
+                                        label: Prefs.update == UpdateState.installed ? @tr("Restart now")
+                                            : Prefs.update == UpdateState.available ? @tr("Install")
+                                            : Prefs.update == UpdateState.installing ? @tr("Installing…")
+                                            : Prefs.update == UpdateState.checking ? @tr("Looking…")
+                                            : @tr("Check now");
+                                        glyph: Prefs.update == UpdateState.installed ? Lucide.rotate-cw
+                                            : Prefs.update == UpdateState.available ? Lucide.download
+                                            : Lucide.refresh-cw;
+                                        // The one filled button in this window.
+                                        // Everything else here is a setting
+                                        // somebody came to change; this is the
+                                        // app asking for something, and only
+                                        // when it actually has something to ask.
+                                        kind: Prefs.update == UpdateState.available || Prefs.update == UpdateState.installed
+                                            ? ButtonKind.primary : ButtonKind.tonal;
+                                        // Nothing to press while it is working.
+                                        enabled: Prefs.update != UpdateState.checking && Prefs.update != UpdateState.installing;
+                                        clicked => {
+                                            if (Prefs.update == UpdateState.installed) {
+                                                Prefs.relaunch();
+                                            } else if (Prefs.update == UpdateState.available) {
+                                                Prefs.install-update();
+                                            } else {
+                                                Prefs.check-update();
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -14,6 +14,7 @@ pub mod launch;
 pub mod locale;
 pub mod screen;
 pub mod single_instance;
+pub mod update;
 
 pub use appearance::prefers_dark;
 pub use assoc::{ensure_registered, Outcome, Registration};
@@ -25,3 +26,4 @@ pub use launch::{open, open_url, reveal};
 pub use locale::preferred as preferred_language;
 pub use screen::{centre, fit, work_area};
 pub use single_instance::{acquire, Instance};
+pub use update::{install_kind, Install};

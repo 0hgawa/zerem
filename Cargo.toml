@@ -74,6 +74,21 @@ arboard = "3"
 rfd = "0.15"
 # Tray icon and its menu. Same crate and version Clipo uses.
 tray-icon = "0.20"
+# The update check and its download. reqwest is already in the tree under
+# librqbit, and these features pick the rustls and the certificate store it
+# already links — a second TLS implementation beside it would be pure weight.
+# The roots come from the operating system rather than bundled in, so a machine
+# behind a corporate proxy that terminates TLS can still reach the feed.
+reqwest = { version = "0.13", default-features = false, features = [
+    "blocking",
+    "rustls",
+    "rustls-native-certs",
+    "http2",
+    "charset",
+] }
+# Verify the minisign signature of a release before it replaces the running
+# program. Same crate Clipo and Vayou use.
+minisign-verify = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The software renderer, measured in Phase 0 at 17 MB of private memory against
