@@ -329,6 +329,16 @@ export component MainWindow inherits Window {
     /// why every use of it below is guarded.
     property <length> room;
 
+    /// And how much of it the list itself ended up with, measured the same way.
+    ///
+    /// Not the same number as `room` and not derivable from it without copying
+    /// the layout's own arithmetic here -- the rail is in the band too, and it
+    /// opens and closes. Over the list the sheet is drawn inside the list's own
+    /// card, so this is the width it has to fit, and using the band's instead
+    /// made the sheet wider than the card holding it the moment the rail was
+    /// open: clipped again, which is the very thing this was fixing.
+    property <length> list-room;
+
     /// The narrowest the panel is worth drawing at all.
     ///
     /// Under this it is a column of ellipses: every path elided, every address
@@ -360,7 +370,11 @@ export component MainWindow inherits Window {
     /// band, less a strip that keeps the list visible underneath -- which is
     /// what says the sheet is covering something rather than replacing it.
     property <length> panel-width: root.compact
-        ? max(root.panel-floor, root.room - 40px)
+        // Never wider than the card it is drawn in, and short of it by a strip
+        // that keeps some list showing -- which is what says the sheet is over
+        // something rather than instead of it. On a card too narrow even for
+        // the floor the strip is what gives way, not the fit.
+        ? min(root.list-room, max(root.panel-floor, root.list-room - 40px))
         : clamp(DetailState.width, root.panel-floor, max(root.panel-floor, root.room - root.rail-room - root.list-floor));
 
     keys := FocusScope {
@@ -610,6 +624,7 @@ export component MainWindow inherits Window {
                     // The list is the app; it claims the height on its own.
                     vertical-stretch: 1;
                     min-width: 240px;
+                    changed width => { root.list-room = self.width; }
                     // The list is the paper this app is about, so it is the one
                     // card that is not chrome-coloured.
                     background: Theme.bg;
