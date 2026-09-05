@@ -8,6 +8,7 @@ import {
 } from "../state.slint";
 import { TableHeader, TableRow } from "../components/table.slint";
 import { DetailDrawer } from "../components/detail.slint";
+import { Rail } from "../components/rail.slint";
 import { ColumnsMenu, ContextMenu, FileMenu } from "../components/menu.slint";
 import { AddDialog } from "../components/add.slint";
 import { Lucide } from "../components/icons.slint";
@@ -509,96 +510,7 @@ export component MainWindow inherits Window {
                 spacing: 8px;
                 changed width => { root.room = self.width; }
 
-                // The rail. Where a browser puts its sidebar and where every
-                // other client puts this, so it is where the hand goes looking.
-                // The counts are what earn it the width: they answer "is
-                // anything stuck?" without a click.
-                if TorrentList.rail-open: Rectangle {
-                    width: 166px;
-                    background: Theme.surface;
-                    border-radius: Theme.radius-float;
-                    VerticalLayout {
-                        padding: 6px;
-                        spacing: 2px;
-                        alignment: start;
-                        RailItem {
-                            label: @tr("All");
-                            glyph: Lucide.files;
-                            count: SessionState.total;
-                            active: TorrentList.shown == 0;
-                            chosen => { TorrentList.show-state(0); }
-                        }
-                        RailItem {
-                            label: @tr("Downloading");
-                            glyph: Lucide.arrow-down;
-                            count: SessionState.downloading;
-                            active: TorrentList.shown == 1;
-                            tint: Theme.accent;
-                            chosen => { TorrentList.show-state(1); }
-                        }
-                        RailItem {
-                            label: @tr("Seeding");
-                            glyph: Lucide.arrow-up;
-                            count: SessionState.seeding;
-                            active: TorrentList.shown == 2;
-                            tint: Theme.seeding;
-                            chosen => { TorrentList.show-state(2); }
-                        }
-                        RailItem {
-                            label: @tr("Queued");
-                            glyph: Lucide.loader;
-                            count: SessionState.queued;
-                            active: TorrentList.shown == 3;
-                            chosen => { TorrentList.show-state(3); }
-                        }
-                        RailItem {
-                            label: @tr("Paused");
-                            glyph: Lucide.pause;
-                            count: SessionState.paused;
-                            active: TorrentList.shown == 4;
-                            chosen => { TorrentList.show-state(4); }
-                        }
-                        RailItem {
-                            label: @tr("Error");
-                            glyph: Lucide.triangle-alert;
-                            count: SessionState.failed;
-                            active: TorrentList.shown == 5;
-                            tint: Theme.danger;
-                            chosen => { TorrentList.show-state(5); }
-                        }
-
-                        // The shelves, under the states and only once there is
-                        // one. An empty heading over an empty list is a
-                        // promise the app has not kept yet.
-                        if TorrentList.categories.length > 0: Rectangle {
-                            height: 22px;
-                            HorizontalLayout {
-                                padding-left: 9px;
-                                VerticalLayout {
-                                    alignment: end;
-                                    Text {
-                                        text: @tr("Categories");
-                                        color: Theme.text-dim;
-                                        font-size: Theme.fs-label;
-                                        font-family: Theme.font;
-                                        font-weight: Theme.semibold;
-                                    }
-                                }
-                            }
-                        }
-                        for c in TorrentList.categories: RailItem {
-                            label: c.name;
-                            glyph: Lucide.folder-open;
-                            count: c.count;
-                            active: c.active;
-                            tint: Theme.warn;
-                            // Clicking the one already on widens back, which is
-                            // the only way out that does not need a second
-                            // control saying "all".
-                            chosen => { TorrentList.show-category(c.active ? "" : c.name); }
-                        }
-                    }
-                }
+                if TorrentList.rail-open: Rail { }
 
                 // `min-width: 0` and `clip` are what make the panel possible at
                 // all. The columns are fixed widths, so this layout's natural

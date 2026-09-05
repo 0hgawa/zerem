@@ -9,26 +9,44 @@
 
 use std::collections::BTreeSet;
 
-/// The `.slint` files that hold prose. `icons.slint` is path data and
-/// `theme.slint` is colours; neither has a word in it.
-const SOURCES: [(&str, &str); 8] = [
-    ("add.slint", include_str!("../ui/components/add.slint")),
-    ("button.slint", include_str!("../ui/components/button.slint")),
-    ("common.slint", include_str!("../ui/components/common.slint")),
-    ("detail.slint", include_str!("../ui/components/detail.slint")),
-    ("menu.slint", include_str!("../ui/components/menu.slint")),
-    ("table.slint", include_str!("../ui/components/table.slint")),
-    ("dialogs.slint", include_str!("../ui/windows/dialogs.slint")),
-    ("main.slint", include_str!("../ui/windows/main.slint")),
-];
+/// Every `.slint` in the tree, found rather than listed.
+///
+/// It was a list of `include_str!`, and a list is a thing to forget: the window
+/// controls had four labels nobody had ever checked because `chrome.slint` was
+/// never added to it, and three of them were untranslated for as long as they
+/// had existed. A new file is exactly when the check matters and exactly when
+/// somebody is thinking about something else.
+///
+/// Read at run time, so `include_str!` cannot be used and a file with no prose
+/// in it costs a read and contributes nothing — which is cheaper than a list
+/// that is right today.
+fn sources() -> Vec<(String, String)> {
+    let mut found = Vec::new();
+    walk(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui").as_path(), &mut found);
+    assert!(found.len() >= 8, "only {} .slint files were found; is the path right?", found.len());
+    found
+}
+
+fn walk(at: &std::path::Path, into: &mut Vec<(String, String)>) {
+    let Ok(entries) = std::fs::read_dir(at) else { return };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            walk(&path, into);
+        } else if path.extension().is_some_and(|e| e == "slint") {
+            let name = path.file_name().unwrap_or_default().to_string_lossy().into_owned();
+            into.push((name, std::fs::read_to_string(&path).unwrap_or_default()));
+        }
+    }
+}
 
 const PT_BR: &str = include_str!("../lang/pt-BR/LC_MESSAGES/zerem.po");
 
 /// Every `@tr("…")` in the UI.
 fn marked() -> BTreeSet<String> {
     let mut found = BTreeSet::new();
-    for (_, text) in SOURCES {
-        let mut rest = text;
+    for (_, text) in sources() {
+        let mut rest = text.as_str();
         while let Some(at) = rest.find("@tr(\"") {
             rest = &rest[at + 5..];
             let Some(end) = rest.find('"') else { break };

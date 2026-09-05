@@ -86,16 +86,7 @@ export global Theme {
     // of it, and the same on every layer it is drawn over.
     out property <brush> stroke: dark ? #35322f : #e6e3df;
 
-    // The edge of something that floats, which is a different job from the edge
-    // of something that sits. A card's stroke separates it from the surface
-    // under it, and both of those are known; a flyout opens over whatever
-    // happens to be there -- a white card, the table, another flyout -- so its
-    // edge cannot be a tint of the thing behind it and has to be darker than
-    // any of them. At four per cent of black, which is what it was, a menu over
-    // a white card had no edge at all and only its shadow said where it ended.
-    out property <brush> float-stroke: dark ? #45403c : #cfcac4;
-
-    // And the shadow it casts. Themed, because the one it had was a black
+    // The shadow a flyout casts. Themed, because the one it had was a black
     // literal: black at forty per cent over a near-black window is nothing, so
     // in the dark theme the flyout had neither an edge nor a shadow.
     out property <brush> float-shade: dark ? #00000091 : #1a140c30;

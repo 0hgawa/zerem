@@ -208,7 +208,11 @@ export component Flyout inherits Rectangle {
     background: Theme.card;
     border-radius: Theme.radius-float;
     border-width: 1px;
-    border-color: Theme.float-stroke;
+    // The same edge the outline buttons draw. What it was before was four per
+    // cent of black, which over a white card is not an edge at all -- but the
+    // answer to that is a real stroke, not a heavier one than anything else in
+    // the window wears.
+    border-color: Theme.stroke;
     drop-shadow-blur: 24px;
     drop-shadow-offset-y: 8px;
     drop-shadow-color: Theme.float-shade;
