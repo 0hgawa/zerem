@@ -545,6 +545,27 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
         return;
     }
 
+    // A torrent that is no longer there takes its panel with it.
+    //
+    // Removing one from inside the panel left the panel showing it: the engine
+    // stops building details for a torrent it no longer has, `details` goes
+    // absent, and the early return below kept the last frame on screen — a
+    // whole panel of a torrent that had been deleted, with buttons that still
+    // offered to pause it.
+    //
+    // Closed rather than moved to a neighbour, and the reason is what this
+    // panel is: it follows the selection, and after a delete there is no
+    // selection. Choosing the next row would be the app picking a torrent on
+    // somebody's behalf — and "next" here is whatever the current sort put
+    // there, which by size or by speed is an unrelated torrent rather than the
+    // next thing you were dealing with.
+    if let Some(shown) = *models.shown.borrow() {
+        if !snapshot.torrents.iter().any(|t| t.id == shown) {
+            detail.set_open(false);
+            return;
+        }
+    }
+
     let Some(details) = &snapshot.details else {
         // Watched but not built yet — the command and the tick can cross.
         return;

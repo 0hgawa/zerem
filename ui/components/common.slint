@@ -55,13 +55,17 @@ export component Tick inherits Rectangle {
     border-radius: 4px;
     // One square, always the same. Only the mark comes and goes.
     //
-    // It was transparent when ticked, which meant the row showed through and
-    // the box read as *white* — so ticking a file changed the colour of its
-    // square rather than putting a mark in it, and a column of them alternated
-    // grey and white for no reason anybody could name.
+    // It was filled once and transparent once, and the transparent version was
+    // wrong for a reason worth keeping: with no edge, the row showed through
+    // and a ticked box read as *white*, so ticking a file changed the colour of
+    // its square rather than putting a mark in it.
     //
-    // The soft square is the seat; the mark is the answer.
-    background: Theme.surface-hi;
+    // Outlined, it can be empty and still be a square. The edge is the seat and
+    // the mark is the answer, which is the same rule the fields and the buttons
+    // beside it now follow.
+    background: transparent;
+    border-width: 1px;
+    border-color: Theme.stroke;
     if on: Icon {
         glyph: Lucide.check;
         // Ink: near-black on a light theme, near-white on a dark one, so it
