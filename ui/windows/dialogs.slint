@@ -36,28 +36,13 @@ export component Preferences inherits Modal {
     // list and the close button. The Modal still clamps this against the window,
     // so a short desktop gets a shorter dialog rather than one off the edge.
     card-height: 440px;
+    closable: true;
     dismissed => { Prefs.close(); }
 
     /// Which room is open. Local rather than global: the dialog is rebuilt each
     /// time it opens, so it always opens on Downloads instead of wherever
     /// somebody happened to leave it a week ago.
     property <string> section: "general";
-
-    // The way out, in the corner of the card rather than in a row inside it.
-    //
-    // That is where every window on this desktop keeps one, and it is outside
-    // the padding on purpose: a close button inset by twenty pixels is one
-    // somebody has to aim at, where a corner can be hit by throwing the pointer
-    // at it. There was a Done button at the foot before this, and it never did
-    // what its word says — every setting is written the moment it changes, so
-    // nothing was ever pending for it to conclude.
-    IconButton {
-        x: parent.width - self.width - 8px;
-        y: 8px;
-        glyph: Lucide.x;
-        label: @tr("Close");
-        clicked => { Prefs.close(); }
-    }
 
     VerticalLayout {
         padding: 16px;
@@ -506,4 +491,5 @@ export component ConfirmRemove inherits Modal {
             }
         }
     }
+
 }

@@ -191,7 +191,10 @@ export global Theme {
     // A row's highlight had a 5 of its own until this, which was a pixel nobody
     // could see and a second number to keep in step.
     //
-    // 8 for anything that floats: a flyout, a card, a dialog.
+    // 12 for anything that floats: a flyout, a card, a dialog. It was 8, which
+    // is Fluent`s flyout corner — grok.com puts its cards at twelve, and this
+    // app takes its surfaces from there. A 62px choice card at eight looked
+    // like a large field rather than a card.
     out property <length> radius: 6px;
-    out property <length> radius-float: 8px;
+    out property <length> radius-float: 12px;
 }

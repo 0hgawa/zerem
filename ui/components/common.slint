@@ -199,6 +199,15 @@ export component SettingsRow inherits Rectangle {
 export component Modal inherits Rectangle {
     in property <length> card-width: 520px;
     in property <length> card-height;
+    /// Whether the card wears a close button in its corner.
+    ///
+    /// Drawn here rather than by whoever fills the card, and that is not a
+    /// convenience: a child of this component is placed inside the card but its
+    /// `parent` resolves to *this* element, so a corner worked out by a caller
+    /// lands in the corner of the window instead — on the scrim, where a dim
+    /// glyph is invisible and a click dismisses anyway. Only the thing that
+    /// knows where the card is can put something in its corner.
+    in property <bool> closable;
     callback dismissed;
     background: #00000080;
 
@@ -224,6 +233,18 @@ export component Modal inherits Rectangle {
         TouchArea { }
 
         @children
+
+        // Last, so it draws over whatever fills the card, and outside that
+        // filling's padding — a close button inset by the content's margin is
+        // one somebody has to aim at, where a corner can be hit by throwing
+        // the pointer at it.
+        if root.closable: IconButton {
+            x: parent.width - self.width - 8px;
+            y: 8px;
+            glyph: Lucide.x;
+            label: @tr("Close");
+            clicked => { root.dismissed(); }
+        }
     }
 }
 
@@ -681,11 +702,30 @@ export component Dropdown inherits Rectangle {
             drop-shadow-offset-y: 4px;
             drop-shadow-color: #0000006b;
             VerticalLayout {
+                // Two at the ends rather than four, because each row insets its
+                // own highlight by another two: what should be even is the gap
+                // between a highlight and the card, not between the row boxes,
+                // which are invisible.
                 padding: 4px;
+                padding-top: 2px;
+                padding-bottom: 2px;
                 for name[i] in root.options: Rectangle {
-                    height: 32px;
-                    border-radius: Theme.radius;
-                    background: i == root.current ? Theme.selected : (item.has-hover ? Theme.hover : transparent);
+                    height: 34px;
+
+                    // The highlight is inset from the row, not the row spaced
+                    // from its neighbour. Two rounded shapes that touch read as
+                    // one shape with a pinch in it the moment the cursor
+                    // crosses between them, and spacing the rows apart instead
+                    // would push a list of ten languages past the window.
+                    // The same inset pill the file list draws, for the same
+                    // reason.
+                    Rectangle {
+                        y: 2px;
+                        height: parent.height - 4px;
+                        border-radius: Theme.radius;
+                        background: i == root.current ? Theme.selected : (item.has-hover ? Theme.hover : transparent);
+                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+                    }
 
                     accessible-role: list-item;
                     accessible-label: name;
