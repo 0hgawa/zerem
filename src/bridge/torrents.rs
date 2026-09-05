@@ -38,13 +38,6 @@ pub fn wire(
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
         move |index, ctrl, shift| {
             let Some(ui) = ui.upgrade() else { return };
-            // Asked before the click changes it: "was this row, on its own,
-            // what was already selected?"
-            let was_alone = {
-                let chosen = state.selection();
-                chosen.len() == 1
-                    && state.model.id_at(index.max(0) as usize).is_some_and(|id| chosen.contains(&id))
-            };
             state.select(index.max(0) as usize, ctrl, shift);
             // A plain click opens the drawer on what was clicked — the way a
             // mail client shows a message. Reaching for a button to see what
@@ -53,18 +46,18 @@ pub fn wire(
             // Only a plain one. Ctrl and Shift are building a selection of
             // several, and a drawer can only show one: opening it there would
             // be picking a torrent out of the group on the user's behalf.
+            // Opens, and only opens. Clicking the same row again used to close
+            // it, and that had to go: a double click *is* two single clicks, so
+            // double-clicking a row opened the panel, closed it, and then
+            // opened the folder — the panel flickering every time.
+            //
+            // Any scheme that keeps both has to work out which gesture is
+            // happening, and the only way to do that is to wait out the
+            // double-click interval before acting on the first click. That
+            // taxes the common case, opening the panel, to serve the rare one.
+            // Escape closes it instead, and so does its own ×.
             if !ctrl && !shift {
-                let detail = ui.global::<crate::DetailState>();
-                // Clicking the row that is already showing closes it again.
-                // The click that opened the panel is the obvious thing to press
-                // to get rid of it, and a panel that only ever opens is one you
-                // have to go and find the × for.
-                //
-                // Only when it was already the whole selection: clicking a
-                // *different* row while the panel is open moves it, which is
-                // the point of the panel following the selection.
-                let showing = detail.get_open() && was_alone;
-                detail.set_open(!showing);
+                ui.global::<crate::DetailState>().set_open(true);
             }
             // The drawer follows the selection: what it shows has to be what
             // is highlighted, or it is showing the wrong torrent.

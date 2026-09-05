@@ -291,6 +291,13 @@ export component MainWindow inherits Window {
                 TorrentList.close-columns();
                 return accept;
             }
+            // The way out of the panel, now that clicking the row again is not.
+            // Escape closes the innermost open thing everywhere else in this
+            // window, and the panel was the last one that did not answer to it.
+            if (e.text == Key.Escape && DetailState.open) {
+                DetailState.close();
+                return accept;
+            }
             if (TorrentList.menu-open) {
                 TorrentList.close-menu();
                 return accept;
