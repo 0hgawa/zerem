@@ -144,7 +144,7 @@ component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             IconButton {
-                glyph: Lucide.sliders;
+                glyph: Lucide.settings;
                 label: @tr("Preferences");
                 clicked => { Prefs.open = true; }
             }
@@ -269,15 +269,22 @@ export component MainWindow inherits Window {
             if (TorrentList.confirming) {
                 if (e.text == Key.Escape) { TorrentList.confirm-cancel(); return accept; }
                 if (e.text == Key.Return) { TorrentList.confirm-accept(); return accept; }
+                if (e.text == Key.Tab) { return reject; }
                 return accept;
             }
             if (AddState.open) {
                 if (e.text == Key.Escape) { AddState.cancel(); return accept; }
                 if (e.text == Key.Return && AddState.can-add) { AddState.confirm(); return accept; }
+                // Tab is the focus's, not the window's. Everything else is
+                // swallowed while a dialog is up — which is the point — but
+                // swallowing this one leaves a dialog full of fields that can
+                // only be reached with the mouse.
+                if (e.text == Key.Tab) { return reject; }
                 return accept;
             }
             if (Prefs.open) {
                 if (e.text == Key.Escape || e.text == Key.Return) { Prefs.close(); return accept; }
+                if (e.text == Key.Tab) { return reject; }
                 return accept;
             }
             if (TorrentList.columns-open) {

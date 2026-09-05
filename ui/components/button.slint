@@ -115,7 +115,10 @@ export component IconButton inherits Rectangle {
     /// floating thing here already is.
     property <bool> settled;
     wait := Timer {
-        interval: 600ms;
+        // Six hundred was too long to be discovered. Windows waits about four,
+        // and a tooltip nobody stays still for is a tooltip nobody has read —
+        // the turtle in this toolbar got asked about twice.
+        interval: 350ms;
         running: false;
         triggered => {
             root.settled = true;

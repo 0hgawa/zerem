@@ -536,11 +536,13 @@ export component NumberBox inherits HorizontalLayout {
         }
     }
 
-    // A fixed slot rather than a hugging one, so the boxes of a card line up
-    // whether or not the row beside them carries a unit.
-    VerticalLayout {
+    // Only when there is one. It was a fixed 32px slot, on the reasoning that
+    // the boxes of a card would then line up whether or not their row carried a
+    // unit — and a card where every box has a unit lines up anyway, while a row
+    // without one ended up with an empty column holding its field 32px short of
+    // the right edge that every button and switch beside it reached.
+    if root.unit != "": VerticalLayout {
         alignment: center;
-        width: 32px;
         Text {
             text: root.unit;
             color: Theme.text-dim;

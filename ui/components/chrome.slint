@@ -86,6 +86,22 @@ component Control inherits Rectangle {
 export component WindowControls inherits HorizontalLayout {
     spacing: 0px;
 
+    // A hairline before the three, which is the one thing separating the
+    // window's own controls from the application's. They sit in the same bar
+    // now — without a line, the preferences button and the close button read as
+    // one row of five, and two of those five do something to the window rather
+    // than to what is in it.
+    VerticalLayout {
+        alignment: center;
+        padding-left: 6px;
+        padding-right: 6px;
+        Rectangle {
+            width: 1px;
+            height: 18px;
+            background: Theme.border;
+        }
+    }
+
     Control {
         glyph: "M4 12h16";
         label: @tr("Minimize");

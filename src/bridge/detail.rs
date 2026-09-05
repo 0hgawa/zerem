@@ -554,7 +554,16 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
         push!(detail, get_running, set_running, row.is_active());
         push!(detail, get_down, set_down, fmt::speed(row.down_bps).into());
         push!(detail, get_up, set_up, fmt::speed(row.up_bps).into());
-        push!(detail, get_eta, set_eta, fmt::eta(row.eta).into());
+        // Empty rather than "∞" when there is no time to give. The table's ETA
+        // column has a heading saying what it is, so an infinity there reads as
+        // "not finishing"; alone on a line beside the state it is a symbol with
+        // no question attached to it.
+        push!(
+            detail,
+            get_eta,
+            set_eta,
+            row.eta.map_or_else(SharedString::default, |secs| fmt::eta(Some(secs)).into())
+        );
         push!(detail, get_ratio, set_ratio, fmt::ratio(row.ratio_x100).into());
         push!(detail, get_swarm, set_swarm, fmt::peers(row.peers_connected, row.peers_total).into());
     }

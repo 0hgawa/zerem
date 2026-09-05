@@ -171,8 +171,8 @@ msgstr "Os arquivos vão para a lixeira, então dá para desfazer."
 msgid "The files stay where they are."
 msgstr "Os arquivos ficam onde estão."
 
-msgid "Torrents already in the list keep their folder."
-msgstr "Torrents que já estão na lista mantêm a pasta deles."
+msgid "Changing this does not move torrents already in the list."
+msgstr "Mudar isto não move os torrents que já estão na lista."
 
 msgid "Try again"
 msgstr "Tentar de novo"

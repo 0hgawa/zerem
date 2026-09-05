@@ -38,6 +38,13 @@ pub fn wire(
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
         move |index, ctrl, shift| {
             let Some(ui) = ui.upgrade() else { return };
+            // Asked before the click changes it: "was this row, on its own,
+            // what was already selected?"
+            let was_alone = {
+                let chosen = state.selection();
+                chosen.len() == 1
+                    && state.model.id_at(index.max(0) as usize).is_some_and(|id| chosen.contains(&id))
+            };
             state.select(index.max(0) as usize, ctrl, shift);
             // A plain click opens the drawer on what was clicked — the way a
             // mail client shows a message. Reaching for a button to see what
@@ -47,7 +54,17 @@ pub fn wire(
             // several, and a drawer can only show one: opening it there would
             // be picking a torrent out of the group on the user's behalf.
             if !ctrl && !shift {
-                ui.global::<crate::DetailState>().set_open(true);
+                let detail = ui.global::<crate::DetailState>();
+                // Clicking the row that is already showing closes it again.
+                // The click that opened the panel is the obvious thing to press
+                // to get rid of it, and a panel that only ever opens is one you
+                // have to go and find the × for.
+                //
+                // Only when it was already the whole selection: clicking a
+                // *different* row while the panel is open moves it, which is
+                // the point of the panel following the selection.
+                let showing = detail.get_open() && was_alone;
+                detail.set_open(!showing);
             }
             // The drawer follows the selection: what it shows has to be what
             // is highlighted, or it is showing the wrong torrent.
