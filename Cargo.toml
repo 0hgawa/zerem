@@ -12,10 +12,30 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+# The patched librqbit below. Excluded so it stays a package this workspace
+# consumes rather than one it owns: it is somebody else's code, and lints
+# written for code we wrote would fail the build on every line of it.
+exclude = ["vendor"]
 # `spikes/` is absent on purpose. Each spike declares its own empty `[workspace]`
 # and is therefore its own root, with its own lockfile and dependency tree — so
 # librqbit's does not reach the app until it is proven, and a new spike needs no
 # change here.
+
+# librqbit, patched.
+#
+# It has no seam to put protocol encryption through. `PeerConnection` holds an
+# `Arc<StreamConnector>` -- a concrete struct, no trait and no factory -- and
+# writes the BitTorrent handshake straight after `connect` returns, so there is
+# nowhere to wrap a stream. Every mainstream client obfuscates its traffic and
+# several private trackers refuse those that cannot, so the choice was a patched
+# copy or no encryption at all.
+#
+# Kept in the tree rather than in a fork somewhere: what is built has to be what
+# is read, and a patch that lives on a branch on somebody's account is a patch
+# that goes missing. `vendor/CHANGES.md` says exactly what was altered, and that
+# file is the thing to read before taking a new upstream release.
+[patch.crates-io]
+librqbit = { path = "vendor/librqbit" }
 
 [workspace.package]
 version = "0.1.0"

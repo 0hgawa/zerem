@@ -93,6 +93,7 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
 
     ui.global::<Theme>().set_dark(settings.dark);
     push!(prefs, get_theme, set_theme, settings.theme.as_str().into());
+    push!(prefs, get_encryption, set_encryption, settings.encryption.as_str().into());
     // Neither of these changes while the app runs, so they are stated once and
     // read from the manifest rather than typed into the window — a version in
     // two places is a version that is wrong in one of them.
@@ -404,6 +405,20 @@ fn wire_switches(
                 chosen.clone_into(&mut s.theme);
             });
             push!(ui.global::<Prefs>(), get_theme, set_theme, chosen.into());
+        }
+    });
+
+    prefs.on_set_encryption({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move |chosen| {
+            let Some(ui) = ui.upgrade() else { return };
+            let chosen = chosen.to_string();
+            store.update(|s| s.encryption.clone_from(&chosen));
+            ui.global::<Prefs>().set_encryption(chosen.into());
+            // Not pushed to the running session on purpose. The policy is fixed
+            // when the engine is built, and a control that quietly did nothing
+            // until the next launch is the thing the note under this card
+            // exists to prevent -- so it says so instead of pretending.
         }
     });
 

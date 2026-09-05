@@ -300,13 +300,38 @@ export component Preferences inherits Modal {
                                 toggled(on) => { Prefs.set-upnp(on); }
                             }
                         }
+                        Divider { }
+                        SettingsRow {
+                            title: @tr("Protocol encryption");
+                            // What the third choice costs, said on the row that
+                            // offers it. A plain connection announces itself in
+                            // its first nineteen bytes, which is what equipment
+                            // that throttles this reads -- but demanding
+                            // encryption turns away every peer that will not,
+                            // and on a healthy swarm that is most of the ones
+                            // holding the data.
+                            subtitle: Prefs.encryption == "require"
+                                    ? @tr("Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers.")
+                                : Prefs.encryption == "prefer"
+                                    ? @tr("Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent.")
+                                    : @tr("Never. Anything watching the line can see what this is.");
+                            Dropdown {
+                                options: [@tr("Never"), @tr("Prefer"), @tr("Require")];
+                                current: Prefs.encryption == "require" ? 2
+                                    : Prefs.encryption == "prefer" ? 1 : 0;
+                                hint: @tr("Protocol encryption");
+                                changed(at) => {
+                                    Prefs.set-encryption(at == 2 ? "require" : at == 1 ? "prefer" : "off");
+                                }
+                            }
+                        }
                     }
 
                     // Once, for all three. The port carried its own copy of
                     // this and the two switches another, so the same sentence
                     // was on screen twice.
                     if root.section == "connection": Text {
-                        text: @tr("All three take effect the next time Zerem starts.");
+                        text: @tr("These take effect the next time Zerem starts.");
                         color: Theme.text-dim;
                         font-size: Theme.fs-label;
                         font-family: Theme.font;

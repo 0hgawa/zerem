@@ -240,9 +240,6 @@ msgstr "Adicionar torrents parados"
 msgid "Listening port"
 msgstr "Porta de escuta"
 
-msgid "All three take effect the next time Zerem starts."
-msgstr "Os três valem a partir da próxima vez que o Zerem abrir."
-
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — cede espaço para o resto do tráfego da linha"
 
@@ -435,3 +432,27 @@ msgstr "Instalando…"
 
 msgid "Check now"
 msgstr "Procurar agora"
+
+msgid "Protocol encryption"
+msgstr "Criptografia de protocolo"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Só peers que criptografam. Nada na linha diz o que isto é, e haverá menos peers."
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Criptografa onde o peer aceitar. Esconde o tráfego de uma conexão que estrangula BitTorrent."
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Nunca. Qualquer coisa observando a linha vê o que isto é."
+
+msgid "Never"
+msgstr "Nunca"
+
+msgid "Prefer"
+msgstr "Preferir"
+
+msgid "Require"
+msgstr "Exigir"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Estas passam a valer na próxima vez que o Zerem abrir."

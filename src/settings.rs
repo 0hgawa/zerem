@@ -56,6 +56,17 @@ pub struct Settings {
     /// and the first frame after a launch is not the wrong colour.
     #[serde(default = "follow_the_system")]
     pub theme: String,
+
+    /// What the app does about protocol encryption: "off", "prefer" or
+    /// "require".
+    ///
+    /// Three answers and not two, and the third is the one that costs
+    /// something: requiring it turns away every peer that will not, which on a
+    /// healthy swarm is most of the ones holding the data. It is the right
+    /// setting for a connection somebody is interfering with and the wrong one
+    /// everywhere else, so it is offered rather than assumed.
+    #[serde(default = "offered_not_demanded")]
+    pub encryption: String,
     pub dark: bool,
     pub sort_col: usize,
     pub sort_desc: bool,
@@ -114,6 +125,12 @@ fn follow_the_system() -> String {
     "system".to_owned()
 }
 
+/// Offered to every peer, demanded of none. The default because demanding it
+/// costs peers and only pays where somebody is being interfered with.
+fn offered_not_demanded() -> String {
+    "prefer".to_owned()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         let engine = zerem_engine::EngineConfig::default();
@@ -131,6 +148,7 @@ impl Default for Settings {
             utp: engine.utp,
             upnp: engine.upnp,
             theme: follow_the_system(),
+            encryption: offered_not_demanded(),
             dark: true,
             sort_col: 0,
             sort_desc: false,
@@ -204,6 +222,7 @@ impl Settings {
             port: self.port,
             utp: self.utp,
             upnp: self.upnp,
+            encryption: self.encryption.clone(),
             ..Default::default()
         }
     }

@@ -15,7 +15,11 @@ use std::net::{Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 
 use librqbit::dht::DhtPersistenceConfig;
-use librqbit::{DhtSessionConfig, ListenerMode, ListenerOptions, SessionOptions, SessionPersistenceConfig};
+use librqbit::encryption::Encryption;
+use librqbit::{
+    ConnectionOptions, DhtSessionConfig, ListenerMode, ListenerOptions, PeerConnectionOptions,
+    SessionOptions, SessionPersistenceConfig,
+};
 
 /// The conventional BitTorrent port. Fixed rather than ephemeral so peers can
 /// reach us, and so a router's forwarding rule has something to point at.
@@ -41,6 +45,13 @@ pub struct EngineConfig {
     pub keep_dir: Option<PathBuf>,
     /// A folder `.torrent` files are picked up from, or `None` for none.
     pub watch_dir: Option<PathBuf>,
+    /// Whether peer connections are obfuscated: "off", "prefer" or "require".
+    ///
+    /// A string rather than the engine's own type, because the setting is
+    /// written to a file and read back, and a name survives a version bump
+    /// where a number does not. Anything unrecognised reads as off, which is
+    /// the behaviour a hand-edited file should get: the cautious one.
+    pub encryption: String,
 }
 
 impl Default for EngineConfig {
@@ -57,6 +68,11 @@ impl Default for EngineConfig {
             upnp: true,
             keep_dir: None,
             watch_dir: None,
+            // Offered and not demanded. Demanding it is the right answer on a
+            // connection somebody is interfering with and the wrong one
+            // everywhere else, because it turns away every peer that will not
+            // -- and on a healthy swarm that is most of the ones with the data.
+            encryption: "prefer".to_owned(),
         }
     }
 }
@@ -99,6 +115,22 @@ impl EngineConfig {
             // machine halves the verification that can happen at once, and
             // verification is what a finished piece waits on.
             runtime_worker_threads: Some(workers()),
+            // Protocol encryption, which this engine only has because the
+            // vendored copy of librqbit was patched for it -- see
+            // `vendor/CHANGES.md`. A plain connection announces itself in its
+            // first nineteen bytes, and equipment that shapes traffic reads
+            // them at line rate.
+            connect: Some(ConnectionOptions {
+                peer_opts: Some(PeerConnectionOptions {
+                    encryption: match self.encryption.as_str() {
+                        "prefer" => Encryption::Prefer,
+                        "require" => Encryption::Require,
+                        _ => Encryption::Off,
+                    },
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
             ..Default::default()
         }
     }

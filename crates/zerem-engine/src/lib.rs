@@ -273,6 +273,10 @@ mod tests {
             add_paused: false,
             utp: false,
             upnp: false,
+            // Off, so a test never spends time on a key exchange it has
+            // nobody to do one with. The handshake itself is tested where it
+            // lives, in zerem-mse.
+            encryption: "off".to_owned(),
         }
     }
 

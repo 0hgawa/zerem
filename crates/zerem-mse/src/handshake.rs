@@ -152,7 +152,7 @@ fn padding() -> Result<Vec<u8>, Failure> {
 /// marker it is waiting for, so it reads a byte at a time and slides a window
 /// along — and it has to stop looking somewhere, or a peer that says nothing
 /// keeps a connection open for ever.
-async fn scan<S: AsyncRead + Unpin>(stream: &mut S, pattern: &[u8]) -> Result<(), Failure> {
+async fn scan<S: AsyncRead + Unpin>(reader: &mut S, pattern: &[u8]) -> Result<(), Failure> {
     let mut window = Vec::with_capacity(pattern.len());
     // The marker can begin anywhere up to the end of the allowance, so the last
     // byte of it can arrive that much further along.
@@ -160,7 +160,7 @@ async fn scan<S: AsyncRead + Unpin>(stream: &mut S, pattern: &[u8]) -> Result<()
 
     for _ in 0..allowance {
         let mut byte = [0_u8; 1];
-        if stream.read_exact(&mut byte).await.is_err() {
+        if reader.read_exact(&mut byte).await.is_err() {
             return Err(Failure::Ended);
         }
         if window.len() == pattern.len() {
@@ -175,9 +175,9 @@ async fn scan<S: AsyncRead + Unpin>(stream: &mut S, pattern: &[u8]) -> Result<()
 }
 
 /// Read exactly `n` bytes.
-async fn take<S: AsyncRead + Unpin>(stream: &mut S, n: usize) -> Result<Vec<u8>, Failure> {
+async fn take<S: AsyncRead + Unpin>(reader: &mut S, n: usize) -> Result<Vec<u8>, Failure> {
     let mut buf = vec![0_u8; n];
-    stream.read_exact(&mut buf).await.map_err(|_| Failure::Ended)?;
+    reader.read_exact(&mut buf).await.map_err(|_| Failure::Ended)?;
     Ok(buf)
 }
 
@@ -191,9 +191,15 @@ async fn take<S: AsyncRead + Unpin>(stream: &mut S, n: usize) -> Result<Vec<u8>,
 /// # Errors
 ///
 /// When the peer will not agree, does not answer, or is not speaking this.
-pub async fn initiate<S>(stream: &mut S, info_hash: &[u8; 20], first: &[u8]) -> Result<Agreed, Failure>
+pub async fn initiate<R, W>(
+    reader: &mut R,
+    writer: &mut W,
+    info_hash: &[u8; 20],
+    first: &[u8],
+) -> Result<Agreed, Failure>
 where
-    S: AsyncRead + AsyncWrite + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     // The field that carries it is two bytes wide. A caller passing more than
     // fits would have it quietly cut in half and spend the connection wondering
@@ -203,12 +209,12 @@ where
     }
 
     let ours = Half::new()?;
-    stream.write_all(ours.public()).await?;
-    stream.write_all(&padding()?).await?;
-    stream.flush().await?;
+    writer.write_all(ours.public()).await?;
+    writer.write_all(&padding()?).await?;
+    writer.flush().await?;
 
     let mut theirs = [0_u8; WIDTH];
-    stream.read_exact(&mut theirs).await.map_err(|_| Failure::Ended)?;
+    reader.read_exact(&mut theirs).await.map_err(|_| Failure::Ended)?;
     let secret = ours.secret(&theirs);
 
     // Keyed before the padding is even read: the response cannot be recognised
@@ -235,32 +241,32 @@ where
     send.apply(&mut sealed);
 
     message.extend_from_slice(&sealed);
-    stream.write_all(&message).await?;
-    stream.flush().await?;
+    writer.write_all(&message).await?;
+    writer.flush().await?;
 
     // What B's encrypted VC will look like, worked out from a copy of the
     // cipher so the real one stays at the start of its keystream — the bytes
     // before the marker are B's padding and were never encrypted.
     let mut expected = VC;
     cipher(b"keyB", &secret, info_hash).apply(&mut expected);
-    scan(stream, &expected).await?;
+    scan(reader, &expected).await?;
     // Those eight bytes were matched, not decrypted, and the keystream was
     // spent on them all the same. Walking the real cipher past them is what
     // keeps the two ends in step from here on.
     let mut matched = VC;
     receive.apply(&mut matched);
 
-    let mut chosen = take(stream, 4).await?;
+    let mut chosen = take(reader, 4).await?;
     receive.apply(&mut chosen);
     let chosen = u32::from_be_bytes([chosen[0], chosen[1], chosen[2], chosen[3]]);
 
-    let mut raw = take(stream, 2).await?;
+    let mut raw = take(reader, 2).await?;
     receive.apply(&mut raw);
     let pad_len = usize::from(u16::from_be_bytes([raw[0], raw[1]]));
     if pad_len > MAX_PAD {
         return Err(Failure::Absurd);
     }
-    let mut pad = take(stream, pad_len).await?;
+    let mut pad = take(reader, pad_len).await?;
     receive.apply(&mut pad);
 
     settle(chosen, info_hash, send, receive)
@@ -276,25 +282,31 @@ where
 ///
 /// When the peer is not speaking this, names a torrent this end does not have,
 /// or will not settle on a cipher.
-pub async fn accept<S, K>(stream: &mut S, known: K, first: &mut Vec<u8>) -> Result<Agreed, Failure>
+pub async fn accept<R, W, K>(
+    reader: &mut R,
+    writer: &mut W,
+    known: K,
+    first: &mut Vec<u8>,
+) -> Result<Agreed, Failure>
 where
-    S: AsyncRead + AsyncWrite + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
     K: Fn() -> Vec<[u8; 20]>,
 {
     let mut theirs = [0_u8; WIDTH];
-    stream.read_exact(&mut theirs).await.map_err(|_| Failure::Ended)?;
+    reader.read_exact(&mut theirs).await.map_err(|_| Failure::Ended)?;
 
     let ours = Half::new()?;
-    stream.write_all(ours.public()).await?;
-    stream.write_all(&padding()?).await?;
-    stream.flush().await?;
+    writer.write_all(ours.public()).await?;
+    writer.write_all(&padding()?).await?;
+    writer.flush().await?;
 
     let secret = ours.secret(&theirs);
-    scan(stream, &hash(&[b"req1", &secret])).await?;
+    scan(reader, &hash(&[b"req1", &secret])).await?;
 
     // Which torrent. The initiator masked it, so the only way through is to
     // unmask with the shared secret and compare against what this end holds.
-    let asked = take(stream, 20).await?;
+    let asked = take(reader, 20).await?;
     let masked = hash(&[b"req3", &secret]);
     let wanted: Vec<u8> = asked.iter().zip(masked).map(|(a, b)| a ^ b).collect();
     let info_hash = known()
@@ -307,23 +319,23 @@ where
 
     // The initiator's VC comes first and is already encrypted, so no scan is
     // needed here — this end knows exactly where it starts.
-    let mut vc = take(stream, 8).await?;
+    let mut vc = take(reader, 8).await?;
     receive.apply(&mut vc);
     if vc != VC {
         return Err(Failure::NoSync);
     }
 
-    let mut offered = take(stream, 4).await?;
+    let mut offered = take(reader, 4).await?;
     receive.apply(&mut offered);
     let offered = u32::from_be_bytes([offered[0], offered[1], offered[2], offered[3]]);
 
-    let mut raw = take(stream, 2).await?;
+    let mut raw = take(reader, 2).await?;
     receive.apply(&mut raw);
     let pad_len = usize::from(u16::from_be_bytes([raw[0], raw[1]]));
     if pad_len > MAX_PAD {
         return Err(Failure::Absurd);
     }
-    let mut pad = take(stream, pad_len).await?;
+    let mut pad = take(reader, pad_len).await?;
     receive.apply(&mut pad);
 
     // Prefer RC4: the whole reason to be here is that the traffic should not
@@ -337,10 +349,10 @@ where
         return Err(Failure::NoCipherInCommon);
     };
 
-    let mut raw = take(stream, 2).await?;
+    let mut raw = take(reader, 2).await?;
     receive.apply(&mut raw);
     let payload = usize::from(u16::from_be_bytes([raw[0], raw[1]]));
-    let mut carried = take(stream, payload).await?;
+    let mut carried = take(reader, payload).await?;
     receive.apply(&mut carried);
     first.clear();
     first.extend_from_slice(&carried);
@@ -352,8 +364,8 @@ where
     sealed.extend_from_slice(&(pad.len() as u16).to_be_bytes());
     sealed.extend_from_slice(&pad);
     send.apply(&mut sealed);
-    stream.write_all(&sealed).await?;
-    stream.flush().await?;
+    writer.write_all(&sealed).await?;
+    writer.flush().await?;
 
     settle(chosen, &info_hash, send, receive)
 }
@@ -387,10 +399,12 @@ mod tests {
         held: Vec<[u8; 20]>,
         payload: &'static [u8],
     ) -> (Result<super::Agreed, Failure>, Result<super::Agreed, Failure>, Vec<u8>) {
-        let (mut a, mut b) = tokio::io::duplex(64 * 1024);
+        let (a, b) = tokio::io::duplex(64 * 1024);
+        let (mut read_a, mut write_a) = tokio::io::split(a);
         let there = tokio::spawn(async move {
+            let (mut read_b, mut write_b) = tokio::io::split(b);
             let mut carried = Vec::new();
-            let out = accept(&mut b, move || held.clone(), &mut carried).await;
+            let out = accept(&mut read_b, &mut write_b, move || held.clone(), &mut carried).await;
             // `b` is dropped here, on purpose. Handing it back out of the task
             // would keep the far end of the pipe open past the responder's own
             // life, and an initiator waiting on a reply that is not coming
@@ -399,7 +413,7 @@ mod tests {
             // refuses.
             (out, carried)
         });
-        let here = initiate(&mut a, &initiator, payload).await;
+        let here = initiate(&mut read_a, &mut write_a, &initiator, payload).await;
         let (there, carried) = there.await.expect("the responder panicked");
         (here, there, carried)
     }
@@ -470,8 +484,11 @@ mod tests {
         // Ninety-six bytes of anything will do. Nothing checks them, and the
         // secret they lead to being wrong is exactly why the rest is never
         // answered.
-        let (mut ours, mut watched) = tokio::io::duplex(64 * 1024);
-        let sending = tokio::spawn(async move { initiate(&mut ours, &HASH_A, b"BitTorrent protocol").await });
+        let (ours, mut watched) = tokio::io::duplex(64 * 1024);
+        let sending = tokio::spawn(async move {
+            let (mut read, mut write) = tokio::io::split(ours);
+            initiate(&mut read, &mut write, &HASH_A, b"BitTorrent protocol").await
+        });
 
         let mut seen = Vec::new();
         let mut opening = [0_u8; 96];
@@ -507,10 +524,11 @@ mod tests {
         // The scan has to give up. Without a bound, one silent peer is one
         // connection that never returns, and a client that meets a few of those
         // stops connecting to anybody.
-        let (mut ours, mut theirs) = tokio::io::duplex(64 * 1024);
+        let (ours, mut theirs) = tokio::io::duplex(64 * 1024);
         let listening = tokio::spawn(async move {
+            let (mut read, mut write) = tokio::io::split(ours);
             let mut carried = Vec::new();
-            accept(&mut ours, || vec![HASH_A], &mut carried).await
+            accept(&mut read, &mut write, || vec![HASH_A], &mut carried).await
         });
 
         // Padding for ever and never the marker -- while staying on the line

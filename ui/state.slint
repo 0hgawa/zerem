@@ -350,6 +350,10 @@ export global Prefs {
     /// following the system is a choice that resolves to one of the other two.
     in-out property <string> theme;
     callback pick-theme(string);
+    /// "off", "prefer" or "require". A name rather than a number, because it is
+    /// written to a file and read back, and a name survives a version bump.
+    in-out property <string> encryption;
+    callback set-encryption(string);
     /// What the About section shows: the version and what it is built on.
     /// Filled once at startup — neither changes while the app runs.
     in-out property <string> version;
