@@ -39,9 +39,15 @@ export component Button inherits Rectangle {
     accessible-action-default => { if (root.enabled) { root.clicked(); } }
 
     property <bool> filled: kind == ButtonKind.primary;
+    property <bool> aimed: ta.has-hover || ta.pressed;
+    // Red only once it is pointed at. It was red always, which contradicts the
+    // rule the table already follows for the same verb: a permanently red
+    // control in something opened constantly is a standing warning, and a
+    // warning that is always on is one nobody reads. Quiet until aimed at,
+    // unmistakable the moment it is.
     property <brush> ink: !enabled ? Theme.idle
         : kind == ButtonKind.primary ? Theme.on-accent
-        : kind == ButtonKind.danger ? Theme.danger
+        : kind == ButtonKind.danger && root.aimed ? Theme.danger
         : Theme.text;
 
     height: 32px;
@@ -49,6 +55,9 @@ export component Button inherits Rectangle {
     border-radius: 16px;
     background: !enabled ? transparent
         : filled ? (ta.pressed ? Theme.accent-fill.darker(15%) : Theme.accent-fill)
+        // And the wash follows the ink: the one place in this app where
+        // hovering says "are you sure" before the click does.
+        : kind == ButtonKind.danger && root.aimed ? Theme.danger.with-alpha(ta.pressed ? 0.24 : 0.14)
         : ta.pressed ? Theme.selected
         : ta.has-hover ? Theme.hover
         : kind == ButtonKind.text ? transparent
