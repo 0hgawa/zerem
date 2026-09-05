@@ -13,7 +13,6 @@ description = "Message Stream Encryption — the BitTorrent protocol obfuscation
 # here rather than pulled in: it is twenty lines with published test vectors,
 # and a crate for that is a supply chain for nothing.
 [dependencies]
-tracing.workspace = true
 num-bigint = "0.4"
 ring = "0.17"
 tokio = { version = "1", features = ["io-util"] }

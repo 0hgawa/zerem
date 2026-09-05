@@ -45,6 +45,13 @@ const CHUNK: usize = 256 * 1024;
 /// A request line longer than this is not a request.
 const LIMIT: usize = 8 * 1024;
 
+/// How many headers are read before the request is abandoned.
+///
+/// A client that sends short headers for ever is a client that holds a task
+/// open for ever, and the loop below has nothing else to stop it. Nothing a
+/// player sends comes close to this.
+const MAX_HEADERS: usize = 64;
+
 /// What the window needs to build a URL, and what the loop needs to serve one.
 pub struct Streamer {
     port: u16,
@@ -105,20 +112,22 @@ async fn serve(socket: TcpStream, lookup: &Lookup) -> anyhow::Result<()> {
     let mut reader = BufReader::new(read);
 
     let mut line = String::new();
-    reader.read_line(&mut line).await?;
+    if bounded(&mut reader, &mut line).await?.is_none() {
+        return refuse(&mut write, "431 Request Header Fields Too Large").await;
+    }
     let Some((id, file)) = target(&line) else {
         return refuse(&mut write, "400 Bad Request").await;
     };
 
     // The headers, for the one that matters.
     let mut from = 0u64;
-    loop {
+    for _ in 0..MAX_HEADERS {
         let mut header = String::new();
-        if reader.read_line(&mut header).await? == 0 || header.trim().is_empty() {
-            break;
-        }
-        if header.len() > LIMIT {
+        let Some(read) = bounded(&mut reader, &mut header).await? else {
             return refuse(&mut write, "431 Request Header Fields Too Large").await;
+        };
+        if read == 0 || header.trim().is_empty() {
+            break;
         }
         if let Some(start) = range_start(&header) {
             from = start;
@@ -145,16 +154,15 @@ async fn serve(socket: TcpStream, lookup: &Lookup) -> anyhow::Result<()> {
     };
 
     let total = stream.len();
-    if from >= total && total > 0 {
+    let Some((remaining, partial)) = span(from, total) else {
         return refuse(&mut write, "416 Range Not Satisfiable").await;
-    }
-    if from > 0 {
+    };
+    if partial {
         stream.seek(std::io::SeekFrom::Start(from)).await?;
     }
 
     let kind = zerem_core::mime_of(&name).unwrap_or("application/octet-stream");
-    let remaining = total - from;
-    let head = if from > 0 {
+    let head = if partial {
         format!(
             "HTTP/1.1 206 Partial Content\r\nContent-Type: {kind}\r\nAccept-Ranges: bytes\r\n\
              Content-Length: {remaining}\r\nContent-Range: bytes {from}-{}/{total}\r\n\r\n",
@@ -181,6 +189,41 @@ async fn serve(socket: TcpStream, lookup: &Lookup) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+/// Read one line, or refuse a line longer than one has any business being.
+///
+/// `read_line` has no bound of its own: it allocates whatever arrives, so a
+/// local process that opens a socket and never sends a newline can grow this
+/// one until it dies. The limit goes on the read rather than on the result,
+/// because checking the length afterwards is checking after the damage.
+///
+/// `None` is a line that hit the ceiling.
+async fn bounded(
+    reader: &mut (impl AsyncBufReadExt + Unpin),
+    into: &mut String,
+) -> anyhow::Result<Option<usize>> {
+    let read = reader.take(LIMIT as u64).read_line(into).await?;
+    Ok((read < LIMIT).then_some(read))
+}
+
+/// How much is left to send, and whether the answer is a partial one.
+///
+/// `None` is a request that asked to start past the end — the one range answer
+/// that has no body.
+///
+/// Its own function because the arithmetic here is a subtraction on unsigned
+/// numbers, and the empty file is the case that gets it wrong: nothing rules
+/// out a zero-byte file in a torrent, and `total - from` on one is a number
+/// with eighteen digits in it.
+const fn span(from: u64, total: u64) -> Option<(u64, bool)> {
+    if from == 0 {
+        return Some((total, false));
+    }
+    if from >= total {
+        return None;
+    }
+    Some((total - from, true))
 }
 
 /// The torrent and file a request line names, for `GET /t/{id}/{file}`.
@@ -210,11 +253,11 @@ async fn refuse(write: &mut (impl AsyncWriteExt + Unpin), status: &str) -> anyho
 
 #[cfg(test)]
 mod tests {
-    use super::{range_start, target};
+    use super::{range_start, span, target};
     use zerem_core::TorrentId;
 
     #[test]
-    fn a_request_names_a_torrent_and_a_file() {
+    fn a_request_names_a_torrent_and_a_file_and_nothing_else() {
         assert_eq!(target("GET /t/7/2 HTTP/1.1\r\n"), Some((TorrentId(7), 2)));
     }
 
@@ -225,6 +268,34 @@ mod tests {
         assert_eq!(target("GET /t/7 HTTP/1.1\r\n"), None, "a torrent is not a file");
         assert_eq!(target("GET /t/x/2 HTTP/1.1\r\n"), None);
         assert_eq!(target(""), None);
+    }
+
+    #[test]
+    fn an_empty_file_is_served_rather_than_subtracted_past_zero() {
+        // Nothing rules out a zero-byte file in a torrent, and asking for one
+        // used to fall past the guard and take `total - from` below zero.
+        assert_eq!(span(0, 0), Some((0, false)), "a plain request for it is a body of nothing");
+        assert_eq!(span(1, 0), None, "and any range into it is unsatisfiable");
+        assert_eq!(span(4096, 0), None);
+    }
+
+    #[test]
+    fn a_range_past_the_end_has_no_body() {
+        assert_eq!(span(10, 10), None, "starting at the end is past it");
+        assert_eq!(span(11, 10), None);
+    }
+
+    #[test]
+    fn a_range_inside_the_file_sends_what_is_left() {
+        assert_eq!(span(4, 10), Some((6, true)));
+        assert_eq!(span(9, 10), Some((1, true)), "the last byte is still a range");
+    }
+
+    #[test]
+    fn a_request_with_no_range_is_the_whole_file() {
+        // And not a partial answer, which would put a Content-Range on a reply
+        // that has nothing partial about it.
+        assert_eq!(span(0, 10), Some((10, false)));
     }
 
     #[test]

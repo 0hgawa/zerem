@@ -45,6 +45,8 @@ pub enum Fault {
     /// A copy finished but came out the wrong length, which is a disk that
     /// filled up without saying so.
     Short(PathBuf),
+    /// Something is already where a file was going.
+    Occupied(PathBuf),
 }
 
 impl std::fmt::Display for Fault {
@@ -53,6 +55,9 @@ impl std::fmt::Display for Fault {
             Self::Folder(path, why) => write!(f, "could not make {}: {why}", path.display()),
             Self::Copy(path, why) => write!(f, "could not copy {}: {why}", path.display()),
             Self::Short(path) => write!(f, "{} came out short — the disk may be full", path.display()),
+            Self::Occupied(path) => {
+                write!(f, "{} is already there, and nothing here overwrites", path.display())
+            }
         }
     }
 }
@@ -69,6 +74,22 @@ impl std::fmt::Display for Fault {
 ///
 /// Every [`Fault`] leaves the source files where they were.
 pub fn carry(plan: &[Step]) -> Result<(), Fault> {
+    // Nothing is moved onto anything. Both `rename` and `copy` replace what is
+    // there without a word on this platform, so two torrents that share a
+    // folder name -- a re-release, the same film in two sizes -- would send the
+    // second one's files over the first one's, and the first would simply be
+    // gone. That is the one outcome this module exists to make impossible, and
+    // it is worth a pass over the plan before a single byte moves.
+    //
+    // *Both* ends have to exist for it to be a collision. A destination that is
+    // occupied while its source has gone is this move resuming: the rename pass
+    // got partway and then met a volume boundary, and that file is already
+    // where it was going. The copy pass skips those, and refusing them here
+    // would make a straddling move impossible to finish.
+    if let Some(taken) = plan.iter().find(|step| step.to.exists() && step.from.exists()) {
+        return Err(Fault::Occupied(taken.to.clone()));
+    }
+
     for folder in folders(plan) {
         fs::create_dir_all(&folder).map_err(|why| Fault::Folder(folder.clone(), why))?;
     }
@@ -177,7 +198,7 @@ fn prune(plan: &[Step]) {
 
 #[cfg(test)]
 mod tests {
-    use super::carry;
+    use super::{carry, Fault};
     use std::fs;
     use std::path::{Path, PathBuf};
     use zerem_core::Step;
@@ -244,6 +265,44 @@ mod tests {
 
         assert!(!scratch.at("dl/Show/S1/E01.mkv").exists(), "the original is still there");
         assert!(!scratch.at("dl/Show/S1").exists(), "the folder it emptied is still there");
+    }
+
+    #[test]
+    fn nothing_is_moved_onto_anything() {
+        // Two torrents that share a folder name is not a strange case -- a
+        // re-release, the same film in two sizes -- and both `rename` and
+        // `copy` replace what is there without a word. The first one's files
+        // would simply be gone.
+        let scratch = Scratch::new("occupied");
+        scratch.file("dl/Show/E01.mkv", b"the new one");
+        scratch.file("keep/E01.mkv", b"the one already there");
+
+        let plan = vec![step(scratch.at("dl/Show/E01.mkv"), scratch.at("keep/E01.mkv"))];
+        let fault = carry(&plan).expect_err("it moved onto a file that was already there");
+
+        assert!(matches!(fault, Fault::Occupied(_)), "{fault}");
+        assert_eq!(fs::read(scratch.at("keep/E01.mkv")).expect("read"), b"the one already there");
+        assert!(scratch.at("dl/Show/E01.mkv").exists(), "the source was taken anyway");
+    }
+
+    #[test]
+    fn one_file_already_there_stops_the_whole_plan() {
+        // And stops it before anything moves, not partway: a plan that took
+        // three of four files and then refused would leave the torrent in two
+        // places, which is the state this module exists to prevent.
+        let scratch = Scratch::new("occupied-partial");
+        scratch.file("dl/Show/E01.mkv", b"one");
+        scratch.file("dl/Show/E02.mkv", b"two");
+        scratch.file("keep/E02.mkv", b"already");
+
+        let plan = vec![
+            step(scratch.at("dl/Show/E01.mkv"), scratch.at("keep/E01.mkv")),
+            step(scratch.at("dl/Show/E02.mkv"), scratch.at("keep/E02.mkv")),
+        ];
+        assert!(carry(&plan).is_err());
+
+        assert!(scratch.at("dl/Show/E01.mkv").exists(), "the first file moved before the refusal");
+        assert!(!scratch.at("keep/E01.mkv").exists(), "the first file was carried anyway");
     }
 
     #[test]

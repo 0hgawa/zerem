@@ -159,26 +159,26 @@ fn build(t: &TorrentRow, selected: bool) -> Row {
     // the one sentence a screen reader announces instead, and it is built here
     // for the same reason every other string is: once per changed row, not once
     // per row per frame.
-    let a11y = format!(
-        "{}, {}, {}, down {}, up {}, {} peers",
-        t.name,
-        t.status_text(),
-        fmt::progress(t.done, t.size),
-        fmt::speed(t.down_bps),
-        fmt::speed(t.up_bps),
-        t.peers_connected,
-    );
+    // Formatted once each and used twice: the sentence and the cell say the
+    // same thing, and building each of them separately meant three `format!`s
+    // and their allocations thrown away on every row that changed. On a list
+    // that is all moving at once that is the whole per-row cost, doubled.
+    let progress = fmt::progress(t.done, t.size);
+    let state = t.status_text();
+    let (down, up) = (fmt::speed(t.down_bps), fmt::speed(t.up_bps));
+
+    let a11y = format!("{}, {state}, {progress}, down {down}, up {up}, {} peers", t.name, t.peers_connected);
     Row {
         id: t.id.0 as i32,
         name: t.name.as_ref().into(),
         content: t.content.kind(),
         progress: t.progress_bp() as f32 / 10_000.0,
-        progress_text: fmt::progress(t.done, t.size).into(),
-        state: t.status_text().into(),
+        progress_text: progress.into(),
+        state: state.into(),
         kind: t.status_kind(),
         active: t.is_active(),
-        down: fmt::speed(t.down_bps).into(),
-        up: fmt::speed(t.up_bps).into(),
+        down: down.into(),
+        up: up.into(),
         peers: fmt::peers(t.peers_connected, t.peers_total).into(),
         eta: fmt::eta(t.eta).into(),
         ratio: fmt::ratio(t.ratio_x100).into(),

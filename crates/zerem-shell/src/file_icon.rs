@@ -204,9 +204,25 @@ mod imp {
         // BGRA → RGBA. Windows stores the blue channel first, and an icon that
         // comes out with its reds and blues swapped is the classic sign of
         // having skipped this.
+        let mut opaque = false;
         for pixel in pixels.chunks_exact_mut(4) {
             pixel.swap(0, 2);
+            opaque |= pixel[3] != 0;
         }
+
+        // An icon drawn without an alpha channel comes back with all of it
+        // zero, and a caller that trusts it draws nothing at all -- a blank
+        // where a file type should be. The shell hands out 32-bit icons on
+        // anything current, so this is the handler that predates that, and
+        // "show it solid" is the only answer available here: the shape lives in
+        // the mask bitmap, which is a separate image in a separate format, and
+        // reading it to recover a few old icons is not worth the code.
+        if !opaque {
+            for pixel in pixels.chunks_exact_mut(4) {
+                pixel[3] = u8::MAX;
+            }
+        }
+
         Some(Bitmap { width, height, rgba: pixels })
     }
 }

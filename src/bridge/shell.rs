@@ -45,9 +45,16 @@ pub fn wire(ui: &MainWindow) {
     shell.on_close({
         let ui = ui.as_weak();
         move || {
-            // The same thing the frame's close did: hidden, not closed. The
-            // engine keeps going and the tray brings it back — the button lost
-            // its frame, not its meaning.
+            // Hidden, not closed: the engine keeps going and the tray brings it
+            // back — the button lost its frame, not its meaning.
+            //
+            // Unless there is no tray. Hiding a window with nowhere to come
+            // back from leaves somebody with a process they cannot reach and no
+            // way to stop it, which is worse than any reason for closing.
+            if !crate::tray::present() {
+                let _ = slint::quit_event_loop();
+                return;
+            }
             if let Some(ui) = ui.upgrade() {
                 let _ = ui.window().hide();
             }

@@ -945,6 +945,23 @@ impl TorrentSession {
             torrents.push(row);
         }
 
+        // The rows come out of a `HashMap`, so the order they arrive in is the
+        // map`s and not anybody`s. Sorted by id, it becomes a pure function of
+        // which torrents exist.
+        //
+        // That matters more than it looks. The window caches an *order* -- a
+        // list of indices into this vector -- and rebuilds it only when the
+        // generation changes. If two publishes with the same generation
+        // disagreed about which row sits at index four, every cached index
+        // would point at a different torrent and the table would draw one
+        // torrent's figures under another's name. It cannot happen today
+        // because every mutation of `entries` bumps the generation, but that is
+        // four adjacent lines agreeing rather than a guarantee: a fifth
+        // mutation that forgot would produce exactly that, silently. Sorting
+        // costs microseconds on a list this size and takes the whole class of
+        // failure off the table.
+        torrents.sort_unstable_by_key(|row| row.id.0);
+
         // Only the watched one, and only while something is watching.
         let details = self
             .watching

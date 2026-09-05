@@ -11,7 +11,7 @@
 //! figures — but a translator does have to visit both, and saying so beats
 //! letting them find out.
 //!
-//! Two shapes, and the split is not stylistic. A fixed string goes in [`TABLE`]
+//! Two shapes, and the split is not stylistic. A fixed string goes in `TABLE`
 //! and is looked up by its English self, exactly as gettext does it. A string
 //! with a number in it cannot: `format!` needs a literal, so those are written
 //! out per language in the functions below, where the word order is free to

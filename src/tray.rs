@@ -8,6 +8,7 @@
 //! engine keeps transferring.
 
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use slint::ComponentHandle;
@@ -32,30 +33,67 @@ fn icon() -> Icon {
         .expect("the icon is generated, so it is always well-formed")
 }
 
+/// Whether there is a tray icon to come back from.
+///
+/// A process-wide fact settled once at startup, read later by whatever decides
+/// what the close button does. It has to be readable from a closure registered
+/// *before* `install` runs -- the bridge wires the window before the tray is
+/// built -- and by the time that closure fires the answer is final.
+static PRESENT: AtomicBool = AtomicBool::new(false);
+
+/// Whether closing the window can safely hide it.
+#[must_use]
+pub fn present() -> bool {
+    PRESENT.load(Ordering::Relaxed)
+}
+
 /// Install the tray icon and make the window's close button hide it.
 ///
 /// The returned handle has to outlive the event loop: dropping a `TrayIcon`
 /// removes it from the tray.
-#[must_use]
-pub fn install(ui: &MainWindow) -> (TrayIcon, slint::Timer) {
+///
+/// # Nothing here is fatal
+///
+/// It used to be: a tray that would not build took the whole application down
+/// at startup. On Windows that happens for a reason nobody chose -- the shell
+/// restarting takes the notification area with it for a second or two -- and
+/// dying because of it is a worse answer than starting without a tray.
+///
+/// What made the panic defensible was the coupling: closing the window hides
+/// it, and hiding with nowhere to come back from strands somebody with a
+/// process they cannot reach. So the coupling is stated instead of assumed, and
+/// `present` is what states it. Without a tray, closing quits.
+pub fn install(ui: &MainWindow) -> Option<(TrayIcon, slint::Timer)> {
     let show = MenuItem::new("Show Zerem", true, None);
     let quit = MenuItem::new("Quit", true, None);
     let (show_id, quit_id) = (show.id().clone(), quit.id().clone());
 
     let menu = Menu::new();
-    menu.append_items(&[&show, &quit]).expect("build the tray menu");
+    if let Err(e) = menu.append_items(&[&show, &quit]) {
+        tracing::warn!(error = %e, "no tray menu; the close button will quit instead");
+        return None;
+    }
 
-    let tray = TrayIconBuilder::new()
+    let tray = match TrayIconBuilder::new()
         .with_tooltip("Zerem")
         .with_icon(icon())
         .with_menu(Box::new(menu))
         .build()
-        .expect("build the tray icon");
+    {
+        Ok(tray) => tray,
+        Err(e) => {
+            tracing::warn!(error = %e, "no tray icon; the close button will quit instead");
+            return None;
+        }
+    };
+    PRESENT.store(true, Ordering::Relaxed);
 
     ui.window().on_close_requested({
         let window = ui.as_weak();
         move || {
             // Hidden, not closed. The engine keeps going; the UI tick stops.
+            // This is only ever registered once the tray is up, so there is
+            // always somewhere to come back from.
             if let Some(ui) = window.upgrade() {
                 let _ = ui.window().hide();
             }
@@ -95,5 +133,5 @@ pub fn install(ui: &MainWindow) -> (TrayIcon, slint::Timer) {
         }
     });
 
-    (tray, timer)
+    Some((tray, timer))
 }
