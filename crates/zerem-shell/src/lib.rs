@@ -19,7 +19,7 @@ pub use attention::ask as ask_attention;
 pub use corners::round as round_corners;
 pub use disk::free_space;
 pub use file_icon::{for_extension as file_icon, for_folder as folder_icon};
-pub use launch::{open, reveal};
+pub use launch::{open, open_url, reveal};
 pub use locale::preferred as preferred_language;
 pub use screen::{centre, fit, work_area};
 pub use single_instance::{acquire, Instance};

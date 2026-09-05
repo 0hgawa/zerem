@@ -21,7 +21,9 @@ tracing.workspace = true
 # hardware-accelerated), and it costs nothing in binary size — 13.32 MB either
 # way, to the hundredth of a megabyte.
 librqbit = { version = "9", default-features = false, features = ["rust-tls"] }
-tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "macros"] }
+# `net` and `io-util` are the streaming server: a listener on the loopback and
+# the buffered reader that parses a request line. No web framework for one route.
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "macros", "net", "io-util"] }
 anyhow = "1"
 dirs = "5"
 # Deleting a torrent's data sends it to the recycle bin. A mis-click has to stay

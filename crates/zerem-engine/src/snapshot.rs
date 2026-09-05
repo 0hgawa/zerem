@@ -13,6 +13,11 @@ use zerem_core::{History, SessionStats, TorrentId, TorrentRow};
 /// core without moving a byte.
 #[derive(Clone, Debug)]
 pub struct Snapshot {
+    /// The loopback port a file can be streamed from, once there is one.
+    ///
+    /// `None` on a machine that would not give a port, where the window simply
+    /// does not offer to play anything.
+    pub stream_port: Option<u16>,
     /// Monotonic. An optimistic UI edit records the sequence it was made
     /// against, and the first snapshot past it is the truth that supersedes it.
     pub seq: u64,
@@ -63,7 +68,15 @@ impl Snapshot {
             pending: None,
             history: History::default(),
             finished: Vec::new(),
+            stream_port: None,
         }
+    }
+
+    /// Say where a file can be streamed from.
+    #[must_use]
+    pub const fn with_stream_port(mut self, port: Option<u16>) -> Self {
+        self.stream_port = port;
+        self
     }
 
     #[must_use]

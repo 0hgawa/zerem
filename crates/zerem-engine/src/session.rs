@@ -194,6 +194,11 @@ pub struct TorrentSession {
     /// The one move in flight, if any. One at a time: two large copies at
     /// once turn a sequential read into a seeking one.
     pub moving: Option<crate::arrival::Move>,
+    /// The loopback server a media player is pointed at, once it has a port.
+    ///
+    /// `None` on a machine that would not give one, where the app runs and the
+    /// Play row is simply not offered.
+    pub(crate) streamer: Option<crate::stream::Streamer>,
     /// The last minute of session throughput, for the footer.
     history: History,
     /// Selections narrowed by a pin, so an interrupted run can put them back.
@@ -248,6 +253,7 @@ impl TorrentSession {
             keep_dir: config.keep_dir.clone(),
             arrived: Vec::new(),
             moving: None,
+            streamer: None,
             session,
             entries,
             seq: 0,
@@ -277,6 +283,16 @@ impl TorrentSession {
                 config.port
             ));
         }
+        // Started after the session exists, and given a way to find a torrent
+        // rather than a reference to one: the server runs on its own tasks and
+        // the session is a single `&mut self`, so what crosses between them is
+        // a question and its answer.
+        let session = this.session.clone();
+        this.streamer = crate::stream::Streamer::start(std::sync::Arc::new(move |id: TorrentId| {
+            session.get(TorrentIdOrHash::Id(id.0 as usize))
+        }))
+        .await;
+
         Ok(this)
     }
 
@@ -939,7 +955,8 @@ impl TorrentSession {
             .with_notice(notice)
             .with_details(details)
             .with_finished(finished)
-            .with_pending(self.pending.clone());
+            .with_pending(self.pending.clone())
+            .with_stream_port(self.streamer.as_ref().map(crate::stream::Streamer::port));
 
         // Recorded from the totals the snapshot just derived, so the footer
         // plots exactly the figures the status bar prints beside it.

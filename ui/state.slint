@@ -44,6 +44,10 @@ export struct Row {
 // interpolated in the UI would be one more place formatting could drift from
 // the rest of the app.
 export struct FileEntry {
+    /// Whether this is something a player would open. Decided in Rust from the
+    /// extension — the window formats nothing and knows nothing about
+    /// containers.
+    playable: bool,
     /// The whole relative path, which is what a screen reader is told and what
     /// the file is opened by. What is *drawn* is the two halves below.
     path: string,
@@ -216,6 +220,8 @@ export global DetailState {
     callback open-file(int);
     /// Show it in the file manager, selected.
     callback reveal-file(int);
+    /// Hand it to a media player *now*, finished or not.
+    callback play-file(int);
     /// Every file at once, both ways — the tick above the list. Fetching
     /// nothing is allowed and the row says so; it used to be refused, which
     /// made this a control that only worked in one direction.

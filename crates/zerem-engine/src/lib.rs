@@ -17,6 +17,7 @@ mod map;
 mod relocate;
 mod session;
 mod snapshot;
+mod stream;
 
 pub use command::Command;
 pub use config::{EngineConfig, DEFAULT_PORT};

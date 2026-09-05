@@ -55,10 +55,11 @@ jobs:
         run: cargo bench --workspace --no-run
 
       # The binary is part of the product. The budget was 12 MB while the engine was
-      # synthetic, then 16 once librqbit's 4.7 MB was real. It is 17 now: the country
-      # table and the flags are 608 KiB of deliberate weight and they are the feature,
-      # not overhead. Headroom stays thin on purpose — a release that quietly doubles
-      # this should not merge, and 16.61 is where it sits.
+      # synthetic, then 16 once librqbit's 4.7 MB was real, then 17 for the country
+      # table and the flags. It is 18 now: streaming a file to a media player needs
+      # tokio's net and io-util, which is the loopback server that makes it possible.
+      # Every one of those steps bought a feature. Headroom stays thin on purpose — a
+      # release that quietly doubles this should not merge, and 17.08 is where it sits.
       - name: Release build and size budget
         if: runner.os == 'Windows'
         shell: pwsh
@@ -66,4 +67,4 @@ jobs:
           cargo build --release
           $mb = [math]::Round((Get-Item target/release/zerem.exe).Length / 1MB, 2)
           Write-Host "zerem.exe is $mb MB"
-          if ($mb -gt 17) { throw "binary is $mb MB, over the 17 MB budget" }
+          if ($mb -gt 18) { throw "binary is $mb MB, over the 18 MB budget" }

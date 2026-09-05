@@ -196,11 +196,19 @@ export component FileMenu inherits MenuSurface {
     at-y: DetailState.file-menu-y;
     dismissed => { DetailState.close-file-menu(); }
 
+    // First, and above Open, because for a film it is the better answer even
+    // when the file has arrived: it plays without waiting for anything.
+    if root.file.playable: Item {
+        label: @tr("Play now");
+        glyph: Lucide.play;
+        chosen => { DetailState.play-file(DetailState.file-menu-index); }
+    }
     Item {
         label: @tr("Open");
-        glyph: Lucide.play;
+        glyph: Lucide.file;
         // A file that is still coming down opens as whatever has arrived of
-        // it, which for video is a few seconds and a codec error.
+        // it, which for video is a few seconds and a codec error. Playing it
+        // is the row above, and that one works either way.
         enabled: root.file.complete;
         chosen => { DetailState.open-file(DetailState.file-menu-index); }
     }

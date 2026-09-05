@@ -115,19 +115,12 @@ component Toolbar inherits Rectangle {
         }
         Rectangle { width: 6px; }
 
-        // Tertiary, so icons alone. Anything that is not about a torrent stays
-        // out of the way of everything that is.
-        // One click away, which is the whole point of it: the moment somebody
-        // wants the line back is not a moment they want to open a panel.
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.turtle;
-                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
-                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
-                clicked => { Prefs.toggle-alt-speed(); }
-            }
-        }
+        // The slow-limits switch used to be here. It moved to the footer, beside
+        // the two speeds it changes — where qBittorrent, Transmission and
+        // Deluge all keep it, and where it stops needing to be explained: a
+        // turtle next to ↓ and ↑ is about those numbers, and a turtle among the
+        // theme switch and the preferences is about nothing in particular.
+        // Somebody asked what it was twice while it was up here.
         // The details panel has no button here any more. It is not a view of
         // the window, it is a view of one torrent: clicking a row opens it and
         // its own × closes it. A global switch for something that is always
@@ -180,6 +173,18 @@ component StatusBar inherits Rectangle {
             value: SessionState.up;
             hint: @tr("Upload speed");
             tint: Theme.seeding;
+        }
+
+        // Beside the numbers it changes.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.turtle;
+                diameter: 24px;
+                label: Prefs.alt-speed ? @tr("Back to the full speed limits") : @tr("Switch to the slow limits");
+                tint: Prefs.alt-speed ? Theme.warn : Theme.idle;
+                clicked => { Prefs.toggle-alt-speed(); }
+            }
         }
 
         // Beside the two figures it plots, not off in a corner: the line is

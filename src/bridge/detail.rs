@@ -478,6 +478,24 @@ fn wire_menu(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
         }
     });
 
+    detail.on_play_file({
+        let (state, views, ui) = (state.clone(), views.clone(), ui.as_weak());
+        move |index| {
+            let Some(ui) = ui.upgrade() else { return };
+            ui.global::<DetailState>().set_file_menu_open(false);
+            let snapshot = state.snapshot();
+            let Some(id) = *views.detail.shown.borrow() else { return };
+            let Ok(file) = usize::try_from(index) else { return };
+            match snapshot.stream_port {
+                // The whole point: handed to a player *now*, whether or not
+                // the file has finished. The engine's reader waits for the
+                // pieces it needs and tells the picker to fetch those first.
+                Some(port) => zerem_shell::open_url(&zerem_core::stream_url(port, id.0, file)),
+                None => state.set_notice(zerem_core::tr("Streaming is not available")),
+            }
+        }
+    });
+
     detail.on_reveal_file({
         let (state, views, ui) = (state.clone(), views.clone(), ui.as_weak());
         move |index| {
@@ -620,6 +638,7 @@ fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: 
         .map(|(i, f)| {
             let (folder, name) = zerem_core::split_path(&f.path);
             FileEntry {
+                playable: zerem_core::is_playable(&f.path),
                 path: f.path.as_ref().into(),
                 folder: folder.into(),
                 name: name.into(),

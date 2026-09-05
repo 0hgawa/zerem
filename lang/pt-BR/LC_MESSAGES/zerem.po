@@ -338,3 +338,7 @@ msgstr "Proporção"
 # Reverificação forçada, no menu de botão direito.
 msgid "Force recheck"
 msgstr "Forçar reverificação"
+
+# Reproduzir enquanto baixa.
+msgid "Play now"
+msgstr "Reproduzir agora"

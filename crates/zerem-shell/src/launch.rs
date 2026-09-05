@@ -36,6 +36,15 @@ pub fn reveal(path: &Path) {
     imp::reveal(path);
 }
 
+/// Hand a URL to whatever opens that kind of link.
+///
+/// Separate from [`open`] because a URL is not a path: it has no filesystem
+/// behind it, and building a `Path` out of one on Windows mangles the `//`
+/// after the scheme.
+pub fn open_url(url: &str) {
+    imp::open_url(url);
+}
+
 /// What to hand Explorer to show a path.
 ///
 /// `/select,` takes its argument glued to it with no space, and the path has to
@@ -82,6 +91,17 @@ mod imp {
         };
     }
 
+    pub fn open_url(url: &str) {
+        // The same call as a file's. The shell resolves a URL through the
+        // protocol handler rather than the file association, and works out
+        // which from the string itself.
+        let target = wide(std::ffi::OsStr::new(url));
+        let verb = wide(std::ffi::OsStr::new("open"));
+        let _ = unsafe {
+            ShellExecuteW(None, PCWSTR(verb.as_ptr()), PCWSTR(target.as_ptr()), None, None, SW_SHOWNORMAL)
+        };
+    }
+
     pub fn reveal(path: &Path) {
         let argument = super::explorer_argument(path, path.is_dir());
         let file = wide(std::ffi::OsStr::new("explorer.exe"));
@@ -98,6 +118,12 @@ mod imp {
 
     pub fn open(path: &Path) {
         spawn(path);
+    }
+
+    pub fn open_url(url: &str) {
+        if let Err(e) = std::process::Command::new("xdg-open").arg(url).spawn() {
+            tracing::warn!(url, error = %e, "could not hand the link to the desktop");
+        }
     }
 
     /// No `/select,` equivalent that every file manager agrees on, so the
