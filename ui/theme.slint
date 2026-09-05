@@ -67,6 +67,22 @@ export global Theme {
     out property <brush> hover: dark ? #ffffff16 : #0f0d0a11;
     out property <brush> selected: dark ? #299fff26 : #0890ff1c;
     out property <brush> border: dark ? #ffffff0f : #0f0d0a0a;
+    // The edge of a control: a button, a field, a select.
+    //
+    // A colour, not an opacity, and that distinction is the whole of it.
+    //
+    // It went in as near-black at twenty-five per cent — a line you look *at*
+    // rather than one that says where a control ends, and outlined buttons
+    // drawn that way read as a form. Softening the alpha was the wrong repair:
+    // a translucent edge is a different colour over a white card than over the
+    // grey page behind it, so one control's outline never quite matches
+    // another's.
+    //
+    // Stated instead. A warm light grey, a step off the surfaces either side
+    // of it, and the same on every layer it is drawn over.
+    out property <brush> stroke: dark ? #35322f : #e6e3df;
+    /// The same edge, once the control has the keyboard.
+    out property <brush> stroke-lit: accent-fill;
     out property <brush> track: dark ? #ffffff12 : #0f0d0a0f;
 
     // --- content ---

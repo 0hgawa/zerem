@@ -272,7 +272,9 @@ export component SearchField inherits Rectangle {
     width: 186px;
     height: 26px;
     border-radius: Theme.radius;
-    background: input.has-focus ? Theme.surface-hi : Theme.hover;
+    background: input.has-focus ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.stroke-lit : Theme.stroke;
 
     // The `TextInput` inside announces itself as a text field, but not what
     // the field is for — the placeholder is drawn, not spoken.
@@ -496,7 +498,9 @@ export component NumberBox inherits HorizontalLayout {
             width: 92px;
             height: 32px;
             border-radius: Theme.radius;
-            background: input.has-focus ? Theme.surface : Theme.hover;
+            background: input.has-focus ? Theme.hover : transparent;
+            border-width: 1px;
+            border-color: input.has-focus ? Theme.stroke-lit : Theme.stroke;
             animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
             accessible-role: text-input;
@@ -617,7 +621,9 @@ export component Dropdown inherits Rectangle {
     width: 190px;
     height: 32px;
     border-radius: Theme.radius;
-    background: ta.has-hover ? Theme.surface : Theme.hover;
+    background: ta.has-hover ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: Theme.stroke;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     accessible-role: combobox;

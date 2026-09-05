@@ -53,15 +53,21 @@ export component Button inherits Rectangle {
     height: 32px;
     width: row.preferred-width + 26px;
     border-radius: 16px;
+    // Outlined, to be looked at. The filled version is committed either side of
+    // this one, so switching back is a revert.
     background: !enabled ? transparent
         : filled ? (ta.pressed ? Theme.accent-fill.darker(15%) : Theme.accent-fill)
-        // And the wash follows the ink: the one place in this app where
-        // hovering says "are you sure" before the click does.
+        // The wash follows the ink: the one place in this app where hovering
+        // says "are you sure" before the click does.
         : kind == ButtonKind.danger && root.aimed ? Theme.danger.with-alpha(ta.pressed ? 0.24 : 0.14)
         : ta.pressed ? Theme.selected
         : ta.has-hover ? Theme.hover
-        : kind == ButtonKind.text ? transparent
-        : Theme.surface-hi;
+        : transparent;
+
+    // Not on the filled one, which has its own edge, and not on a text button,
+    // which is a word and nothing else.
+    border-width: !enabled || filled || kind == ButtonKind.text ? 0px : 1px;
+    border-color: kind == ButtonKind.danger && root.aimed ? Theme.danger.with-alpha(0.55) : Theme.stroke;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     row := HorizontalLayout {

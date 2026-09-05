@@ -144,7 +144,9 @@ export component AddDialog inherits Modal {
                 Rectangle {
                     height: 32px;
                     border-radius: Theme.radius;
-                    background: shelf-input.has-focus ? Theme.surface-hi : Theme.hover;
+                    background: shelf-input.has-focus ? Theme.hover : transparent;
+                    border-width: 1px;
+                    border-color: shelf-input.has-focus ? Theme.stroke-lit : Theme.stroke;
                     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
                     accessible-role: text-input;
@@ -198,7 +200,9 @@ export component AddDialog inherits Modal {
                 Rectangle {
                     height: 32px;
                     border-radius: Theme.radius;
-                    background: name-input.has-focus ? Theme.surface-hi : Theme.hover;
+                    background: name-input.has-focus ? Theme.hover : transparent;
+                    border-width: 1px;
+                    border-color: name-input.has-focus ? Theme.stroke-lit : Theme.stroke;
                     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
                     accessible-role: text-input;
