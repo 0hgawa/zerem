@@ -352,6 +352,23 @@ fn wire_download_dir(
         }
     });
 
+    wire_switches(ui, state, store, views);
+}
+
+/// What is left of the panel once the pickers have their own place: the
+/// switches that clear a folder, the theme, and putting everything back.
+///
+/// Split off because the pickers alone had grown past the line this workspace
+/// holds, and because the name of the function they were in had stopped
+/// describing what was inside it.
+fn wire_switches(
+    ui: &MainWindow,
+    state: &Rc<crate::state::UiState>,
+    store: &Rc<Store>,
+    views: &Rc<super::Views>,
+) {
+    let prefs = ui.global::<Prefs>();
+
     prefs.on_clear_keep_dir({
         let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
         move || {
@@ -373,6 +390,37 @@ fn wire_download_dir(
             let dark = !theme.get_dark();
             theme.set_dark(dark);
             store.update(|s| s.dark = dark);
+        }
+    });
+
+    prefs.on_reset_all({
+        let (store, state, ui, views) = (store.clone(), state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            // The download folder is kept. It is the one setting that describes
+            // where somebody's files already are, and putting it back to the
+            // default would silently start writing the next torrent somewhere
+            // else — a reset of preferences, not a rearrangement of a disk.
+            store.update(|s| {
+                let keep = s.download_dir.clone();
+                *s = crate::settings::Settings::default();
+                s.download_dir = keep;
+            });
+
+            let settings = store.get();
+            // Everything the engine was told, told again. A setting the session
+            // is holding does not un-tell itself.
+            state.engine.send(in_force(&settings));
+            state.engine.send(Command::SetMaxActive(settings.max_active));
+            state.engine.send(Command::SetAddPaused(settings.add_paused));
+            state.engine.send(Command::SetKeepDir(None));
+            state.engine.send(Command::SetWatchDir(None));
+            apply_language(&settings.language);
+
+            ui.global::<Prefs>().set_resetting(false);
+            show(&ui, &settings);
+            offer_languages(&ui.global::<Prefs>(), &settings.language);
+            super::refresh_now(&ui, &state, &views);
         }
     });
 }

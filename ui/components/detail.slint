@@ -124,9 +124,12 @@ component FileLine inherits Rectangle {
     // 7. Behind the layout, so every cell still draws over it.
     Rectangle {
         x: 4px;
-        y: 1px;
+        // Two pixels off each end, so one pill never meets the next. At one
+        // they touched, and two rounded shapes that touch read as a single one
+        // with a pinch in it the moment the cursor crosses between them.
+        y: 2px;
         width: parent.width - 8px;
-        height: parent.height - 2px;
+        height: parent.height - 4px;
         border-radius: Theme.radius;
         background: ta.has-hover ? Theme.hover : transparent;
         animate background { duration: Theme.quick; easing: Theme.ease-standard(); }

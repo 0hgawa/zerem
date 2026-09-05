@@ -60,10 +60,13 @@ export component Button inherits Rectangle {
     height: 32px;
     width: row.preferred-width + 26px;
     border-radius: 16px;
-    // The same neutral every other button has. A coloured one is not a
-    // different kind of control, it is the same control with a different thing
-    // to say.
+    // Neutral, except under the cursor on the destructive one — where the wash
+    // is a pale version of the colour already in the word rather than a fill
+    // that replaces it. It is the one place in this app where pointing at
+    // something asks "are you sure" before the click does.
     background: !enabled ? transparent
+        : kind == ButtonKind.danger && ta.pressed ? Theme.danger.with-alpha(0.22)
+        : kind == ButtonKind.danger && ta.has-hover ? Theme.danger.with-alpha(0.12)
         : ta.pressed ? Theme.pressed
         : ta.has-hover ? Theme.hover
         : transparent;

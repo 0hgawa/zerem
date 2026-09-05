@@ -29,8 +29,9 @@ component Item inherits Rectangle {
     Rectangle {
         x: 4px;
         width: parent.width - 8px;
-        height: parent.height - 2px;
-        y: 1px;
+        // Two pixels off each end, so one pill never meets the next.
+        y: 2px;
+        height: parent.height - 4px;
         border-radius: Theme.radius;
         background: ta.has-hover && root.enabled ? Theme.hover : transparent;
         animate background { duration: Theme.quick; easing: Theme.ease-standard(); }

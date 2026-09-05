@@ -306,6 +306,39 @@ export component Preferences inherits Modal {
 
                     if root.section == "appearance": SettingsCard {
                         SettingsRow {
+                            title: @tr("Put every setting back");
+                            subtitle: Prefs.resetting
+                                ? @tr("Every preference returns to what it was on the first launch. Torrents are not touched.")
+                                : @tr("Folders, limits, language and theme — all of it.");
+                            HorizontalLayout {
+                                spacing: 6px;
+                                if Prefs.resetting: Button {
+                                    label: @tr("Cancel");
+                                    kind: ButtonKind.text;
+                                    clicked => { Prefs.resetting = false; }
+                                }
+                                Button {
+                                    label: Prefs.resetting ? @tr("Reset everything") : @tr("Reset…");
+                                    glyph: Lucide.loader;
+                                    kind: ButtonKind.danger;
+                                    // Asked in place rather than over a dialog:
+                                    // the row is what it is about, and a modal
+                                    // over a modal is a stack nobody enjoys.
+                                    // Two presses, and the second one names the
+                                    // thing — which is the same shape Remove
+                                    // uses on a torrent.
+                                    clicked => {
+                                        if (Prefs.resetting) {
+                                            Prefs.reset-all();
+                                        } else {
+                                            Prefs.resetting = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Divider { }
+                        SettingsRow {
                             title: @tr("Language");
                             Dropdown {
                                 options: Prefs.languages;

@@ -326,6 +326,10 @@ export global Prefs {
     callback pick-watch-dir();
     callback watch-dir-picked(string);
     callback clear-watch-dir();
+    /// Whether the confirmation for putting everything back is up.
+    in-out property <bool> resetting;
+    /// Put every setting back to what it was on the first launch.
+    callback reset-all();
     /// Raised by the picker thread once the user has chosen, not by anything in
     /// the UI. It is how that thread gets back onto this one carrying a value:
     /// invoking a callback is the only handoff Slint offers that arrives with
