@@ -330,6 +330,18 @@ export component Preferences inherits Modal {
                     // Once, for all three. The port carried its own copy of
                     // this and the two switches another, so the same sentence
                     // was on screen twice.
+                    // Said here rather than on the encryption row, because it
+                    // is a consequence of that choice on a different row -- and
+                    // a setting that silently switches another one off is the
+                    // kind of thing somebody finds out about a month later.
+                    if root.section == "connection" && Prefs.encryption != "off": Text {
+                        text: @tr("Encryption uses TCP, so uTP is off while it is on.");
+                        color: Theme.text-dim;
+                        font-size: Theme.fs-label;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                    }
+
                     if root.section == "connection": Text {
                         text: @tr("These take effect the next time Zerem starts.");
                         color: Theme.text-dim;

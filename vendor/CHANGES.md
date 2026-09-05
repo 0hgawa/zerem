@@ -32,6 +32,7 @@ copy is the glue that can only live here.
 | `src/encryption.rs` | **New.** The `Encryption` policy, and the two adapters that put an RC4 keystream between this crate's streams and the wire. |
 | `src/peer_connection.rs` | `PeerConnectionOptions` gains `encryption`. `manage_peer_outgoing` runs the encrypted handshake before the BitTorrent one, carrying it inside; `encrypt` is the helper that does it. |
 | `src/session.rs` | `merge_peer_opts` carries the policy through. |
+| `webui/` | **Deleted.** 557 KB of a TypeScript application behind a feature this build does not enable (`default-features = false`). It never compiled here, and a web front end is not something to carry in a repository that has no use for it. Deleting it is why a fresh unpack diffs as two hundred removals. |
 
 ## The two things worth knowing before changing any of it
 
@@ -46,14 +47,25 @@ peer has already been sent bytes it could not read, and there is no taking them
 back. So `Prefer` reconnects and tries again in the clear, which is what every
 client that does this does.
 
+## Encryption is TCP only, and that is a finding rather than a choice
+
+Over uTP the handshake completes and the message stream then stalls: both ends
+report the other as silent. The adapters are not the cause — they are tested
+against a writer that accepts seven bytes at a time, which is more hostile than
+anything a socket does — and the cause is not known.
+
+So `EngineConfig::to_session_options` turns uTP off whenever encryption is on,
+and `manage_peer_outgoing` refuses to encrypt a connection that is not TCP even
+if one arrives. Shipping a transport that quietly fails is worse than shipping
+one fewer transport. The Connection panel says so on the card.
+
+`test_e2e_download_tcp_encrypted` is the proof that the rest works: a real
+download between two sessions, both refusing to speak in the clear.
+
 ## Not done yet
 
-**Incoming connections are still plaintext only.** A peer that opens an
-encrypted connection to this client is refused, because the listener reads a
-BitTorrent handshake directly and there is no scan for the encrypted opening in
-front of it. Outgoing works, which covers the case that matters most — a
-connection being shaped on the way out — but it is half the feature and should
-not be described as more than that.
+Nothing outstanding on the encryption itself, for TCP. The uTP stall is the one
+open question, and it is open — not worked around in a way that hides it.
 
 ## Taking a new upstream release
 

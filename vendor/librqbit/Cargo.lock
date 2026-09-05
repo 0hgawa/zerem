@@ -1990,6 +1990,7 @@ dependencies = [
  "uuid",
  "walkdir",
  "windows 0.62.2",
+ "zerem-mse",
 ]
 
 [[package]]
@@ -2548,6 +2549,16 @@ dependencies = [
  "num-integer",
  "num-iter",
  "num-rational",
+ "num-traits",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
+dependencies = [
+ "num-integer",
  "num-traits",
 ]
 
@@ -4899,6 +4910,16 @@ dependencies = [
  "quote",
  "syn 2.0.119",
  "synstructure",
+]
+
+[[package]]
+name = "zerem-mse"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "ring",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -117,6 +117,14 @@ pub(crate) struct ManagedTorrentOptions {
     pub ratelimits: LimitsConfig,
     pub initial_peers: Vec<SocketAddr>,
     pub peer_limit: Option<usize>,
+    /// NOT UPSTREAM -- Zerem. See `vendor/CHANGES.md`.
+    ///
+    /// Carried all the way down here because the peer options are *rebuilt*
+    /// where a connection is opened rather than passed along, so anything the
+    /// session decided and did not put in this struct is quietly lost. That is
+    /// how the first version of this patch encrypted nothing at all while
+    /// reporting that it would.
+    pub encryption: crate::encryption::Encryption,
     #[cfg(feature = "disable-upload")]
     pub _disable_upload: bool,
 }

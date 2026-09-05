@@ -15,6 +15,10 @@ use crate::{
     ApiError, CreateTorrentOptions, FileInfos, ManagedTorrent, ManagedTorrentShared,
     api::TorrentIdOrHash,
     api_error::WithStatus,
+    // NOT UPSTREAM -- Zerem. See vendor/CHANGES.md.
+    encryption::{Deciphering, Enciphering, Prefixed},
+    peer_connection::with_timeout,
+    vectored_traits::AsyncReadVectoredExt as _,
     bitv_factory::{BitVFactory, NonPersistentBitVFactory},
     create_torrent,
     create_torrent_file::CreateTorrentResult,
@@ -929,6 +933,73 @@ impl Session {
             bail!("Incoming ip {incoming_ip} is not in allowlist");
         }
 
+        // NOT UPSTREAM -- Zerem. See vendor/CHANGES.md.
+        //
+        // Which kind of connection this is, decided by its first byte. A plain
+        // one opens with 0x13 -- the length of the words "BitTorrent protocol"
+        // -- and an encrypted one opens with a random public value, which is
+        // that byte only one time in 256. There is no peeking on these streams,
+        // so it is read and given back.
+        let mut opening = [0_u8; 1];
+        let got = with_timeout("reading", rwtimeout, async {
+            reader
+                .read_vectored(&mut [std::io::IoSliceMut::new(&mut opening)])
+                .await
+                .map_err(|e| crate::Error::Anyhow(anyhow::anyhow!(e)))
+        })
+        .await
+        .context("error reading the first byte")?;
+        if got != 1 {
+            bail!("incoming connection from {addr} closed before it said anything");
+        }
+
+        let policy = self.peer_opts.encryption;
+        let plain = opening[0] == 0x13;
+        let mut reader: BoxAsyncReadVectored =
+            Box::new(Prefixed::new(opening.to_vec(), reader));
+        let mut writer = writer;
+
+        if plain && !policy.allows_plaintext() {
+            bail!("incoming connection from {addr} is not encrypted, and encryption is required");
+        }
+
+        let mut carried = Vec::new();
+        if !plain {
+            if !policy.incoming() {
+                bail!("incoming connection from {addr} is encrypted, and encryption is off");
+            }
+            // Which torrent it is for is not said in the clear: the peer sends a
+            // hash of the info hash mixed with the shared secret, so the only
+            // way through is to try the ones this session holds.
+            let held: Vec<[u8; 20]> = self
+                .db
+                .read()
+                .torrents
+                .values()
+                .map(|t| t.info_hash().0)
+                .collect();
+            let agreed = with_timeout("encrypting", rwtimeout, async {
+                zerem_mse::accept(&mut reader, &mut writer, || held.clone(), &mut carried)
+                    .await
+                    .map_err(|e| crate::Error::Anyhow(anyhow::anyhow!("{e}")))
+            })
+            .await
+            .context("error in the encrypted handshake")?;
+
+            if let (Some(inbound), Some(outbound)) = (agreed.incoming, agreed.outgoing) {
+                // The carried greeting sits *outside* the deciphering reader:
+                // it has already been deciphered, and a second pass would turn
+                // it back into noise and take the keystream with it.
+                reader = Box::new(Prefixed::new(
+                    std::mem::take(&mut carried),
+                    Deciphering::new(reader, inbound),
+                ));
+                writer = Box::new(Enciphering::new(writer, outbound));
+            } else {
+                reader = Box::new(Prefixed::new(std::mem::take(&mut carried), reader));
+            }
+        }
+
         let mut read_buf = ReadBuf::new();
         let h = read_buf
             .read_handshake(&mut reader, rwtimeout)
@@ -1359,6 +1430,8 @@ impl Session {
                     ratelimits: opts.ratelimits,
                     initial_peers: opts.initial_peers.clone().unwrap_or_default(),
                     peer_limit: opts.peer_limit.or(self.peer_limit),
+                    // NOT UPSTREAM -- Zerem.
+                    encryption: peer_opts.encryption,
                     #[cfg(feature = "disable-upload")]
                     _disable_upload: self._disable_upload,
                 },

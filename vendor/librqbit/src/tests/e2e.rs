@@ -10,8 +10,10 @@ use tokio::{
 use tracing::{Instrument, error, error_span, info};
 
 use crate::{
-    AddTorrentOptions, AddTorrentResponse, ConnectionOptions, ListenerMode, Session,
-    SessionOptions, SessionPersistenceConfig, create_torrent,
+    AddTorrentOptions, AddTorrentResponse, ConnectionOptions, ListenerMode, PeerConnectionOptions,
+    Session, SessionOptions, SessionPersistenceConfig, create_torrent,
+    // NOT UPSTREAM -- Zerem.
+    encryption::Encryption,
     listen::ListenerOptions,
     spawn_utils::BlockingSpawner,
     tests::test_util::{
@@ -22,15 +24,32 @@ use crate::{
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_e2e_download_tcp() {
-    _test_e2e_download_timeout_and_cleanups(ListenerMode::TcpOnly).await
+    _test_e2e_download_timeout_and_cleanups(ListenerMode::TcpOnly, Encryption::Off).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_e2e_download_utp() {
-    _test_e2e_download_timeout_and_cleanups(ListenerMode::UtpOnly).await
+    _test_e2e_download_timeout_and_cleanups(ListenerMode::UtpOnly, Encryption::Off).await
 }
 
-async fn _test_e2e_download_timeout_and_cleanups(mode: ListenerMode) {
+// NOT UPSTREAM -- Zerem. See vendor/CHANGES.md.
+//
+// The same download, with both ends refusing to speak in the clear. It is the
+// only test that exercises the whole of the patch at once: the key exchange,
+// the greeting carried inside it, the ciphers on both directions, and the
+// listener working out which kind of connection arrived. Everything else about
+// the encryption is tested in `zerem-mse` against a pipe, which cannot catch a
+// stream wired up backwards.
+// There is no uTP counterpart, and that is the finding. The handshake
+// completes over uTP and the message stream then stalls; the session turns uTP
+// off whenever encryption is on rather than ship a transport that quietly
+// fails, so there is no such combination left to test.
+#[tokio::test(flavor = "multi_thread")]
+async fn test_e2e_download_tcp_encrypted() {
+    _test_e2e_download_timeout_and_cleanups(ListenerMode::TcpOnly, Encryption::Require).await
+}
+
+async fn _test_e2e_download_timeout_and_cleanups(mode: ListenerMode, encryption: Encryption) {
     let timeout = std::env::var("E2E_TIMEOUT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -39,7 +58,7 @@ async fn _test_e2e_download_timeout_and_cleanups(mode: ListenerMode) {
     let drop_checks = DropChecks::default();
     tokio::time::timeout(
         Duration::from_secs(timeout),
-        _test_e2e_download(mode, &drop_checks),
+        _test_e2e_download(mode, encryption, &drop_checks),
     )
     .await
     .context("test_e2e_download timed out")
@@ -51,7 +70,7 @@ async fn _test_e2e_download_timeout_and_cleanups(mode: ListenerMode) {
     drop_checks.check().unwrap();
 }
 
-async fn _test_e2e_download(mode: ListenerMode, drop_checks: &DropChecks) {
+async fn _test_e2e_download(mode: ListenerMode, encryption: Encryption, drop_checks: &DropChecks) {
     setup_test_logging();
     match crate::try_increase_nofile_limit() {
         Ok(limit) => info!(limit, "increased ulimit"),
@@ -110,6 +129,14 @@ async fn _test_e2e_download(mode: ListenerMode, drop_checks: &DropChecks) {
                         listen: Some(ListenerOptions {
                             mode,
                             listen_addr: (Ipv4Addr::LOCALHOST, listen_port).into(),
+                            ..Default::default()
+                        }),
+                        // NOT UPSTREAM -- Zerem.
+                        connect: Some(ConnectionOptions {
+                            peer_opts: Some(PeerConnectionOptions {
+                                encryption,
+                                ..Default::default()
+                            }),
                             ..Default::default()
                         }),
                         root_span: Some(error_span!(parent: None, "server", id = i)),
@@ -224,6 +251,11 @@ async fn _test_e2e_download(mode: ListenerMode, drop_checks: &DropChecks) {
                 },
                 connect: Some(ConnectionOptions {
                     enable_tcp: mode.tcp_enabled(),
+                    // NOT UPSTREAM -- Zerem.
+                    peer_opts: Some(PeerConnectionOptions {
+                        encryption,
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 }),
                 fastresume: true,

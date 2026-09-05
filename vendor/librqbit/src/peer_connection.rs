@@ -117,6 +117,21 @@ pub(crate) async fn with_timeout<T>(
     fut.await
 }
 
+/// NOT UPSTREAM -- Zerem. See `vendor/CHANGES.md`.
+///
+/// Push whatever the writer is holding all the way out.
+///
+/// Nothing upstream flushed, and nothing needed to: a write to a socket is
+/// already gone. The enciphering writer keeps what it has enciphered until
+/// something pushes it -- a stream cipher cannot encipher the same bytes twice,
+/// so it cannot hand the caller a partial write and take the rest again later.
+/// Without this the last message of every connection sits in a buffer and both
+/// ends wait for the other. On a plain socket it is a no-op.
+async fn flushed<W: tokio::io::AsyncWrite + Unpin + ?Sized>(write: &mut W) -> Result<()> {
+    use tokio::io::AsyncWriteExt as _;
+    write.flush().await.map_err(Error::Write)
+}
+
 struct ManagePeerArgs {
     handshake_supports_extended: bool,
     read_buf: ReadBuf,
@@ -217,6 +232,12 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                 .map_err(Error::WriteHandshake),
         )
         .await?;
+        // NOT UPSTREAM -- Zerem. Nothing here flushed, because on a plain socket
+        // a write is already gone. The enciphering writer holds what it has
+        // enciphered until something pushes it, so without this the last
+        // message of every connection stays in a buffer and both ends wait for
+        // each other. On a plain socket this is a no-op.
+        with_timeout("flushing", rwtimeout, flushed(&mut incoming.writer)).await?;
 
         let handshake_supports_extended = handshake.supports_extended();
 
@@ -277,7 +298,12 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                 self.connector.connect(self.addr),
             )
             .await?;
-            if !encrypting {
+            // TCP only, and belt and braces: the session already turns uTP off
+            // whenever encryption is on, because the handshake completes over
+            // uTP and the message stream then stalls. This is here so that a
+            // caller who sets the options directly cannot get a uTP connection
+            // that claims to be encrypted.
+            if !encrypting || !matches!(ckind, ConnectionKind::Tcp) {
                 break (ckind, read, write, false);
             }
             match self.encrypt(read, write, &write_buf[..hsz], rwtimeout).await {
@@ -303,6 +329,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                         .map_err(Error::WriteHandshake),
                 )
                 .await?;
+                with_timeout("flushing", rwtimeout, flushed(&mut write)).await?;
             }
 
             let mut read_buf = ReadBuf::new();
@@ -376,6 +403,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                 write.write_all(&write_buf[..esz]).map_err(Error::Write),
             )
             .await?;
+            with_timeout("flushing", rwtimeout, flushed(&mut write)).await?;
         }
 
         let writer = async move {
@@ -395,6 +423,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                     write.write_all(&write_buf[..len]).map_err(Error::Write),
                 )
                 .await?;
+                with_timeout("flushing", rwtimeout, flushed(&mut write)).await?;
                 trace!("sent bitfield");
             }
 
@@ -405,6 +434,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                 write.write_all(&write_buf[..len]).map_err(Error::Write),
             )
             .await?;
+            with_timeout("flushing", rwtimeout, flushed(&mut write)).await?;
             trace!("sent unchoke");
 
             let mut broadcast_closed = false;
@@ -523,6 +553,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                     write.write_all(&write_buf[..len]).map_err(Error::Write),
                 )
                 .await?;
+                with_timeout("flushing", rwtimeout, flushed(&mut write)).await?;
 
                 if let Some(uploaded_add) = uploaded_add {
                     self.handler.on_uploaded_bytes(uploaded_add)

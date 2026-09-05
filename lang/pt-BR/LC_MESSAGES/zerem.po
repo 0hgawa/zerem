@@ -456,3 +456,6 @@ msgstr "Exigir"
 
 msgid "These take effect the next time Zerem starts."
 msgstr "Estas passam a valer na próxima vez que o Zerem abrir."
+
+msgid "Encryption uses TCP, so uTP is off while it is on."
+msgstr "A criptografia usa TCP, então o uTP fica desligado enquanto ela estiver ligada."
