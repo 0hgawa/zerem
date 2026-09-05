@@ -69,8 +69,8 @@ msgstr "Copiar link magnet"
 msgid "Del"
 msgstr "Del"
 
-msgid "Done"
-msgstr "Pronto"
+msgid "Close"
+msgstr "Fechar"
 
 msgid "Download limit"
 msgstr "Limite de download"
@@ -219,9 +219,6 @@ msgstr "Velocidade"
 msgid "Connection"
 msgstr "Conexão"
 
-msgid "Appearance"
-msgstr "Aparência"
-
 msgid "Download at once"
 msgstr "Baixar de uma vez"
 
@@ -254,9 +251,6 @@ msgstr "Pedir ao roteador para abrir a porta (UPnP)"
 
 msgid "Language"
 msgstr "Idioma"
-
-msgid "Dark theme"
-msgstr "Tema escuro"
 
 # Os contadores do rodapé. Agora são ícones na tela; o texto sobrou para quem
 # usa leitor de tela, então voltou a ser frase com inicial maiúscula. "Paused"
@@ -365,3 +359,34 @@ msgstr "Restaurar…"
 
 msgid "Reset everything"
 msgstr "Restaurar tudo"
+
+# As seções Geral e Sobre.
+msgid "General"
+msgstr "Geral"
+
+msgid "About"
+msgstr "Sobre"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Dark"
+msgstr "Escuro"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Every window changes at once. No restart."
+msgstr "Cada janela muda de uma vez. Sem reiniciar."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "Um cliente BitTorrent que não fica no seu caminho."
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, e as bandeiras vêm do que os cinco registros da internet publicam."

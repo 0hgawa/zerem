@@ -45,6 +45,17 @@ pub struct Settings {
     pub upnp: bool,
 
     // --- view ---
+    /// Which theme was chosen: "system", "light" or "dark".
+    ///
+    /// A string and not a boolean, because there are three answers and the
+    /// third is the interesting one — "whatever the desktop is" has to survive
+    /// the desktop changing its mind, which a stored `true` cannot.
+    ///
+    /// `dark` stays beside it and is what the window is *currently* drawn in,
+    /// so a session that follows the system still remembers what it resolved to
+    /// and the first frame after a launch is not the wrong colour.
+    #[serde(default = "follow_the_system")]
+    pub theme: String,
     pub dark: bool,
     pub sort_col: usize,
     pub sort_desc: bool,
@@ -98,6 +109,11 @@ pub struct Settings {
     pub drawer_width: f32,
 }
 
+/// The theme a fresh install follows.
+fn follow_the_system() -> String {
+    "system".to_owned()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         let engine = zerem_engine::EngineConfig::default();
@@ -114,6 +130,7 @@ impl Default for Settings {
             port: engine.port,
             utp: engine.utp,
             upnp: engine.upnp,
+            theme: follow_the_system(),
             dark: true,
             sort_col: 0,
             sort_desc: false,

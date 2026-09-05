@@ -4,6 +4,7 @@
 //! App-neutral on purpose. Nothing here names Zerem, so promoting this folder to
 //! a repository shared with Clipo and Vayou is a move rather than a rewrite.
 
+pub mod appearance;
 pub mod assoc;
 pub mod attention;
 pub mod corners;
@@ -14,6 +15,7 @@ pub mod locale;
 pub mod screen;
 pub mod single_instance;
 
+pub use appearance::prefers_dark;
 pub use assoc::{ensure_registered, Outcome, Registration};
 pub use attention::ask as ask_attention;
 pub use corners::round as round_corners;

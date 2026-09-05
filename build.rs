@@ -36,6 +36,8 @@ fn main() {
         .join()
         .expect("the Slint compiler panicked");
 
+    tell_engine_version();
+
     #[cfg(windows)]
     embed_windows_resources();
 }
@@ -98,4 +100,21 @@ fn embed_windows_resources() {
     embed_resource::compile(&rc_path, embed_resource::NONE)
         .manifest_optional()
         .expect("embed the icon and version info");
+}
+
+/// The engine version, taken from the lockfile rather than typed.
+///
+/// The About panel names it, and a version written by hand in a window is a
+/// version that is wrong the first time the dependency moves. `cargo` resolves
+/// it; this only reads what was resolved.
+fn tell_engine_version() {
+    println!("cargo:rerun-if-changed=Cargo.lock");
+    let lock = std::fs::read_to_string("Cargo.lock").unwrap_or_default();
+    let version = lock
+        .split("[[package]]")
+        .find(|block| block.contains("name = \"librqbit\"\n"))
+        .and_then(|block| block.lines().find_map(|line| line.strip_prefix("version = \"")))
+        .and_then(|rest| rest.strip_suffix('"'))
+        .unwrap_or("unknown");
+    println!("cargo:rustc-env=ZEREM_ENGINE_VERSION={version}");
 }

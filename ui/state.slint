@@ -328,6 +328,15 @@ export global Prefs {
     callback clear-watch-dir();
     /// Whether the confirmation for putting everything back is up.
     in-out property <bool> resetting;
+    /// Which theme was chosen: "system", "light" or "dark". Not the same
+    /// question as `Theme.dark`, which is what the window is drawn in *now* —
+    /// following the system is a choice that resolves to one of the other two.
+    in-out property <string> theme;
+    callback pick-theme(string);
+    /// What the About section shows: the version and what it is built on.
+    /// Filled once at startup — neither changes while the app runs.
+    in-out property <string> version;
+    in-out property <string> engine;
     /// Put every setting back to what it was on the first launch.
     callback reset-all();
     /// Raised by the picker thread once the user has chosen, not by anything in

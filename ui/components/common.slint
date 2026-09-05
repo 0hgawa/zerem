@@ -758,3 +758,61 @@ export component Tooltip inherits Rectangle {
         }
     }
 }
+
+/// One card in a row of them, of which exactly one is chosen.
+///
+/// For a choice with two or three answers that can each be *shown*: a theme is
+/// the case this exists for, where a swatch says more in a glance than the word
+/// "Dark" does. A dropdown would hide two of the three behind a click for no
+/// gain — the whole set fits on the row.
+///
+/// The chosen one is said twice, by the accent and by the edge, because one of
+/// those is a colour and somebody may not see it.
+export component RadioCard inherits Rectangle {
+    in property <string> glyph;
+    in property <string> label;
+    in property <bool> chosen;
+    callback picked;
+
+    height: 62px;
+    horizontal-stretch: 1;
+    // The float radius, not the control one. It is a card — a surface with
+    // something on it — and it is the size of one; the corner a text field uses
+    // looks tight on a shape four times as tall.
+    border-radius: Theme.radius-float;
+    background: root.chosen ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: root.chosen ? Theme.accent-fill : Theme.stroke;
+    animate background, border-color { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+    accessible-role: list-item;
+    accessible-label: root.label;
+    accessible-item-selected: root.chosen;
+    accessible-action-default => { root.picked(); }
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 5px;
+        HorizontalLayout {
+            alignment: center;
+            Icon {
+                glyph: root.glyph;
+                tint: root.chosen ? Theme.accent : Theme.text-dim;
+                size: 18px;
+            }
+        }
+        Text {
+            text: root.label;
+            color: root.chosen ? Theme.accent : Theme.text;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            font-weight: root.chosen ? Theme.semibold : 400;
+            horizontal-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.picked(); }
+    }
+}

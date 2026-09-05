@@ -77,6 +77,7 @@ component Toolbar inherits Rectangle {
             IconButton {
                 glyph: Lucide.panel-left;
                 label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tip: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
                 tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
                 clicked => { TorrentList.toggle-rail(); }
             }
@@ -147,6 +148,7 @@ component Toolbar inherits Rectangle {
             IconButton {
                 glyph: Theme.dark ? Lucide.sun : Lucide.moon;
                 label: Theme.dark ? @tr("Switch to the light theme") : @tr("Switch to the dark theme");
+                tip: Theme.dark ? @tr("Switch to the light theme") : @tr("Switch to the dark theme");
                 clicked => { TorrentList.toggle-theme(); }
             }
         }
@@ -155,6 +157,7 @@ component Toolbar inherits Rectangle {
             IconButton {
                 glyph: Lucide.settings;
                 label: @tr("Preferences");
+                tip: @tr("Preferences");
                 clicked => { Prefs.open = true; }
             }
         }
@@ -280,6 +283,8 @@ component StatusBar inherits Rectangle {
                 glyph: Lucide.gauge-low;
                 diameter: 26px;
                 label: Prefs.alt-speed ? @tr("Back to the full speed limits")
+                    : @tr("Switch to the slow limits");
+                tip: Prefs.alt-speed ? @tr("Back to the full speed limits")
                     : @tr("Switch to the slow limits");
                 tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
                 clicked => { Prefs.toggle-alt-speed(); }

@@ -3,10 +3,10 @@
 
 import { Theme } from "../theme.slint";
 import { Lucide } from "../components/icons.slint";
-import { Button, ButtonKind } from "../components/button.slint";
+import { Button, ButtonKind, IconButton } from "../components/button.slint";
 import { ScrollView } from "std-widgets.slint";
 import {
-    Check, Divider, Dropdown, Modal, NumberBox, RailItem, SettingsCard, SettingsGroup, SettingsRow, Toggle
+    Check, Divider, Dropdown, Modal, NumberBox, RadioCard, RailItem, SettingsCard, SettingsGroup, SettingsRow, Toggle
 } from "../components/common.slint";
 import { Prefs, TorrentList } from "../state.slint";
 
@@ -33,7 +33,7 @@ export component Preferences inherits Modal {
     // Stated, not asked. The pane is a ScrollView, and a ScrollView reports a
     // small preferred height on purpose — hugging its content is the one thing
     // it exists not to do. Asking it collapsed the card to a title, a sliver of
-    // list and the Done button. The Modal still clamps this against the window,
+    // list and the close button. The Modal still clamps this against the window,
     // so a short desktop gets a shorter dialog rather than one off the edge.
     card-height: 440px;
     dismissed => { Prefs.close(); }
@@ -41,10 +41,26 @@ export component Preferences inherits Modal {
     /// Which room is open. Local rather than global: the dialog is rebuilt each
     /// time it opens, so it always opens on Downloads instead of wherever
     /// somebody happened to leave it a week ago.
-    property <string> section: "downloads";
+    property <string> section: "general";
+
+    // The way out, in the corner of the card rather than in a row inside it.
+    //
+    // That is where every window on this desktop keeps one, and it is outside
+    // the padding on purpose: a close button inset by twenty pixels is one
+    // somebody has to aim at, where a corner can be hit by throwing the pointer
+    // at it. There was a Done button at the foot before this, and it never did
+    // what its word says — every setting is written the moment it changes, so
+    // nothing was ever pending for it to conclude.
+    IconButton {
+        x: parent.width - self.width - 8px;
+        y: 8px;
+        glyph: Lucide.x;
+        label: @tr("Close");
+        clicked => { Prefs.close(); }
+    }
 
     VerticalLayout {
-        padding: 20px;
+        padding: 16px;
         spacing: 12px;
 
         HorizontalLayout {
@@ -73,6 +89,12 @@ export component Preferences inherits Modal {
                 }
 
                 RailItem {
+                    label: @tr("General");
+                    glyph: Lucide.settings;
+                    active: root.section == "general";
+                    chosen => { root.section = "general"; }
+                }
+                RailItem {
                     label: @tr("Downloads");
                     glyph: Lucide.folder-open;
                     active: root.section == "downloads";
@@ -91,10 +113,10 @@ export component Preferences inherits Modal {
                     chosen => { root.section = "connection"; }
                 }
                 RailItem {
-                    label: @tr("Appearance");
-                    glyph: Lucide.sun;
-                    active: root.section == "appearance";
-                    chosen => { root.section = "appearance"; }
+                    label: @tr("About");
+                    glyph: Lucide.info;
+                    active: root.section == "about";
+                    chosen => { root.section = "about"; }
                 }
             }
 
@@ -110,11 +132,13 @@ export component Preferences inherits Modal {
                     // The room's own name, mirroring the door that was opened.
                     // Windows does this, and it is what tells somebody who
                     // clicked without reading where they have landed.
+                    //
                     Text {
-                        text: root.section == "downloads" ? @tr("Downloads")
+                        text: root.section == "general" ? @tr("General")
+                            : root.section == "downloads" ? @tr("Downloads")
                             : root.section == "speed" ? @tr("Speed")
                             : root.section == "connection" ? @tr("Connection")
-                            : @tr("Appearance");
+                            : @tr("About");
                         color: Theme.text;
                         font-size: Theme.fs-title;
                         font-family: Theme.font;
@@ -304,59 +328,123 @@ export component Preferences inherits Modal {
                         wrap: word-wrap;
                     }
 
-                    if root.section == "appearance": SettingsCard {
-                        SettingsRow {
-                            title: @tr("Put every setting back");
-                            subtitle: Prefs.resetting
-                                ? @tr("Every preference returns to what it was on the first launch. Torrents are not touched.")
-                                : @tr("Folders, limits, language and theme — all of it.");
-                            HorizontalLayout {
-                                spacing: 6px;
-                                if Prefs.resetting: Button {
-                                    label: @tr("Cancel");
-                                    kind: ButtonKind.text;
-                                    clicked => { Prefs.resetting = false; }
+                    // What the app is, before what it does. Theme and language
+                    // are not "appearance" and "appearance" is not a home for
+                    // whatever is left over — which is what that section had
+                    // become: it held a reset that touches folders and limits.
+                    if root.section == "general": VerticalLayout {
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Theme");
+                            color: Theme.text-dim;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            font-weight: Theme.semibold;
+                        }
+                        // Cards rather than a switch, because a theme can be
+                        // shown: the choice is three states and a two-state
+                        // control could not hold the third at all.
+                        HorizontalLayout {
+                            spacing: 8px;
+                            RadioCard {
+                                glyph: Lucide.sun;
+                                label: @tr("Light");
+                                chosen: Prefs.theme == "light";
+                                picked => { Prefs.pick-theme("light"); }
+                            }
+                            RadioCard {
+                                glyph: Lucide.moon;
+                                label: @tr("Dark");
+                                chosen: Prefs.theme == "dark";
+                                picked => { Prefs.pick-theme("dark"); }
+                            }
+                            RadioCard {
+                                glyph: Lucide.monitor;
+                                label: @tr("System");
+                                chosen: Prefs.theme == "system";
+                                picked => { Prefs.pick-theme("system"); }
+                            }
+                        }
+
+                        SettingsCard {
+                            SettingsRow {
+                                title: @tr("Language");
+                                subtitle: @tr("Every window changes at once. No restart.");
+                                Dropdown {
+                                    options: Prefs.languages;
+                                    current: Prefs.language-index;
+                                    hint: @tr("Language");
+                                    changed(at) => { Prefs.set-language(at); }
                                 }
-                                Button {
-                                    label: Prefs.resetting ? @tr("Reset everything") : @tr("Reset…");
-                                    glyph: Lucide.loader;
-                                    kind: ButtonKind.danger;
-                                    // Asked in place rather than over a dialog:
-                                    // the row is what it is about, and a modal
-                                    // over a modal is a stack nobody enjoys.
-                                    // Two presses, and the second one names the
-                                    // thing — which is the same shape Remove
-                                    // uses on a torrent.
-                                    clicked => {
-                                        if (Prefs.resetting) {
-                                            Prefs.reset-all();
-                                        } else {
-                                            Prefs.resetting = true;
+                            }
+                        }
+                    }
+
+                    if root.section == "about": VerticalLayout {
+                        spacing: 10px;
+
+                        SettingsCard {
+                            SettingsRow {
+                                title: "Zerem";
+                                subtitle: @tr("A BitTorrent client that does not get in the way.");
+                                Text {
+                                    text: Prefs.version;
+                                    color: Theme.text-dim;
+                                    font-size: Theme.fs-label;
+                                    font-family: Theme.font;
+                                    vertical-alignment: center;
+                                }
+                            }
+                            Divider { }
+                            SettingsRow {
+                                title: @tr("Engine");
+                                subtitle: @tr("librqbit, and the flags come from what the five internet registries publish.");
+                                Text {
+                                    text: Prefs.engine;
+                                    color: Theme.text-dim;
+                                    font-size: Theme.fs-label;
+                                    font-family: Theme.font;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // The reset lives here, not under a heading about how
+                        // the app looks. It puts folders, limits and the port
+                        // back as well, and none of those are appearance.
+                        SettingsCard {
+                            SettingsRow {
+                                title: @tr("Put every setting back");
+                                subtitle: Prefs.resetting
+                                    ? @tr("Every preference returns to what it was on the first launch. Torrents are not touched.")
+                                    : @tr("Folders, limits, language and theme — all of it.");
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    if Prefs.resetting: Button {
+                                        label: @tr("Cancel");
+                                        kind: ButtonKind.text;
+                                        clicked => { Prefs.resetting = false; }
+                                    }
+                                    Button {
+                                        label: Prefs.resetting ? @tr("Reset everything") : @tr("Reset…");
+                                        glyph: Lucide.loader;
+                                        kind: ButtonKind.danger;
+                                        // Asked in place rather than over a
+                                        // dialog: the row is what it is about,
+                                        // and a modal over a modal is a stack
+                                        // nobody enjoys. Two presses, and the
+                                        // second names the thing — the shape
+                                        // Remove already uses on a torrent.
+                                        clicked => {
+                                            if (Prefs.resetting) {
+                                                Prefs.reset-all();
+                                            } else {
+                                                Prefs.resetting = true;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }
-                        Divider { }
-                        SettingsRow {
-                            title: @tr("Language");
-                            Dropdown {
-                                options: Prefs.languages;
-                                current: Prefs.language-index;
-                                hint: @tr("Language");
-                                changed(at) => { Prefs.set-language(at); }
-                            }
-                        }
-                        Divider { }
-                        SettingsRow {
-                            title: @tr("Dark theme");
-                            Toggle {
-                                on: Theme.dark;
-                                hint: @tr("Dark theme");
-                                // Through the same callback the toolbar button
-                                // uses, so the choice is written down rather
-                                // than only drawn.
-                                toggled(on) => { TorrentList.toggle-theme(); }
                             }
                         }
                     }
@@ -364,14 +452,6 @@ export component Preferences inherits Modal {
             }
         }
 
-        HorizontalLayout {
-            alignment: end;
-            Button {
-                label: @tr("Done");
-                kind: ButtonKind.primary;
-                clicked => { Prefs.close(); }
-            }
-        }
     }
 }
 

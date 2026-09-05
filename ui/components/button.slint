@@ -118,6 +118,17 @@ export component IconButton inherits Rectangle {
     /// so this is the only thing a reader can announce — a button without one
     /// is announced as "button" and nothing else.
     in property <string> label;
+    /// What to teach, on screen, for an icon that does not explain itself.
+    ///
+    /// Separate from `label`, and that separation is the fix: every icon button
+    /// needs a label, because a screen reader has nothing else — and showing
+    /// every label meant a caption over the close button of a dialog, every
+    /// time the pointer crossed it. A tooltip is for the mark somebody has to
+    /// learn; a cross is not one.
+    ///
+    /// Empty by default, so a button says nothing on screen until it has a
+    /// reason to.
+    in property <string> tip;
     callback clicked;
 
     /// The label, on screen, after a pause.
@@ -146,17 +157,17 @@ export component IconButton inherits Rectangle {
     /// button's and stayed on screen for the rest of the session.
     property <string> published;
     wait := Timer {
-        // Six hundred was too long to be discovered. Windows waits about four,
-        // and a tooltip nobody stays still for is a tooltip nobody has read —
-        // the turtle in this toolbar got asked about twice.
-        interval: 350ms;
+        // Windows waits about half a second. Long enough that crossing a bar on
+        // the way somewhere else lights nothing up, short enough that somebody
+        // who has stopped to look gets an answer.
+        interval: 450ms;
         running: false;
         triggered => {
             root.settled = true;
             self.running = false;
-            if (root.label != "") {
-                root.published = root.label;
-                Hint.text = root.label;
+            if (root.tip != "") {
+                root.published = root.tip;
+                Hint.text = root.tip;
                 Hint.at-x = root.absolute-position.x + root.width / 2;
                 Hint.at-y = root.absolute-position.y + root.height + 5px;
             }

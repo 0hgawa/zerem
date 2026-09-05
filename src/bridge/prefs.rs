@@ -92,6 +92,12 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     offer_languages(&prefs, &settings.language);
 
     ui.global::<Theme>().set_dark(settings.dark);
+    push!(prefs, get_theme, set_theme, settings.theme.as_str().into());
+    // Neither of these changes while the app runs, so they are stated once and
+    // read from the manifest rather than typed into the window — a version in
+    // two places is a version that is wrong in one of them.
+    prefs.set_version(concat!("v", env!("CARGO_PKG_VERSION")).into());
+    prefs.set_engine(concat!("librqbit ", env!("ZEREM_ENGINE_VERSION")).into());
     // The add dialog shows the same folder, because it is the same setting.
     super::add::show_destination(ui, &settings.download_dir.display().to_string());
 }
@@ -389,7 +395,41 @@ fn wire_switches(
             let theme = ui.global::<Theme>();
             let dark = !theme.get_dark();
             theme.set_dark(dark);
-            store.update(|s| s.dark = dark);
+            // And it is now an explicit choice rather than whatever the desktop
+            // is: pressing this is somebody saying which one they want, so
+            // "follow the system" stops being true the moment they do.
+            let chosen = if dark { "dark" } else { "light" };
+            store.update(|s| {
+                s.dark = dark;
+                chosen.clone_into(&mut s.theme);
+            });
+            push!(ui.global::<Prefs>(), get_theme, set_theme, chosen.into());
+        }
+    });
+
+    prefs.on_pick_theme({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move |chosen| {
+            let Some(ui) = ui.upgrade() else { return };
+            let chosen = chosen.to_string();
+            // "System" is a choice that has to be resolved before it can be
+            // drawn, and a desktop that will not say leaves whatever is on
+            // screen alone rather than guessing.
+            let dark = match chosen.as_str() {
+                "light" => Some(false),
+                "dark" => Some(true),
+                _ => zerem_shell::prefers_dark(),
+            };
+            store.update(|s| {
+                s.theme.clone_from(&chosen);
+                if let Some(dark) = dark {
+                    s.dark = dark;
+                }
+            });
+            if let Some(dark) = dark {
+                ui.global::<Theme>().set_dark(dark);
+            }
+            push!(ui.global::<Prefs>(), get_theme, set_theme, chosen.as_str().into());
         }
     });
 
