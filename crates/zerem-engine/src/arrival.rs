@@ -70,10 +70,14 @@ pub struct Keepsake {
     bytes: Vec<u8>,
     only_files: Option<Vec<usize>>,
     plan: Vec<zerem_core::Step>,
-    /// Where the rebuilt torrent is told to write.
+    /// Where the rebuilt torrent is told to write, and it is the folder the
+    /// files are *in*, not the destination they were sent to.
     ///
-    /// The destination root, not the torrent's own folder inside it: librqbit
-    /// puts that folder back itself, and naming it here would nest it twice.
+    /// A torrent with a folder of its own carries it along, so it lands one
+    /// level below the destination — and an explicit `output_folder` is the
+    /// branch of librqbit that adds no subfolder of its own. The first version
+    /// of this named the destination, which would have re-registered a torrent
+    /// one level above its own files and downloaded every byte again.
     output: String,
     was_running: bool,
 }
@@ -207,9 +211,48 @@ impl TorrentSession {
             bytes,
             only_files: zerem_core::to_fetch(&entry.wanted, &entry.first, &complete),
             plan,
-            output: keep.to_string_lossy().into_owned(),
+            // The same rule the plan used, asked the same way, so the two
+            // cannot disagree about where the files are.
+            output: zerem_core::move_landing(&from, keep, owns_folder).to_string_lossy().into_owned(),
             was_running: entry.wanted_running,
         })
+    }
+
+    /// Check every piece against what is on disk, and believe the disk.
+    ///
+    /// qBittorrent calls this Force recheck and libtorrent has a method for it.
+    /// librqbit does not — but it does exactly this work on every add with
+    /// `overwrite`, because that is how it decides whether a torrent whose
+    /// pieces are already written can be seeded. So a recheck is the same
+    /// sequence a move is, without the moving: let go of the torrent without
+    /// touching a file, and add it back where it already is.
+    ///
+    /// Which fixes what somebody reaches for it to fix. Files deleted behind
+    /// the app's back come back as missing rather than as complete; a torrent
+    /// stuck on an error re-reads what is there and carries on from it; and
+    /// data put in place by hand is found instead of downloaded again.
+    pub async fn recheck(&mut self, id: TorrentId) -> anyhow::Result<()> {
+        let Some(entry) = self.entries.get(&id) else {
+            anyhow::bail!("no such torrent");
+        };
+        let bytes = entry
+            .handle
+            .with_metadata(|meta| meta.torrent_bytes.to_vec())
+            .context("that torrent has no metadata yet")?;
+
+        // Not `to_fetch`: a pin narrows what is *fetched*, and rechecking is
+        // about what is on disk. Every wanted file is asked for, pins or no.
+        let all = entry.wanted.iter().all(|w| *w);
+        let keepsake = Keepsake {
+            bytes,
+            only_files: (!all)
+                .then(|| entry.wanted.iter().enumerate().filter(|(_, w)| **w).map(|(i, _)| i).collect()),
+            plan: Vec::new(),
+            // Where it already is. Nothing moves.
+            output: entry.folder.to_string(),
+            was_running: entry.wanted_running,
+        };
+        self.rebuild(id, keepsake).await
     }
 
     /// Drop the torrent without touching its files, and add it back where the

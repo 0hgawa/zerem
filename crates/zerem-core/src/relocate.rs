@@ -58,12 +58,27 @@ pub fn plan(output: &Path, relative: &[String], destination: &Path, owns_folder:
         return None;
     }
 
-    let carried = match from_root.file_name().filter(|_| owns_folder) {
+    let carried = landing(&from_root, &to_root, owns_folder);
+    Some(relative.iter().map(|path| Step { from: from_root.join(path), to: carried.join(path) }).collect())
+}
+
+/// The folder the files end up *in*, which is not always the destination.
+///
+/// A torrent with a folder of its own takes that folder along, so its files
+/// land one level below where they were sent; one without simply lands there.
+///
+/// Its own function because two things need this answer and must not disagree:
+/// the plan, to know where each file goes, and whatever re-registers the
+/// torrent afterwards, to know where to look for them. Getting the second wrong
+/// is a torrent that has moved perfectly and then downloads itself again — and
+/// that is not hypothetical, it is what the first version of the move did.
+#[must_use]
+pub fn landing(output: &Path, destination: &Path, owns_folder: bool) -> PathBuf {
+    let (from_root, to_root) = (normalise(output), normalise(destination));
+    match from_root.file_name().filter(|_| owns_folder) {
         Some(name) => to_root.join(name),
         None => to_root,
-    };
-
-    Some(relative.iter().map(|path| Step { from: from_root.join(path), to: carried.join(path) }).collect())
+    }
 }
 
 /// Reduce a path to the one spelling this file compares against.
@@ -112,7 +127,7 @@ fn normalise(path: &Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use super::{plan, Step};
+    use super::{landing, plan, Step};
     use std::path::{Path, PathBuf};
 
     fn at(text: &str) -> PathBuf {
@@ -227,6 +242,23 @@ mod tests {
     fn the_case_of_a_drive_letter_is_not_a_different_drive() {
         assert!(plan(Path::new(r"d:\dl"), &["a.mkv".into()], Path::new(r"D:\dl"), true).is_none());
     }
+    #[test]
+    fn the_landing_folder_is_where_the_files_actually_end_up() {
+        // The question the re-registration asks, and it has to give the same
+        // answer as the plan. A torrent that moved perfectly and is then told
+        // to look one level too high downloads itself again.
+        let steps =
+            plan(Path::new("D:/dl/Show"), &["a.mkv".into()], Path::new("E:/lib"), true).expect("a move");
+        let landed = landing(Path::new("D:/dl/Show"), Path::new("E:/lib"), true);
+        assert_eq!(landed, at("E:/lib/Show"));
+        assert_eq!(steps[0].to, landed.join("a.mkv"));
+    }
+
+    #[test]
+    fn a_lone_file_lands_in_the_destination_itself() {
+        assert_eq!(landing(Path::new("D:/downloads"), Path::new("E:/films"), false), at("E:/films"));
+    }
+
     #[test]
     fn a_torrent_with_no_files_is_not_a_move() {
         assert!(plan(Path::new("D:/dl/Thing"), &[], Path::new("E:/keep"), true).is_none());

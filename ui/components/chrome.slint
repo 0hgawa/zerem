@@ -52,7 +52,9 @@ component Control inherits Rectangle {
     callback chosen;
 
     width: 46px;
-    height: 32px;
+    // The full height of the bar, so the corner is a target and not a button
+    // sitting near one.
+    height: 100%;
     background: ta.pressed ? (root.danger ? #c42b1c : Theme.surface-hi)
         : ta.has-hover ? (root.danger ? #e81123 : Theme.hover)
         : transparent;

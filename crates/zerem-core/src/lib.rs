@@ -42,7 +42,7 @@ pub use language::SHIPPED as LANGUAGES;
 pub use pending::{Pending, PendingFile};
 pub use queue::{admit, Waiting};
 pub use rate::Rate;
-pub use relocate::{plan as move_plan, Step};
+pub use relocate::{landing as move_landing, plan as move_plan, Step};
 pub use sort::Sort;
 pub use text::tr;
 pub use torrent::{SessionStats, Stall, State, TorrentId, TorrentRow};

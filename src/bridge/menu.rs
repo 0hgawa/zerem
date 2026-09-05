@@ -66,6 +66,21 @@ pub fn wire(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
         }
     });
 
+    list.on_recheck_selected({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            // Everything selected, not just the one the menu was opened over:
+            // a recheck is what somebody reaches for after a disk went away,
+            // and that takes more than one torrent with it.
+            let chosen: Vec<_> = state.selection().iter().copied().collect();
+            for id in chosen {
+                state.engine.send(zerem_engine::Command::Recheck(id));
+            }
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
     list.on_open_folder({
         let (state, ui) = (state.clone(), ui.as_weak());
         move || {

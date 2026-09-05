@@ -51,6 +51,11 @@ pub enum Command {
     /// download bandwidth, which is the thing being rationed.
     SetMaxActive(u32),
     /// Whether the next torrent added is added stopped.
+    /// Check every piece against what is on disk and believe the disk.
+    ///
+    /// What qBittorrent calls Force recheck: for a torrent that has gone wrong,
+    /// or whose files were deleted or replaced behind the app's back.
+    Recheck(TorrentId),
     SetAddPaused(bool),
     /// Where a torrent goes once it has finished, or `None` to leave it where
     /// it downloaded. Off by default: moving somebody's files is not something

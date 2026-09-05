@@ -159,6 +159,11 @@ export component ContextMenu inherits MenuSurface {
         glyph: Lucide.copy;
         chosen => { TorrentList.copy-magnet(); }
     }
+    Item {
+        label: @tr("Force recheck");
+        glyph: Lucide.loader;
+        chosen => { TorrentList.recheck-selected(); }
+    }
     Separator { }
     Item {
         label: @tr("Remove…");

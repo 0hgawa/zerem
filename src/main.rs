@@ -164,6 +164,11 @@ fn main() -> Result<(), slint::PlatformError> {
     slint::invoke_from_event_loop(move || {
         if let Some(ui) = placing.upgrade() {
             fit_to_desktop(&ui);
+            // The frame that was removed took the desktop-s rounded corners
+            // with it: Windows rounds a window because its *frame* is
+            // rounded, and this one has none. Asked back here, once the window
+            // exists to be asked about.
+            zerem_shell::round_corners();
         }
     })
     .unwrap_or_else(|e| tracing::warn!("could not queue the window placement: {e}"));

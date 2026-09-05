@@ -25,7 +25,6 @@ component Toolbar inherits Rectangle {
     callback dismissed;
     height: 48px;
     background: Theme.surface;
-    border-radius: Theme.radius-float;
 
     // Behind everything else in the bar, so the gaps move the window and every
     // button drawn over it keeps its own clicks.
@@ -33,7 +32,6 @@ component Toolbar inherits Rectangle {
 
     HorizontalLayout {
         padding-left: 10px;
-        padding-right: 10px;
         spacing: 6px;
         alignment: start;
 
@@ -148,8 +146,8 @@ component Toolbar inherits Rectangle {
         }
 
         // The three, hard against the right edge and the full height of the
-        // bar, which is where every window on this desktop keeps them.
-        Rectangle { width: 4px; }
+        // bar, which is where every window on this desktop keeps them. No gap
+        // before them and none after: the corner itself is the target.
         WindowControls { }
     }
 
@@ -356,9 +354,18 @@ export component MainWindow inherits Window {
         // cards sitting on it. Nothing was removed to do this: the same
         // controls, laid out as objects rather than as regions.
         VerticalLayout {
-            padding: 8px;
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-bottom: 8px;
             spacing: 8px;
 
+            // The header reaches the window's edges, and the cards start below
+            // it. It is the title bar now: the close button belongs in the
+            // actual corner, where it can be hit by throwing the pointer at it
+            // without looking, and a title bar inset by eight pixels is a title
+            // bar you have to aim for.
+            //
+            // Its top corners are the window's, cut by the desktop.
             bar := Toolbar {
                 dismissed => { keys.focus(); }
             }

@@ -207,6 +207,7 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.set_max_active(limit).await;
             Ok(())
         }
+        Command::Recheck(id) => session.recheck(id).await,
         Command::SetKeepDir(ref folder) => {
             session.set_keep_dir(folder.as_deref().map(std::path::PathBuf::from));
             Ok(())

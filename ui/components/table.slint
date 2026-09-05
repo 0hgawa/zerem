@@ -230,8 +230,10 @@ export component TableRow inherits Rectangle {
     // Both act on the row under the pointer and leave the selection alone — no
     // selecting first, and no chance of hitting a torrent the cursor is not on.
     // Declared after `ta` so they take their own clicks.
+    // The play button stays whatever the panel is doing. It is the verb people
+    // use most, on whichever row the cursor happens to be over — which is not
+    // necessarily the row the panel is showing.
     run := TouchArea {
-        visible: !DetailState.open;
         x: 6px;
         y: (parent.height - self.height) / 2;
         width: 22px;
@@ -265,13 +267,9 @@ export component TableRow inherits Rectangle {
         }
     }
 
-    // Both go away while the panel is open. It carries the same three verbs for
-    // the torrent it is showing, the table is narrower with it out, and two
-    // sets of buttons for one job is one set too many.
-    //
-    // What is lost is acting on a row *other* than the one in the panel without
-    // selecting it first. The right-click menu and the keyboard both still do
-    // that, so it is a shortcut that goes, not a capability.
+    // Remove goes away while the panel is open: the panel has its own, the
+    // table is narrower with it out, and two buttons for the one destructive
+    // verb is one too many. Play does not — see above.
     del := TouchArea {
         visible: !DetailState.open;
         x: parent.width - self.width - 6px;

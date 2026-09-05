@@ -459,6 +459,9 @@ export global TorrentList {
     callback toggle-column(int);
     callback open-folder();
     callback copy-magnet();
+    /// Check every piece against what is on disk. For a torrent that has gone
+    /// wrong, or whose files were deleted or replaced behind the app's back.
+    callback recheck-selected();
     callback start-selected();
     callback pause-selected();
     /// Act on the row under the pointer, leaving the selection alone.
