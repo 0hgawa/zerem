@@ -65,6 +65,10 @@ export global Theme {
     // roughly twice the stripe, which is where Fluent puts a list hover.
     out property <brush> row-alt: dark ? #ffffff0a : #0f0d0a08;
     out property <brush> hover: dark ? #ffffff16 : #0f0d0a11;
+    /// Under the finger. A step past `hover` and in the same neutral: the
+    /// accent means selected, and a control that turns blue while it is being
+    /// pressed is telling you it has been chosen when it has only been touched.
+    out property <brush> pressed: dark ? #ffffff26 : #0f0d0a1e;
     out property <brush> selected: dark ? #299fff26 : #0890ff1c;
     out property <brush> border: dark ? #ffffff0f : #0f0d0a0a;
     // The edge of a control: a button, a field, a select.

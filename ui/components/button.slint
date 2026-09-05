@@ -38,7 +38,6 @@ export component Button inherits Rectangle {
     accessible-enabled: root.enabled;
     accessible-action-default => { if (root.enabled) { root.clicked(); } }
 
-    property <bool> aimed: ta.has-hover || ta.pressed;
     /// Whether this one speaks in a colour rather than in ink.
     ///
     /// Two do: the recommended action and the destructive one. Everything else
@@ -49,29 +48,29 @@ export component Button inherits Rectangle {
     /// Which colour, when it is one.
     property <brush> hue: kind == ButtonKind.danger ? Theme.danger : Theme.accent-fill;
 
-    // The colour is worn twice, and which way round depends on the cursor: the
-    // word and the mark carry it at rest, and the button fills with it once it
-    // is pointed at — at which point the word has to invert or it disappears
-    // into what it is standing on.
-    property <brush> ink: !enabled ? Theme.idle
-        : root.coloured && root.aimed ? Theme.on-accent
-        : root.coloured ? root.hue
-        : Theme.text;
+    // The colour is in the word and the mark, and nowhere else.
+    //
+    // It filled with the colour on hover for a while, which meant the button
+    // changed shape under the cursor and the word had to invert to survive it.
+    // Two states doing the work of one: what a colour on a label is for is
+    // saying which button this is, and it says that just as well standing
+    // still.
+    property <brush> ink: !enabled ? Theme.idle : root.coloured ? root.hue : Theme.text;
 
     height: 32px;
     width: row.preferred-width + 26px;
     border-radius: 16px;
+    // The same neutral every other button has. A coloured one is not a
+    // different kind of control, it is the same control with a different thing
+    // to say.
     background: !enabled ? transparent
-        : root.coloured && root.aimed ? (ta.pressed ? root.hue.darker(15%) : root.hue)
-        : ta.pressed ? Theme.selected
+        : ta.pressed ? Theme.pressed
         : ta.has-hover ? Theme.hover
         : transparent;
 
-    // Not on a text button, which is a word and nothing else. A coloured one
-    // draws its own edge, so it says which button it is before anybody points
-    // at it.
+    // Not on a text button, which is a word and nothing else.
     border-width: !enabled || kind == ButtonKind.text ? 0px : 1px;
-    border-color: root.coloured ? root.hue : Theme.stroke;
+    border-color: Theme.stroke;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     row := HorizontalLayout {
@@ -168,7 +167,7 @@ export component IconButton inherits Rectangle {
     width: diameter;
     height: diameter;
     border-radius: diameter / 2;
-    background: ta.pressed ? Theme.selected : ta.has-hover ? Theme.hover : transparent;
+    background: ta.pressed ? Theme.pressed : ta.has-hover ? Theme.hover : transparent;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 
     Icon {

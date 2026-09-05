@@ -253,7 +253,7 @@ export component TableRow inherits Rectangle {
         }
         Rectangle {
             border-radius: 7px;
-            background: run.pressed ? Theme.selected
+            background: run.pressed ? Theme.pressed
                 : run.has-hover ? Theme.surface-hi
                 : transparent;
             animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
@@ -290,7 +290,7 @@ export component TableRow inherits Rectangle {
             // times — to stay legible over whatever the last column shows —
             // and the result was a column of grey squares down the window,
             // louder than the button it was protecting.
-            background: del.pressed ? Theme.selected
+            background: del.pressed ? Theme.pressed
                 : del.has-hover ? Theme.surface-hi
                 : transparent;
             animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
