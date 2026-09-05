@@ -56,6 +56,8 @@ pub enum Command {
     /// What qBittorrent calls Force recheck: for a torrent that has gone wrong,
     /// or whose files were deleted or replaced behind the app's back.
     Recheck(TorrentId),
+    /// Where `.torrent` files are picked up from, or `None` to stop looking.
+    SetWatchDir(Option<String>),
     SetAddPaused(bool),
     /// Where a torrent goes once it has finished, or `None` to leave it where
     /// it downloaded. Off by default: moving somebody's files is not something

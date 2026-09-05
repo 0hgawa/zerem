@@ -165,6 +165,26 @@ export component Preferences inherits Modal {
                         }
                         Divider { }
                         SettingsRow {
+                            title: @tr("Watch this folder");
+                            subtitle: Prefs.watch-dir == ""
+                                ? @tr("A .torrent file dropped in a watched folder is added on its own.")
+                                : Prefs.watch-dir;
+                            HorizontalLayout {
+                                spacing: 6px;
+                                if Prefs.watch-dir != "": Button {
+                                    label: @tr("Off");
+                                    kind: ButtonKind.text;
+                                    clicked => { Prefs.clear-watch-dir(); }
+                                }
+                                Button {
+                                    label: @tr("Change");
+                                    glyph: Lucide.folder-open;
+                                    clicked => { Prefs.pick-watch-dir(); }
+                                }
+                            }
+                        }
+                        Divider { }
+                        SettingsRow {
                             title: @tr("Add torrents stopped");
                             Toggle {
                                 on: Prefs.add-paused;

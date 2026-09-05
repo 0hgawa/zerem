@@ -82,6 +82,10 @@ pub struct Settings {
     /// because an update shipped.
     #[serde(default)]
     pub keep_dir: String,
+    /// A folder `.torrent` files are picked up from. Empty is off, which is
+    /// the default: a folder nobody named is a folder nobody wants watched.
+    #[serde(default)]
+    pub watch_dir: String,
     /// Which language the interface is in, as a folder name under `lang/`.
     ///
     /// Empty means "whatever the machine is set to", and is stored as empty
@@ -121,6 +125,7 @@ impl Default for Settings {
             max_active: 0,
             add_paused: false,
             keep_dir: String::new(),
+            watch_dir: String::new(),
             language: zerem_core::language::SYSTEM.to_owned(),
             drawer_width: crate::state::DEFAULT_DRAWER_W,
         }
@@ -178,6 +183,7 @@ impl Settings {
             max_active: self.max_active,
             add_paused: self.add_paused,
             keep_dir: (!self.keep_dir.is_empty()).then(|| PathBuf::from(&self.keep_dir)),
+            watch_dir: (!self.watch_dir.is_empty()).then(|| PathBuf::from(&self.watch_dir)),
             port: self.port,
             utp: self.utp,
             upnp: self.upnp,

@@ -27,6 +27,7 @@ mod relocate;
 pub mod sort;
 pub mod text;
 pub mod torrent;
+mod watch;
 
 pub use category::Shelves;
 pub use choice::{flags, is_narrowed, ticked, to_fetch};
@@ -48,3 +49,4 @@ pub use relocate::{landing as move_landing, plan as move_plan, Step};
 pub use sort::Sort;
 pub use text::tr;
 pub use torrent::{SessionStats, Stall, State, TorrentId, TorrentRow};
+pub use watch::{parked, waiting, Outcome as Watched};

@@ -87,6 +87,7 @@ pub fn show(ui: &MainWindow, settings: &Settings) {
     push!(prefs, get_utp, set_utp, settings.utp);
     push!(prefs, get_upnp, set_upnp, settings.upnp);
     push!(prefs, get_keep_dir, set_keep_dir, settings.keep_dir.as_str().into());
+    push!(prefs, get_watch_dir, set_watch_dir, settings.watch_dir.as_str().into());
     apply_language(&settings.language);
     offer_languages(&prefs, &settings.language);
 
@@ -221,6 +222,41 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
 ///
 /// Its own function because it is its own thing: a thread, a native dialog and
 /// a re-entry, where everything above is a field being written down.
+/// The native folder dialog, off the UI thread, coming back through a callback.
+///
+/// Every folder setting needs the same handoff and none of them can do it
+/// inline: a native dialog blocks the thread it runs on, and `Rc<Store>` cannot
+/// leave the UI one. So the thread carries only a path and a `Weak`, both
+/// `Send`, and re-enters through a callback with the UI's own context intact.
+///
+/// `deliver` is a plain function pointer rather than a closure, which is what
+/// makes it `Send` without anything having to be moved into it.
+fn ask_folder(
+    ui: &slint::Weak<MainWindow>,
+    title: &'static str,
+    start: std::path::PathBuf,
+    deliver: fn(&Prefs, slint::SharedString),
+) {
+    let ui = ui.clone();
+    std::thread::spawn(move || {
+        let Some(dir) = rfd::FileDialog::new().set_title(title).set_directory(&start).pick_folder() else {
+            return;
+        };
+        let chosen = dir.to_string_lossy().into_owned();
+        let _ = ui.upgrade_in_event_loop(move |ui| deliver(&ui.global::<Prefs>(), chosen.into()));
+    });
+}
+
+/// Where a folder picker should open, which is where it already points or the
+/// download folder for one that points nowhere.
+fn starting_at(current: &str, fallback: std::path::PathBuf) -> std::path::PathBuf {
+    if current.is_empty() {
+        fallback
+    } else {
+        std::path::PathBuf::from(current)
+    }
+}
+
 fn wire_download_dir(
     ui: &MainWindow,
     state: &Rc<crate::state::UiState>,
@@ -232,26 +268,14 @@ fn wire_download_dir(
     prefs.on_pick_download_dir({
         let (store, ui) = (store.clone(), ui.as_weak());
         move || {
-            // Off the UI thread, as every native dialog must be. Unlike the
-            // "add file" picker this has to come back here, because the choice
-            // is written to the settings — and `Rc<Store>` cannot cross a
-            // thread. So the thread carries only the path and a `Weak`, both
-            // `Send`, and re-enters through the callback below.
-            let start = store.get().download_dir;
-            let ui = ui.clone();
-            std::thread::spawn(move || {
-                let Some(dir) = rfd::FileDialog::new()
-                    .set_title("Where should new torrents be saved?")
-                    .set_directory(&start)
-                    .pick_folder()
-                else {
-                    return;
-                };
-                let chosen = dir.to_string_lossy().into_owned();
-                let _ = ui.upgrade_in_event_loop(move |ui| {
-                    ui.global::<Prefs>().invoke_download_dir_picked(chosen.into());
-                });
-            });
+            ask_folder(
+                &ui,
+                "Where should new torrents be saved?",
+                store.get().download_dir,
+                |prefs, chosen| {
+                    prefs.invoke_download_dir_picked(chosen);
+                },
+            );
         }
     });
 
@@ -274,28 +298,10 @@ fn wire_download_dir(
     prefs.on_pick_keep_dir({
         let (store, ui) = (store.clone(), ui.as_weak());
         move || {
-            // The same handoff the download folder uses, for the same reason:
-            // a native dialog cannot run on the UI thread and `Rc<Store>`
-            // cannot leave it.
             let settings = store.get();
-            let start = if settings.keep_dir.is_empty() {
-                settings.download_dir
-            } else {
-                std::path::PathBuf::from(&settings.keep_dir)
-            };
-            let ui = ui.clone();
-            std::thread::spawn(move || {
-                let Some(dir) = rfd::FileDialog::new()
-                    .set_title("Where should finished torrents be moved to?")
-                    .set_directory(&start)
-                    .pick_folder()
-                else {
-                    return;
-                };
-                let chosen = dir.to_string_lossy().into_owned();
-                let _ = ui.upgrade_in_event_loop(move |ui| {
-                    ui.global::<Prefs>().invoke_keep_dir_picked(chosen.into());
-                });
+            let start = starting_at(&settings.keep_dir, settings.download_dir);
+            ask_folder(&ui, "Where should finished torrents be moved to?", start, |prefs, chosen| {
+                prefs.invoke_keep_dir_picked(chosen);
             });
         }
     });
@@ -307,6 +313,40 @@ fn wire_download_dir(
             let dir = chosen.to_string();
             if store.update(|s| s.keep_dir.clone_from(&dir)) {
                 state.engine.send(Command::SetKeepDir(Some(dir)));
+                show(&ui, &store.get());
+            }
+        }
+    });
+
+    prefs.on_pick_watch_dir({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move || {
+            let settings = store.get();
+            let start = starting_at(&settings.watch_dir, settings.download_dir);
+            ask_folder(&ui, "Which folder should be watched for .torrent files?", start, |prefs, chosen| {
+                prefs.invoke_watch_dir_picked(chosen);
+            });
+        }
+    });
+
+    prefs.on_watch_dir_picked({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move |chosen| {
+            let Some(ui) = ui.upgrade() else { return };
+            let dir = chosen.to_string();
+            if store.update(|s| s.watch_dir.clone_from(&dir)) {
+                state.engine.send(Command::SetWatchDir(Some(dir)));
+                show(&ui, &store.get());
+            }
+        }
+    });
+
+    prefs.on_clear_watch_dir({
+        let (store, state, ui) = (store.clone(), state.clone(), ui.as_weak());
+        move || {
+            let Some(ui) = ui.upgrade() else { return };
+            if store.update(|s| s.watch_dir.clear()) {
+                state.engine.send(Command::SetWatchDir(None));
                 show(&ui, &store.get());
             }
         }

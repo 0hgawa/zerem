@@ -194,6 +194,10 @@ pub struct TorrentSession {
     /// The one move in flight, if any. One at a time: two large copies at
     /// once turn a sequential read into a seeking one.
     pub moving: Option<crate::arrival::Move>,
+    /// The folder torrents are picked up from, or `None` for none.
+    pub(crate) watch_dir: Option<PathBuf>,
+    /// Ticks since the last sweep of it.
+    pub(crate) since_sweep: u8,
     /// The loopback server a media player is pointed at, once it has a port.
     ///
     /// `None` on a machine that would not give one, where the app runs and the
@@ -250,6 +254,8 @@ impl TorrentSession {
         );
 
         let mut this = Self {
+            watch_dir: config.watch_dir.clone(),
+            since_sweep: 0,
             keep_dir: config.keep_dir.clone(),
             arrived: Vec::new(),
             moving: None,
@@ -310,6 +316,11 @@ impl TorrentSession {
     /// reads at the call site: this one is always about something going wrong.
     pub(crate) fn report(&mut self, text: &str) {
         self.notify(text);
+    }
+
+    /// Where torrents are picked up from now on. `None` switches it off.
+    pub fn set_watch_dir(&mut self, folder: Option<PathBuf>) {
+        self.watch_dir = folder;
     }
 
     /// Where finished torrents go from now on. `None` switches it off.

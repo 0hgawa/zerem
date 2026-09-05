@@ -18,6 +18,7 @@ mod relocate;
 mod session;
 mod snapshot;
 mod stream;
+mod watch;
 
 pub use command::Command;
 pub use config::{EngineConfig, DEFAULT_PORT};
@@ -156,6 +157,9 @@ async fn run(
         // downloads are kept, if anywhere is. Free when nothing finished, which
         // is almost every tick.
         session.relocate_arrived().await;
+        // And picks up whatever was dropped in the watched folder. Free when
+        // none is set, and one directory listing every four ticks when one is.
+        session.sweep_watch().await;
 
         // A command still publishes while the view is paused: a tray action has
         // to show its result the moment the window comes back.
@@ -209,6 +213,10 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             Ok(())
         }
         Command::Recheck(id) => session.recheck(id).await,
+        Command::SetWatchDir(ref folder) => {
+            session.set_watch_dir(folder.as_deref().and_then(watch::folder_of));
+            Ok(())
+        }
         Command::SetKeepDir(ref folder) => {
             session.set_keep_dir(folder.as_deref().map(std::path::PathBuf::from));
             Ok(())
@@ -261,6 +269,7 @@ mod tests {
             // Off, like the default: a test that moved files would move them
             // somewhere on the machine running it.
             keep_dir: None,
+            watch_dir: None,
             add_paused: false,
             utp: false,
             upnp: false,

@@ -39,6 +39,8 @@ pub struct EngineConfig {
     /// Where a torrent goes once it has finished, or `None` to leave it where
     /// it downloaded.
     pub keep_dir: Option<PathBuf>,
+    /// A folder `.torrent` files are picked up from, or `None` for none.
+    pub watch_dir: Option<PathBuf>,
 }
 
 impl Default for EngineConfig {
@@ -54,6 +56,7 @@ impl Default for EngineConfig {
             utp: true,
             upnp: true,
             keep_dir: None,
+            watch_dir: None,
         }
     }
 }

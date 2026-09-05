@@ -342,3 +342,10 @@ msgstr "Forçar reverificação"
 # Reproduzir enquanto baixa.
 msgid "Play now"
 msgstr "Reproduzir agora"
+
+# Pasta vigiada.
+msgid "Watch this folder"
+msgstr "Vigiar esta pasta"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "Um arquivo .torrent solto numa pasta vigiada é adicionado sozinho."

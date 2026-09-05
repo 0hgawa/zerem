@@ -304,6 +304,8 @@ export global Prefs {
     in-out property <bool> add-paused;
     /// Where a finished torrent is moved to. Empty means it stays put.
     in-out property <string> keep-dir;
+    /// Where `.torrent` files are picked up from. Empty means nowhere.
+    in-out property <string> watch-dir;
     in-out property <bool> utp;
     in-out property <bool> upnp;
     /// Every language on offer: "System" first, then each one named in itself.
@@ -321,6 +323,9 @@ export global Prefs {
     callback keep-dir-picked(string);
     /// Stop moving finished torrents anywhere.
     callback clear-keep-dir();
+    callback pick-watch-dir();
+    callback watch-dir-picked(string);
+    callback clear-watch-dir();
     /// Raised by the picker thread once the user has chosen, not by anything in
     /// the UI. It is how that thread gets back onto this one carrying a value:
     /// invoking a callback is the only handoff Slint offers that arrives with

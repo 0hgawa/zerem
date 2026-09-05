@@ -139,6 +139,18 @@ pub fn shortfall(short: &str) -> String {
     }
 }
 
+/// A file in the watched folder that could not be added, and which one.
+///
+/// Named rather than counted: a folder somebody drops torrents into can hold
+/// several, and "one of them failed" is not something anybody can act on.
+#[must_use]
+pub fn watch_failed(name: &str) -> String {
+    match current() {
+        Lang::En => format!("Could not add {name} from the watched folder"),
+        Lang::PtBr => format!("Não foi possível adicionar {name} da pasta vigiada"),
+    }
+}
+
 /// The clipboard would not answer, and what it said about it.
 ///
 /// A format function rather than a table row because the reason comes from the
