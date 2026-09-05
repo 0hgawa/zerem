@@ -5,7 +5,7 @@
 // shadowing either is a compile error.
 
 import { Theme } from "../theme.slint";
-import { Row, TorrentList } from "../state.slint";
+import { DetailState, Row, TorrentList } from "../state.slint";
 import { Icon, Lucide } from "icons.slint";
 
 export component Cell inherits Rectangle {
@@ -231,6 +231,7 @@ export component TableRow inherits Rectangle {
     // selecting first, and no chance of hitting a torrent the cursor is not on.
     // Declared after `ta` so they take their own clicks.
     run := TouchArea {
+        visible: !DetailState.open;
         x: 6px;
         y: (parent.height - self.height) / 2;
         width: 22px;
@@ -264,7 +265,15 @@ export component TableRow inherits Rectangle {
         }
     }
 
+    // Both go away while the panel is open. It carries the same three verbs for
+    // the torrent it is showing, the table is narrower with it out, and two
+    // sets of buttons for one job is one set too many.
+    //
+    // What is lost is acting on a row *other* than the one in the panel without
+    // selecting it first. The right-click menu and the keyboard both still do
+    // that, so it is a shortcut that goes, not a capability.
     del := TouchArea {
+        visible: !DetailState.open;
         x: parent.width - self.width - 6px;
         y: (parent.height - self.height) / 2;
         width: 22px;
@@ -278,12 +287,14 @@ export component TableRow inherits Rectangle {
         }
         Rectangle {
             border-radius: 7px;
-            // A surface of its own, because it floats over whatever the last
-            // column is showing rather than sitting in a gutter of its own.
+            // Nothing until it is pointed at, which is what the play button
+            // beside it does. It used to carry a grey chip on every row at all
+            // times — to stay legible over whatever the last column shows —
+            // and the result was a column of grey squares down the window,
+            // louder than the button it was protecting.
             background: del.pressed ? Theme.selected
-                : del.has-hover ? Theme.hover
-                : root.hovered ? Theme.surface-hi
-                : Theme.surface;
+                : del.has-hover ? Theme.surface-hi
+                : transparent;
             animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
             Icon {
                 // Red only under the cursor. A permanently red icon on every

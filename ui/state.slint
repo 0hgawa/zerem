@@ -237,6 +237,26 @@ export global DetailState {
 // Joins now because there is finally something to hold. Speeds arrive already
 // formatted — "Unlimited", "500 kB/s" — because the alternative is the `.slint`
 // deciding how a number reads, which is Rust's job everywhere else.
+/// The window itself, now that the window draws its own frame.
+///
+/// Every one of these ends in a call the operating system used to make on the
+/// application's behalf, and each is here because removing the title bar
+/// removed the thing that made it.
+export global Shell {
+    /// Whether it is filling the screen. Read by the maximise button to know
+    /// which glyph it is, and by the drag band to know it should not move.
+    in-out property <bool> maximized;
+    callback minimize();
+    callback toggle-maximize();
+    callback close();
+    /// Move the window by this much, from a drag on the header.
+    callback move-by(length, length);
+    /// Resize by this much, from a drag on an edge. The first argument is a
+    /// bitmask of which edges are being pulled: 1 left, 2 right, 4 top,
+    /// 8 bottom — so a corner is two of them.
+    callback resize-by(int, length, length);
+}
+
 /// The app's own mark, for the window to wear.
 ///
 /// The same drawing as the taskbar icon and the `.ico`, from the same function

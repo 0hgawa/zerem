@@ -19,6 +19,7 @@ pub mod add;
 pub mod detail;
 pub mod menu;
 pub mod prefs;
+mod shell;
 pub mod torrents;
 
 /// The models the UI owns, in one place.
@@ -41,6 +42,7 @@ impl Views {
 /// Register every domain's callbacks.
 pub fn wire(ui: &MainWindow, state: &Rc<UiState>, store: &Rc<crate::settings::Store>, views: &Rc<Views>) {
     show_mark(ui);
+    shell::wire(ui);
     torrents::wire(ui, state, store, views);
     prefs::wire(ui, state, store, views);
     detail::wire(ui, state, store, views);
@@ -120,6 +122,10 @@ pub fn refresh(ui: &MainWindow, state: &UiState, snapshot: &Snapshot, views: &Vi
     push!(list, get_sort_col, set_sort_col, state.sort().col as i32);
     push!(list, get_shown, set_shown, state.shown().index());
     shelves(ui, state, snapshot);
+    // The window can be maximised by something other than our own button — a
+    // keyboard snap, the taskbar menu — and a button showing "maximise" on a
+    // maximised window is a button that lies.
+    shell::refresh(ui);
     push!(list, get_sort_desc, set_sort_desc, state.sort().desc);
     // Looked up fresh every refresh: a re-sort or a removal moves the row, and
     // the arrows have to stay on the torrent rather than on the position.

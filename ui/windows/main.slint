@@ -3,7 +3,9 @@
 
 import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
-import { AddState, Brand, DetailState, Hint, Prefs, Row, SessionState, TorrentList } from "../state.slint";
+import {
+    AddState, Brand, DetailState, Hint, Prefs, Row, SessionState, Shell, TorrentList
+} from "../state.slint";
 import { TableHeader, TableRow } from "../components/table.slint";
 import { DetailDrawer } from "../components/detail.slint";
 import { ColumnsMenu, ContextMenu, FileMenu } from "../components/menu.slint";
@@ -12,6 +14,7 @@ import { Lucide } from "../components/icons.slint";
 import { Button, ButtonKind, IconButton } from "../components/button.slint";
 import { EmptyState, RailItem, SearchField, Sparkline, Stat, Tooltip } from "../components/common.slint";
 import { ConfirmRemove, Preferences } from "dialogs.slint";
+import { DragBand, Grip, WindowControls } from "../components/chrome.slint";
 
 component Toolbar inherits Rectangle {
     /// Ctrl+F lands here. The field is nested two layouts deep, so the window
@@ -23,6 +26,10 @@ component Toolbar inherits Rectangle {
     height: 48px;
     background: Theme.surface;
     border-radius: Theme.radius-float;
+
+    // Behind everything else in the bar, so the gaps move the window and every
+    // button drawn over it keeps its own clicks.
+    DragBand { }
 
     HorizontalLayout {
         padding-left: 10px;
@@ -139,6 +146,11 @@ component Toolbar inherits Rectangle {
                 clicked => { Prefs.open = true; }
             }
         }
+
+        // The three, hard against the right edge and the full height of the
+        // bar, which is where every window on this desktop keeps them.
+        Rectangle { width: 4px; }
+        WindowControls { }
     }
 
 }
@@ -224,6 +236,12 @@ component StatusBar inherits Rectangle {
 
 export component MainWindow inherits Window {
     title: "Zerem";
+    // The frame is the application's now. Windows gave a title bar with a name
+    // it already knows, an icon it already shows in the taskbar, and thirty
+    // pixels of grey above everything this app actually is — see
+    // `components/chrome.slint` for what had to be drawn back, and what it
+    // costs.
+    no-frame: true;
     background: Theme.ground;
     default-font-family: Theme.font;
     preferred-width: 1180px;
@@ -593,6 +611,48 @@ export component MainWindow inherits Window {
             }
 
             StatusBar { }
+        }
+
+        // The resize borders the frame took with it, drawn back.
+        //
+        // Six pixels, which is what Windows gives an invisible resize border:
+        // wider is easier to hit and starts taking clicks from the content at
+        // the edge. Above the cards and below anything floating, so a menu or a
+        // dialog covers them rather than being resized through.
+        //
+        // Off while maximised, where there is no edge to pull.
+        if !Shell.maximized: Rectangle {
+            background: transparent;
+            Grip { x: 0; y: 6px; width: 6px; height: parent.height - 12px; edges: 1; cursor: ew-resize; }
+            Grip {
+                x: parent.width - 6px;
+                y: 6px;
+                width: 6px;
+                height: parent.height - 12px;
+                edges: 2;
+                cursor: ew-resize;
+            }
+            Grip { x: 6px; y: 0; width: parent.width - 12px; height: 6px; edges: 4; cursor: ns-resize; }
+            Grip {
+                x: 6px;
+                y: parent.height - 6px;
+                width: parent.width - 12px;
+                height: 6px;
+                edges: 8;
+                cursor: ns-resize;
+            }
+            // The corners, each pulling two edges at once.
+            Grip { x: 0; y: 0; width: 6px; height: 6px; edges: 5; cursor: nwse-resize; }
+            Grip { x: parent.width - 6px; y: 0; width: 6px; height: 6px; edges: 6; cursor: nesw-resize; }
+            Grip { x: 0; y: parent.height - 6px; width: 6px; height: 6px; edges: 9; cursor: nesw-resize; }
+            Grip {
+                x: parent.width - 6px;
+                y: parent.height - 6px;
+                width: 6px;
+                height: 6px;
+                edges: 10;
+                cursor: nwse-resize;
+            }
         }
 
         // Declared last so they draw over everything, innermost question last:

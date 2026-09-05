@@ -53,15 +53,15 @@ export component Tick inherits Rectangle {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    // The mark, and not a filled square carrying one.
+    // One square, always the same. Only the mark comes and goes.
     //
-    // Ticked is the *quiet* state here, which is the opposite of how a
-    // checkbox usually works and right for this list: nearly every file in a
-    // torrent is wanted, so a filled box on every row was a column of solid
-    // blocks saying "normal". The square is what says "not this one", and the
-    // mark alone is what says yes.
-    background: on ? transparent : Theme.surface-hi;
-    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+    // It was transparent when ticked, which meant the row showed through and
+    // the box read as *white* — so ticking a file changed the colour of its
+    // square rather than putting a mark in it, and a column of them alternated
+    // grey and white for no reason anybody could name.
+    //
+    // The soft square is the seat; the mark is the answer.
+    background: Theme.surface-hi;
     if on: Icon {
         glyph: Lucide.check;
         // Ink: near-black on a light theme, near-white on a dark one, so it

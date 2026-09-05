@@ -1,0 +1,120 @@
+// The window's own frame, drawn by the window.
+//
+// Windows gives an application a title bar with a name it already knows, an
+// icon it already shows in the taskbar, and thirty pixels of grey above
+// everything the application actually is. VS Code, Edge, Explorer and the
+// Store all stopped accepting it years ago, and this is the last thing in
+// Zerem that still looked like it came from somewhere else.
+//
+// What it costs is written where the cost is paid — see `Grip` below, and the
+// note on drag-to-edge in `DragBand`. Nothing here is free; all of it is worth
+// it for a window that is entirely the application's.
+
+import { Theme } from "../theme.slint";
+import { Icon } from "icons.slint";
+import { Shell } from "../state.slint";
+
+/// The strip of a header that moves the window.
+///
+/// Placed *behind* a header's content so the buttons drawn over it keep their
+/// own clicks, and the gaps between them move the window. Moving by
+/// `mouse - pressed` keeps the grab point under the cursor: following the
+/// mouse's absolute position instead makes the window jump to centre itself on
+/// the pointer at the first pixel of movement.
+///
+/// What this cannot do is Windows' drag-to-an-edge snap. That is the OS
+/// watching a *title bar* drag it is running itself, and a window that moves
+/// itself is not one. `Win`+arrow still snaps, because that is the OS acting on
+/// a window rather than watching one.
+export component DragBand inherits TouchArea {
+    width: 100%;
+    height: 100%;
+    moved => {
+        // Maximised means pinned. Dragging one should restore it and continue,
+        // which needs the pointer position in screen space — not something a
+        // TouchArea can give — so it does the honest half: nothing.
+        if (!Shell.maximized) {
+            Shell.move-by(self.mouse-x - self.pressed-x, self.mouse-y - self.pressed-y);
+        }
+    }
+    double-clicked => { Shell.toggle-maximize(); }
+}
+
+/// One of the three, at the proportions Windows itself uses.
+///
+/// 46 by 32 is not a guess: it is the size of the buttons in every Windows 11
+/// title bar, and a window whose controls are a different size from every other
+/// window's is one somebody has to aim at.
+component Control inherits Rectangle {
+    in property <string> glyph;
+    in property <string> label;
+    in property <bool> danger;
+    callback chosen;
+
+    width: 46px;
+    height: 32px;
+    background: ta.pressed ? (root.danger ? #c42b1c : Theme.surface-hi)
+        : ta.has-hover ? (root.danger ? #e81123 : Theme.hover)
+        : transparent;
+    animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
+
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.chosen(); }
+
+    Icon {
+        glyph: root.glyph;
+        // White on the red, because the red is Windows' own close colour and
+        // nothing else reads on it.
+        tint: root.danger && ta.has-hover ? #ffffff : Theme.text;
+        size: 10px;
+        weight: 1.0 / 10.0;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+
+    ta := TouchArea { clicked => { root.chosen(); } }
+}
+
+/// Minimise, maximise or restore, and close — in that order, at the right.
+export component WindowControls inherits HorizontalLayout {
+    spacing: 0px;
+
+    Control {
+        glyph: "M4 12h16";
+        label: @tr("Minimize");
+        chosen => { Shell.minimize(); }
+    }
+    Control {
+        // A square, or two offset squares once it is already maximised.
+        glyph: Shell.maximized
+            ? "M7 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z M9 6h9a2 2 0 0 1 2 2v9"
+            : "M6 5h13a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z";
+        label: Shell.maximized ? @tr("Restore") : @tr("Maximize");
+        chosen => { Shell.toggle-maximize(); }
+    }
+    Control {
+        glyph: "M18 6 6 18 M6 6l12 12";
+        label: @tr("Close");
+        danger: true;
+        chosen => { Shell.close(); }
+    }
+}
+
+/// One edge or corner that resizes the window.
+///
+/// The frame that was removed took the resize borders with it, so they are
+/// drawn back. Each grip reports which edges it owns and by how much the
+/// pointer moved; the window is resized and, for a top or left grip, moved by
+/// the same amount — that is what makes an edge stay under the cursor instead
+/// of the opposite one running away from it.
+///
+/// Six pixels, which is what Windows gives an invisible resize border. Wider is
+/// easier to hit and starts stealing clicks from whatever is at the edge of the
+/// content.
+export component Grip inherits TouchArea {
+    in property <int> edges;
+    in property <MouseCursor> cursor: default;
+    mouse-cursor: root.cursor;
+    moved => { Shell.resize-by(root.edges, self.mouse-x - self.pressed-x, self.mouse-y - self.pressed-y); }
+}
