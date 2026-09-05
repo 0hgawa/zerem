@@ -94,6 +94,12 @@ impl Streamer {
 /// question and its answer.
 pub type Lookup = Arc<dyn Fn(TorrentId) -> Option<Arc<ManagedTorrent>> + Send + Sync>;
 
+// The stream is held to the end of the function on purpose, which is what the
+// lint objects to. Its `Drop` is the point: while it is alive it is registered
+// with the torrent, and that registration is what tells the piece picker to
+// fetch what this reader is about to want. Letting it go earlier would end the
+// prioritisation halfway through the film being watched.
+#[allow(clippy::significant_drop_tightening, reason = "the stream's lifetime is the prioritisation")]
 async fn serve(socket: TcpStream, lookup: &Lookup) -> anyhow::Result<()> {
     let (read, mut write) = socket.into_split();
     let mut reader = BufReader::new(read);
