@@ -33,7 +33,12 @@ component Toolbar inherits Rectangle {
     HorizontalLayout {
         padding-left: 10px;
         spacing: 6px;
-        alignment: start;
+        // No alignment, which is the whole of the fix and not an omission.
+        // `alignment: start` packs every child at its preferred width and
+        // ignores `horizontal-stretch` entirely — so the spacer below stopped
+        // spacing and the window controls came to rest wherever the left-hand
+        // group happened to end, halfway across the bar. The default hands the
+        // leftover width to whatever asks for it, which is what the spacer is.
 
         // The app's mark, and the first thing in the window. It exists — it is
         // in the taskbar and the `.ico` — and the window never wore it, which

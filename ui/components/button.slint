@@ -86,7 +86,11 @@ export component Button inherits Rectangle {
 export component IconButton inherits Rectangle {
     in property <string> glyph;
     in property <brush> tint: Theme.text-dim;
-    in property <length> diameter: 26px;
+    // Google's proportions, which are the ones asked for: a round target of
+    // about forty pixels with a twenty-pixel glyph in it. It was 26 and 15 —
+    // near half — which is a size that reads as a decoration beside the text
+    // buttons next to it rather than as something to press.
+    in property <length> diameter: 36px;
     /// What it is, in words. An icon-only control has no text to fall back on,
     /// so this is the only thing a reader can announce — a button without one
     /// is announced as "button" and nothing else.
@@ -137,7 +141,7 @@ export component IconButton inherits Rectangle {
     Icon {
         glyph: root.glyph;
         tint: root.tint;
-        size: root.diameter * 0.58;
+        size: root.diameter * 0.56;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }

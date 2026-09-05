@@ -69,8 +69,12 @@ component Control inherits Rectangle {
         // White on the red, because the red is Windows' own close colour and
         // nothing else reads on it.
         tint: root.danger && ta.has-hover ? #ffffff : Theme.text;
-        size: 10px;
-        weight: 1.0 / 10.0;
+        // Ten was too small: these are drawn on a 24 grid and a minimise dash
+        // sixteen units wide came out under seven pixels, where Windows draws
+        // about ten. Fourteen with a fourteenth of stroke is a one-pixel line,
+        // which is what the title bar beside it uses.
+        size: 14px;
+        weight: 1.0 / 14.0;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }
