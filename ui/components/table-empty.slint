@@ -1,0 +1,79 @@
+// What the table says when it has nothing to show.
+//
+// Three sentences, because there are three different things that leave it empty
+// and only one of them is "you have not added anything". Offering to paste a
+// magnet link to somebody who narrowed to Paused and has nothing paused is the
+// app not knowing where it is.
+//
+// Its own file because the choice between the three is the whole of it and it
+// answers to nothing outside: every value it reads is a global. What is left in
+// the window is the geometry, which is the window's.
+
+import { Theme } from "../theme.slint";
+import { TorrentList } from "../state.slint";
+import { Lucide } from "icons.slint";
+import { Button, ButtonKind } from "button.slint";
+import { EmptyState } from "common.slint";
+
+export component TableEmpty {
+if TorrentList.rows.length == 0 && !TorrentList.narrowed: EmptyState {
+    glyph: Lucide.folder-open;
+    title: @tr("No torrents yet");
+    detail: @tr("Paste a magnet link with Ctrl+V, or add a .torrent file.");
+    HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Button {
+            label: @tr("Paste magnet");
+            glyph: Lucide.clipboard;
+            kind: ButtonKind.primary;
+            clicked => { TorrentList.add-magnet-from-clipboard(); }
+        }
+        Button {
+            label: @tr("Add .torrent file");
+            glyph: Lucide.plus;
+            clicked => { TorrentList.add-torrent-file(); }
+        }
+    }
+}
+
+// Typed words that match nothing. The most specific of
+// the three, so it is tested first, and its button
+// clears only the search — if the rail is narrowed too
+// the next sentence takes over and offers the rest.
+if TorrentList.rows.length == 0 && TorrentList.filter != "": EmptyState {
+    glyph: Lucide.search;
+    title: @tr("Nothing matches");
+    detail: @tr("No torrent's name contains every word you typed.");
+    HorizontalLayout {
+        alignment: center;
+        Button {
+            label: @tr("Clear filter");
+            glyph: Lucide.x;
+            kind: ButtonKind.primary;
+            clicked => {
+                TorrentList.filter = "";
+                TorrentList.filter-changed("");
+            }
+        }
+    }
+}
+
+// Narrowed by the rail or a category, with nothing in
+// it. There are torrents; none of them are here.
+if TorrentList.rows.length == 0 && TorrentList.narrowed
+    && TorrentList.filter == "": EmptyState {
+    glyph: Lucide.folder-open;
+    title: @tr("Nothing here");
+    detail: @tr("You have torrents, just none in this part of the list.");
+    HorizontalLayout {
+        alignment: center;
+        Button {
+            label: @tr("Show all");
+            glyph: Lucide.files;
+            kind: ButtonKind.primary;
+            clicked => { TorrentList.show-all(); }
+        }
+    }
+}
+}

@@ -1,0 +1,155 @@
+// The bar across the top: what the window is called, what can be added to it,
+// and what is being looked for.
+//
+// It also carries the window's own frame — the drag band behind everything and
+// the close, minimise and maximise at the right — because the frame Windows
+// would have drawn was given up. See `components/chrome.slint` for what that
+// cost.
+
+import { Theme } from "../theme.slint";
+import { Brand, Prefs, TorrentList } from "../state.slint";
+import { Lucide } from "icons.slint";
+import { Button, ButtonKind, IconButton } from "button.slint";
+import { SearchField } from "common.slint";
+import { DragBand, WindowControls } from "chrome.slint";
+
+export component Toolbar inherits Rectangle {
+    /// Ctrl+F lands here. The field is nested two layouts deep, so the window
+    /// reaches it through the toolbar rather than through a global — an element
+    /// reference is the one thing a global cannot hold.
+    public function focus-search() { search.take-focus(); }
+    /// Escape in the field. The window answers by taking the keyboard back.
+    callback dismissed;
+    height: 48px;
+    background: Theme.surface;
+    // Behind everything else in the bar, so the gaps move the window and every
+    // button drawn over it keeps its own clicks.
+    DragBand { }
+    HorizontalLayout {
+        padding-left: 10px;
+        // Two groups and a gap, stated rather than hoped for.
+        //
+        // Neither way of aligning one flat row does what a bar with a left and
+        // a right side needs. `alignment: start` packs everything left and
+        // ignores stretch, so the right-hand group rested in the middle;
+        // removing the alignment lets Slint hand spare width to every child
+        // that will take it, which spreads the whole bar out. So the two sides
+        // are groups that cannot grow, and one element between them whose only
+        // job is to be the leftover.
+        spacing: 0px;
+        // --- the app, and what is added to it ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 6px;
+        // The app's mark, and the first thing in the window. It exists — it is
+        // in the taskbar and the `.ico` — and the window never wore it, which
+        // is most of why the header could have belonged to anything.
+        //
+        // No wordmark beside it: the title bar directly above already says
+        // Zerem, and saying it twice in forty pixels is not identity.
+        VerticalLayout {
+            alignment: center;
+            Image {
+                source: Brand.mark;
+                width: 20px;
+                height: 20px;
+                image-fit: contain;
+                accessible-role: image;
+                accessible-label: "Zerem";
+            }
+        }
+        Rectangle { width: 4px; }
+        // Then the fold, hard against the left, because that is where the thing
+        // it opens is. It used to sit at the far right among the preferences
+        // and the theme switch, a control for the left of the window living on
+        // the right of the toolbar — every application on this desktop puts
+        // this button over the panel it reveals.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.panel-left;
+                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tip: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
+                clicked => { TorrentList.toggle-rail(); }
+            }
+        }
+        Rectangle { width: 4px; }
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: @tr("Paste magnet");
+                glyph: Lucide.clipboard;
+                clicked => { TorrentList.add-magnet-from-clipboard(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Button {
+                label: @tr("Add file");
+                glyph: Lucide.plus;
+                clicked => { TorrentList.add-torrent-file(); }
+            }
+        }
+        // Nothing here acts on the selection any more, and nothing here is ever
+        // disabled — which was the argument. Start/pause and Remove were both
+        // greyed out whenever nothing was selected, and nothing selected is what
+        // the window looks like most of the time.
+        //
+        // Every route to them survives: the play/pause that appears on the row
+        // under the cursor, the right-click menu, Space and Delete. And Remove
+        // is the one destructive thing the app does — parked permanently beside
+        // "Add file", it was a slip waiting to happen.
+        }
+        // The gap, and the only thing allowed to have it.
+        Rectangle { horizontal-stretch: 1; }
+        // --- looking, and the window itself ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 6px;
+        VerticalLayout {
+            alignment: center;
+            search := SearchField {
+                text <=> TorrentList.filter;
+                placeholder: @tr("Filter");
+                edited(text) => { TorrentList.filter-changed(text); }
+                dismissed => { root.dismissed(); }
+            }
+        }
+        Rectangle { width: 6px; }
+        // The slow-limits switch used to be here. It moved to the footer, beside
+        // the two speeds it changes — where qBittorrent, Transmission and
+        // Deluge all keep it, and where it stops needing to be explained: a
+        // turtle next to ↓ and ↑ is about those numbers, and a turtle among the
+        // theme switch and the preferences is about nothing in particular.
+        // Somebody asked what it was twice while it was up here.
+        // The details panel has no button here any more. It is not a view of
+        // the window, it is a view of one torrent: clicking a row opens it and
+        // its own × closes it. A global switch for something that is always
+        // *about* a selected row is a switch that does nothing half the time
+        // somebody presses it.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Theme.dark ? Lucide.sun : Lucide.moon;
+                label: Theme.dark ? @tr("Switch to the light theme") : @tr("Switch to the dark theme");
+                tip: Theme.dark ? @tr("Switch to the light theme") : @tr("Switch to the dark theme");
+                clicked => { TorrentList.toggle-theme(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.settings;
+                label: @tr("Preferences");
+                tip: @tr("Preferences");
+                clicked => { Prefs.open = true; }
+            }
+        }
+        // The three, hard against the right edge and the full height of the
+        // bar, which is where every window on this desktop keeps them. No gap
+        // before them and none after: the corner itself is the target.
+            WindowControls { }
+        }
+    }
+}

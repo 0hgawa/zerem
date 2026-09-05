@@ -1,0 +1,134 @@
+// The bar along the bottom: how fast, how many, and the two controls that
+// belong beside them.
+//
+// Two groups and a gap rather than one row spread out, which is the shape the
+// whole app uses for a bar: what is being reported on the left, what can be
+// pressed on the right.
+
+import { Theme } from "../theme.slint";
+import { Prefs, SessionState } from "../state.slint";
+import { Lucide } from "icons.slint";
+import { IconButton } from "button.slint";
+import { Sparkline, Stat } from "common.slint";
+
+export component StatusBar inherits Rectangle {
+    height: 34px;
+    background: Theme.surface;
+    border-radius: Theme.radius-float;
+
+    // Two groups and a gap, stated rather than hoped for.
+    //
+    // This was one flat row, and neither way of aligning a flat row does what a
+    // status bar needs. `alignment: start` packs everything left and ignores
+    // stretch entirely, so the right-hand group came to rest in the middle.
+    // Removing it lets Slint hand the spare width to *every* child that will
+    // take it, which spread the whole bar out with gaps between the numbers.
+    //
+    // So: a left group, a right group, and one element between them whose only
+    // job is to be the leftover. Nothing else can grow, so nothing else does.
+    HorizontalLayout {
+        padding-left: 12px;
+        // Small, because the last thing in the bar is a round button and the
+        // room around its circle is its own padding.
+        padding-right: 4px;
+        spacing: 0px;
+
+        // --- what the session is doing ---
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 14px;
+
+            Stat {
+                glyph: Lucide.arrow-down;
+                value: SessionState.down;
+                hint: @tr("Download speed");
+                tint: Theme.accent;
+            }
+            Stat {
+                glyph: Lucide.arrow-up;
+                value: SessionState.up;
+                hint: @tr("Upload speed");
+                tint: Theme.seeding;
+            }
+
+            // Beside the two figures it plots, not off in a corner: the line is
+            // what the numbers mean over time, and reading them together is the
+            // whole point of drawing it at all.
+            if SessionState.spark-down != "": VerticalLayout {
+                alignment: center;
+                Sparkline {
+                    down: SessionState.spark-down;
+                    up: SessionState.spark-up;
+                }
+            }
+
+            // The counts, with the speeds. Every one of these is a number to
+            // read, and the rule this bar keeps now is that the left side is
+            // read and the right side is pressed.
+            //
+            // The same three marks the list already uses for these states, so
+            // the bar is read with knowledge the table has taught.
+            Stat {
+                glyph: Lucide.play;
+                value: SessionState.active;
+                hint: @tr("Active");
+                tint: Theme.text-dim;
+            }
+            Stat {
+                glyph: Lucide.pause;
+                value: SessionState.paused;
+                hint: @tr("Paused");
+                tint: Theme.text-dim;
+            }
+            if SessionState.matched == "": Stat {
+                glyph: Lucide.files;
+                value: SessionState.total;
+                hint: @tr("Total");
+                tint: Theme.text-dim;
+            }
+            // Replaces the total rather than joining it, and takes the accent:
+            // what it says is "you are not looking at all of them".
+            if SessionState.matched != "": Stat {
+                glyph: Lucide.search;
+                value: SessionState.matched;
+                hint: @tr("Matching the filter");
+                tint: Theme.accent;
+            }
+        }
+
+        // Errors that belong to no row land here rather than in a popup: a
+        // failed paste should not interrupt anything. It is also the gap — the
+        // one thing in the bar allowed to take the width nothing else wants.
+        Text {
+            text: SessionState.notice;
+            color: Theme.danger;
+            font-size: Theme.fs-label;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            horizontal-alignment: center;
+        }
+
+        // --- and the one thing that can be pressed ---
+        //
+        // On its own, which is what makes it obvious. It had a hairline in
+        // front of it while it shared this side with the counts; with the
+        // counts gone to the readouts where they belong, the gap is the
+        // separator and a line as well would be saying it twice.
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            IconButton {
+                glyph: Lucide.gauge-low;
+                diameter: 26px;
+                label: Prefs.alt-speed ? @tr("Back to the full speed limits")
+                    : @tr("Switch to the slow limits");
+                tip: Prefs.alt-speed ? @tr("Back to the full speed limits")
+                    : @tr("Switch to the slow limits");
+                tint: Prefs.alt-speed ? Theme.warn : Theme.text-dim;
+                clicked => { Prefs.toggle-alt-speed(); }
+            }
+        }
+    }
+}

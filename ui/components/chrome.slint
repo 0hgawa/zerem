@@ -140,3 +140,47 @@ export component Grip inherits TouchArea {
     mouse-cursor: root.cursor;
     moved => { Shell.resize-by(root.edges, self.mouse-x - self.pressed-x, self.mouse-y - self.pressed-y); }
 }
+
+/// The resize borders the frame took with it, drawn back.
+///
+/// Eight of them, and they are all the same thing: an invisible strip that
+/// resizes. Six pixels wide, which is what Windows gives one -- wider is easier
+/// to hit and starts taking clicks from the content at the edge.
+///
+/// Grouped here rather than left in the window because they are the frame's,
+/// not the window's, and eight lines of geometry in the middle of a composition
+/// are eight lines nobody reads twice. The window still decides *when* they
+/// exist: there is no edge to pull on a maximised window.
+export component ResizeBorders inherits Rectangle {
+    background: transparent;
+Grip { x: 0; y: 6px; width: 6px; height: parent.height - 12px; edges: 1; cursor: ew-resize; }
+Grip {
+    x: parent.width - 6px;
+    y: 6px;
+    width: 6px;
+    height: parent.height - 12px;
+    edges: 2;
+    cursor: ew-resize;
+}
+Grip { x: 6px; y: 0; width: parent.width - 12px; height: 6px; edges: 4; cursor: ns-resize; }
+Grip {
+    x: 6px;
+    y: parent.height - 6px;
+    width: parent.width - 12px;
+    height: 6px;
+    edges: 8;
+    cursor: ns-resize;
+}
+// The corners, each pulling two edges at once.
+Grip { x: 0; y: 0; width: 6px; height: 6px; edges: 5; cursor: nwse-resize; }
+Grip { x: parent.width - 6px; y: 0; width: 6px; height: 6px; edges: 6; cursor: nesw-resize; }
+Grip { x: 0; y: parent.height - 6px; width: 6px; height: 6px; edges: 9; cursor: nesw-resize; }
+Grip {
+    x: parent.width - 6px;
+    y: parent.height - 6px;
+    width: 6px;
+    height: 6px;
+    edges: 10;
+    cursor: nwse-resize;
+}
+}
