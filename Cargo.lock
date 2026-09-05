@@ -9186,6 +9186,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zerem-mse"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "ring",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "zerem-shell"
 version = "0.1.0"
 dependencies = [
