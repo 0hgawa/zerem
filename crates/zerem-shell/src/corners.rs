@@ -20,15 +20,11 @@ pub fn round() {
 
 #[cfg(windows)]
 mod imp {
-    use windows::Win32::Foundation::{BOOL, HWND, LPARAM, TRUE};
     use windows::Win32::Graphics::Dwm::{
         DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
     };
-    use windows::Win32::System::Threading::GetCurrentProcessId;
-    use windows::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible};
-
     pub fn round() {
-        let Some(window) = window() else { return };
+        let Some(window) = crate::window::own() else { return };
         let preference = DWMWCP_ROUND;
         // Ignored on Windows 10, which does not know the attribute and does not
         // round anything either.
@@ -40,27 +36,6 @@ mod imp {
                 u32::try_from(size_of_val(&preference)).unwrap_or_default(),
             )
         };
-    }
-
-    /// This process's visible top-level window.
-    ///
-    /// The same search `attention` makes, and for the same reason: Slint will
-    /// not hand out a native handle without a feature this build does not
-    /// carry, so the window is found the way any process can find its own.
-    fn window() -> Option<HWND> {
-        let mut found = HWND::default();
-        let _ = unsafe { EnumWindows(Some(visit), LPARAM(&raw mut found as isize)) };
-        (!found.is_invalid()).then_some(found)
-    }
-
-    unsafe extern "system" fn visit(window: HWND, out: LPARAM) -> BOOL {
-        let mut owner = 0;
-        unsafe { GetWindowThreadProcessId(window, Some(&raw mut owner)) };
-        if owner != unsafe { GetCurrentProcessId() } || !unsafe { IsWindowVisible(window) }.as_bool() {
-            return TRUE;
-        }
-        unsafe { *(out.0 as *mut HWND) = window };
-        BOOL(0)
     }
 }
 

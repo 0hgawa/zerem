@@ -179,6 +179,13 @@ fn main() -> Result<(), slint::PlatformError> {
             // rounded, and this one has none. Asked back here, once the window
             // exists to be asked about.
             zerem_shell::round_corners();
+            // And the mark, from the same drawing the `.ico` and the tray use.
+            // The `.slint` cannot do this: its `icon` property is only applied
+            // when the image's cache key changes, and an image made at run time
+            // has no cache key at all -- so the property is set, nothing
+            // notices, and the taskbar falls back to the executable's icon,
+            // which Windows caches by path. See `zerem_shell::mark`.
+            zerem_shell::wear_mark(zerem_core::icon::rgba);
         }
     })
     .unwrap_or_else(|e| tracing::warn!("could not queue the window placement: {e}"));

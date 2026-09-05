@@ -296,10 +296,9 @@ component StatusBar inherits Rectangle {
 export component MainWindow inherits Window {
     title: "Zerem";
     // The frame is the application's now. Windows gave a title bar with a name
-    // it already knows, an icon it already shows in the taskbar, and thirty
-    // pixels of grey above everything this app actually is — see
-    // `components/chrome.slint` for what had to be drawn back, and what it
-    // costs.
+    // it already knows and thirty pixels of grey above everything this app
+    // actually is — see `components/chrome.slint` for what had to be drawn
+    // back, and what it costs.
     no-frame: true;
     background: Theme.ground;
     default-font-family: Theme.font;

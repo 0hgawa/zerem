@@ -19,21 +19,12 @@ pub fn ask() {
 
 #[cfg(windows)]
 mod imp {
-    use std::sync::atomic::{AtomicIsize, Ordering};
-
-    use windows::Win32::Foundation::{BOOL, HWND, LPARAM, TRUE};
-    use windows::Win32::System::Threading::GetCurrentProcessId;
     use windows::Win32::UI::WindowsAndMessaging::{
-        EnumWindows, FlashWindowEx, GetForegroundWindow, GetWindowThreadProcessId, IsWindowVisible,
-        FLASHWINFO, FLASHW_ALL, FLASHW_TIMERNOFG,
+        FlashWindowEx, GetForegroundWindow, FLASHWINFO, FLASHW_ALL, FLASHW_TIMERNOFG,
     };
 
-    /// Found once and kept. Enumerating every top-level window on the desktop
-    /// to answer "which one is mine?" is not something to do per download.
-    static WINDOW: AtomicIsize = AtomicIsize::new(0);
-
     pub fn ask() {
-        let Some(window) = window() else { return };
+        let Some(window) = crate::window::own() else { return };
         // Already looking at it. Flashing a window somebody is using is noise
         // with no message in it.
         if unsafe { GetForegroundWindow() } == window {
@@ -49,34 +40,6 @@ mod imp {
             dwTimeout: 0,
         };
         let _ = unsafe { FlashWindowEx(&raw const flash) };
-    }
-
-    fn window() -> Option<HWND> {
-        let cached = WINDOW.load(Ordering::Relaxed);
-        if cached != 0 {
-            return Some(HWND(cached as *mut _));
-        }
-        // Slint does not hand out a native handle without a feature this build
-        // does not carry, so the window is found the way any process can find
-        // its own: the visible top-level one that belongs to this process.
-        let mut found = HWND::default();
-        let _ = unsafe { EnumWindows(Some(visit), LPARAM(&raw mut found as isize)) };
-        if found.is_invalid() {
-            return None;
-        }
-        WINDOW.store(found.0 as isize, Ordering::Relaxed);
-        Some(found)
-    }
-
-    unsafe extern "system" fn visit(window: HWND, out: LPARAM) -> BOOL {
-        let mut owner = 0;
-        unsafe { GetWindowThreadProcessId(window, Some(&raw mut owner)) };
-        if owner != unsafe { GetCurrentProcessId() } || !unsafe { IsWindowVisible(window) }.as_bool() {
-            return TRUE;
-        }
-        unsafe { *(out.0 as *mut HWND) = window };
-        // Stop: the first visible one is the window.
-        BOOL(0)
     }
 }
 

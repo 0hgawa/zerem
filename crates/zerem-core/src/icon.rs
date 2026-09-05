@@ -24,7 +24,11 @@
 /// with anything — it sits in a taskbar beside other application icons, which
 /// fill their canvas — and a mark left fourteen units wide inside sixteen reads
 /// as a smaller app rather than a tidier one.
-const FIT: f32 = 1.07;
+///
+/// Fourteen units to sixteen is 1.143, and this stops a hair short of it: the
+/// edge is a curve, and a curve needs half a pixel either side of itself to be
+/// drawn as one rather than as a staircase.
+const FIT: f32 = 1.13;
 
 /// Where the artwork's own middle is.
 ///
@@ -65,6 +69,24 @@ const WASH: [f32; 3] = [221.0, 60.0, 226.0]; // #dd3ce2
 const WASH_STARTS_AT: f32 = 0.5;
 const WASH_STRENGTH: f32 = 0.5;
 
+/// The arrow, which is not the SVG's — a cloud on its own is what every storage
+/// service uses, and this is a torrent client. The arrow is what makes it say
+/// what the app does rather than where the file came from.
+///
+/// Where it goes is decided by the shape it sits on. Centred left to right, and
+/// low rather than middling: the cloud carries most of its weight along the
+/// body, and an arrow centred in the *canvas* would sit half in the head, where
+/// there is less to sit on. Top, then where the head widens out, then the point.
+const ARROW: [f32; 3] = [5.4, 8.5, 10.9];
+
+/// Half the stem, and half the head where it is widest.
+///
+/// The stem is what decides whether this reads at sixteen pixels: 0.85 either
+/// side is very close to two whole pixels there, and one pixel of white on blue
+/// is a scratch rather than a stroke.
+const STEM: f32 = 0.85;
+const BARB: f32 = 2.3;
+
 /// The two radial gradients, as the inverse of the transform that places each.
 ///
 /// A radial gradient here is drawn on the unit circle at the origin and then
@@ -94,6 +116,9 @@ pub fn rgba(size: u32) -> Vec<u8> {
                 continue;
             }
             let [r, g, b] = shade(ux, uy, per_unit);
+            // The arrow last and over everything, because it is the part that
+            // has to be legible at sixteen pixels and nothing may tint it.
+            let [r, g, b] = mix([r, g, b], [255.0; 3], coverage(arrow(ux, uy), per_unit));
             let i = ((y * size + x) * 4) as usize;
             out[i] = r as u8;
             out[i + 1] = g as u8;
@@ -127,6 +152,35 @@ fn body(x: f32, y: f32) -> f32 {
 fn head(x: f32, y: f32) -> f32 {
     let [cx, cy, radius] = HEAD;
     (x - cx).hypot(y - cy) - radius
+}
+
+/// How far outside the arrow a point is — negative inside.
+///
+/// A stem and a head, and whichever is nearer, the same way the cloud is put
+/// together. Both are given as distances rather than as a yes or no so the
+/// edges come out smooth: a white shape this small with hard edges is the one
+/// thing in the drawing that would look drawn by hand.
+fn arrow(x: f32, y: f32) -> f32 {
+    let [top, shoulder, tip] = ARROW;
+    stem(x, y, top, shoulder).min(head_of_arrow(x, y, shoulder, tip))
+}
+
+/// The upright, as a box.
+fn stem(x: f32, y: f32, top: f32, shoulder: f32) -> f32 {
+    let half = (shoulder - top) / 2.0;
+    let (dx, dy) = ((x - 8.0).abs() - STEM, (y - (top + half)).abs() - half);
+    dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0)
+}
+
+/// The point, as a triangle: three edges, and outside is whichever it is
+/// furthest past.
+fn head_of_arrow(x: f32, y: f32, shoulder: f32, tip: f32) -> f32 {
+    let (left, right, point) = ((8.0 - BARB, shoulder), (8.0 + BARB, shoulder), (8.0, tip));
+    let past = |a: (f32, f32), b: (f32, f32)| {
+        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+        -dy.mul_add(-(x - a.0), dx * (y - a.1)) / dx.hypot(dy)
+    };
+    past(left, right).max(past(right, point)).max(past(point, left))
 }
 
 /// A distance turned into how much of a pixel is covered.
@@ -262,7 +316,7 @@ fn dib(size: u32) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{cloud, ico, place, rgba, ART_MIDDLE_Y};
+    use super::{arrow, cloud, ico, place, rgba, ARROW, ART_MIDDLE_Y};
 
     /// One pixel of a `size`-square rendering, as RGBA.
     fn pixel(px: &[u8], size: u32, x: u32, y: u32) -> [u8; 4] {
@@ -311,6 +365,55 @@ mod tests {
         let bottom = (0..SIZE).rev().find(|&y| drawn(y)).expect("something is drawn");
         let below = SIZE - 1 - bottom;
         assert!(top.abs_diff(below) <= 2, "{top} above and {below} below");
+    }
+
+    #[test]
+    fn the_arrow_points_down() {
+        // Wide where the head is, a point at the end. That asymmetry is the
+        // whole of what makes it an arrow rather than a cross, and getting the
+        // taper backwards would draw one pointing up -- an upload client.
+        let [_, shoulder, tip] = ARROW;
+        let across = |y: f32| (0..320_u16).filter(|&n| arrow(f32::from(n) / 20.0, y) < 0.0).count();
+        let wide = across(shoulder + 0.1);
+        let narrow = across(tip - 0.3);
+        assert!(wide > narrow * 3, "{wide} across the head against {narrow} near the point");
+    }
+
+    #[test]
+    fn the_arrow_never_hangs_off_the_cloud() {
+        // It is drawn over the mark and takes the mark's own transparency, so
+        // any part of it outside the shape is simply not drawn -- an arrow that
+        // reached past the foot would come out cut off rather than wrong, which
+        // is the kind of thing that survives a glance and ships.
+        // A grid over the whole of where the arrow can be, with room to spare
+        // on every side of it.
+        let mut checked = 0;
+        for row in 0..120_u16 {
+            for col in 0..120_u16 {
+                let x = f32::from(col).mul_add(0.075, 4.0);
+                let y = f32::from(row).mul_add(0.06, 4.5);
+                if arrow(x, y) < 0.0 {
+                    assert!(cloud(x, y) < 0.0, "the arrow is outside the cloud at {x}, {y}");
+                    checked += 1;
+                }
+            }
+        }
+        // The grid has to have found the arrow at all, or this passes by
+        // testing nothing -- which is how it passed the first time I ran it.
+        assert!(checked > 2000, "only {checked} points of arrow were tested");
+    }
+
+    #[test]
+    fn the_arrow_is_centred() {
+        // On the mark's middle, which is also the canvas's. Off by even a
+        // little and it reads as a mistake at every size above the taskbar.
+        let [top, shoulder, tip] = ARROW;
+        for y in [top + 0.2, shoulder - 0.1, shoulder + 0.5, tip - 0.4] {
+            for dx in [0.3_f32, 0.9, 1.6] {
+                let (left, right) = (arrow(8.0 - dx, y), arrow(8.0 + dx, y));
+                assert!((left - right).abs() < 0.001, "at {y}, {dx} out: {left} against {right}");
+            }
+        }
     }
 
     #[test]
