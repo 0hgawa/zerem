@@ -556,10 +556,23 @@ export component DetailDrawer inherits Rectangle {
                 spacing: 8px;
                 alignment: start;
 
+                // Not the accent, and it used to be. Three things:
+                //
+                // The progress bar sixty pixels above it is accent-filled, and
+                // that blue means "this much has arrived". A second blue right
+                // under it meaning "press here" is one colour saying two
+                // things within one glance.
+                //
+                // The accent says *do this*, and a switch is not a
+                // recommendation — half the presses stop something. The label
+                // even inverts, so it would be a fixed blue for an action that
+                // is not fixed.
+                //
+                // And a primary exists to say "this is the one" where there is
+                // a decision. These are three peer actions; there is no one.
                 Button {
                     label: DetailState.running ? @tr("Pause") : @tr("Start");
                     glyph: DetailState.running ? Lucide.pause : Lucide.play;
-                    kind: ButtonKind.primary;
                     clicked => { DetailState.toggle-running(); }
                 }
                 Button {
