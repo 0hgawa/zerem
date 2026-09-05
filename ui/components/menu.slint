@@ -8,6 +8,7 @@
 import { Theme } from "../theme.slint";
 import { DetailState, FileEntry, TorrentList } from "../state.slint";
 import { Icon, Lucide } from "icons.slint";
+import { Flyout } from "common.slint";
 
 component Item inherits Rectangle {
     in property <string> label;
@@ -105,24 +106,17 @@ component MenuSurface inherits Rectangle {
         }
     }
 
-    Rectangle {
+    // The stroke and the shadow are `Flyout`s, shared with the list a dropdown
+    // opens. This used to carry its own copy and say, correctly, that Windows 11
+    // puts a stroke on every flyout for a reason a shadow cannot cover -- and
+    // then draw it at four per cent of black, which over a white card is not a
+    // stroke. The words were right and the number was not.
+    Flyout {
         width: root.card-width;
         height: body.preferred-height + 10px;
         // Clamped so a right-click near an edge does not open the menu off it.
         x: min(root.at-x, parent.width - self.width - 4px);
         y: min(root.at-y, parent.height - self.height - 4px);
-        // The layer a flyout floats on, which is not the layer the bars are.
-        background: Theme.card;
-        border-radius: Theme.radius-float;
-        // A hairline *and* a shadow, which is the one place this app draws a
-        // line and means it. Windows 11 puts a stroke on every flyout for a
-        // reason a shadow cannot cover: a light menu over light content has
-        // nothing else to say where it ends.
-        border-width: 1px;
-        border-color: Theme.border;
-        drop-shadow-blur: 20px;
-        drop-shadow-offset-y: 4px;
-        drop-shadow-color: #0000006b;
 
         body := VerticalLayout {
             padding-top: 5px;
@@ -219,16 +213,13 @@ export component FileMenu inherits MenuSurface {
         chosen => { DetailState.reveal-file(DetailState.file-menu-index); }
     }
     Separator { }
+    // One item that says what pressing it does, not two with one of them
+    // always greyed out. The row already carries a tick for the state; a menu
+    // repeating it as a pair of half-dead lines says the state twice and the
+    // action nowhere. The line below it has always worked this way.
     Item {
-        label: @tr("Do not download");
-        glyph: Lucide.x;
-        enabled: root.file.wanted;
-        chosen => { DetailState.toggle-file(DetailState.file-menu-index); }
-    }
-    Item {
-        label: @tr("Download");
-        glyph: Lucide.check;
-        enabled: !root.file.wanted;
+        label: root.file.wanted ? @tr("Do not download") : @tr("Download");
+        glyph: root.file.wanted ? Lucide.x : Lucide.check;
         chosen => { DetailState.toggle-file(DetailState.file-menu-index); }
     }
     Item {

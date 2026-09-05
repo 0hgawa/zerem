@@ -60,12 +60,11 @@ pub struct Settings {
     /// What the app does about protocol encryption: "off", "prefer" or
     /// "require".
     ///
-    /// Three answers, and both of the others cost something. Requiring it
-    /// turns away every peer that will not, which on a healthy swarm is most of
-    /// the ones holding the data. And *either* of them turns uTP off, because
-    /// the handshake stalls over it -- so this is off until somebody asks,
-    /// rather than a default that quietly changes how the app uses the line.
-    #[serde(default = "off_because_it_costs_utp")]
+    /// Three answers, and the third is the one that costs something: requiring
+    /// it turns away every peer that will not, which on a healthy swarm is most
+    /// of the ones holding the data. Offering it costs nothing at all, which is
+    /// why that is the default.
+    #[serde(default = "offered_not_demanded")]
     pub encryption: String,
     pub dark: bool,
     pub sort_col: usize,
@@ -125,10 +124,11 @@ fn follow_the_system() -> String {
     "system".to_owned()
 }
 
-/// Off, because turning it on turns uTP off. The day that stops being true
-/// this becomes "prefer", which costs nothing in peers.
-fn off_because_it_costs_utp() -> String {
-    "off".to_owned()
+/// Offered to every peer, demanded of none. A peer that will not encrypt is
+/// talked to in the clear, so this costs nothing and hides the traffic from
+/// anything that shapes BitTorrent by pattern.
+fn offered_not_demanded() -> String {
+    "prefer".to_owned()
 }
 
 impl Default for Settings {
@@ -148,7 +148,7 @@ impl Default for Settings {
             utp: engine.utp,
             upnp: engine.upnp,
             theme: follow_the_system(),
-            encryption: off_because_it_costs_utp(),
+            encryption: offered_not_demanded(),
             dark: true,
             sort_col: 0,
             sort_desc: false,

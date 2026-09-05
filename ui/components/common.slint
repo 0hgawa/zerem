@@ -192,6 +192,29 @@ export component SettingsRow inherits Rectangle {
     }
 }
 
+/// The surface anything that floats is drawn on: a menu, the list a dropdown
+/// opens, anything that covers the window rather than sitting in it.
+///
+/// One component because there are two of these and they were drifting: the
+/// menu and the dropdown each carried their own copy of the radius, the border
+/// and the shadow, and a change to one of them was a change to one of them.
+///
+/// A single shadow rather than the two Fluent layers on top of each other.
+/// Slint gives a rectangle one, and stacking a second means a second rectangle
+/// casting a shadow this renderer draws outside its parent -- which is how the
+/// tooltip once tore holes in the window under partial redraw. A real edge and
+/// one well-judged shadow do the work that two shadows and no edge did not.
+export component Flyout inherits Rectangle {
+    background: Theme.card;
+    border-radius: Theme.radius-float;
+    border-width: 1px;
+    border-color: Theme.float-stroke;
+    drop-shadow-blur: 24px;
+    drop-shadow-offset-y: 8px;
+    drop-shadow-color: Theme.float-shade;
+    @children
+}
+
 /// The scrim and card every modal shares.
 ///
 /// Extracted because three dialogs had the same forty lines of centring, border
@@ -693,14 +716,7 @@ export component Dropdown inherits Rectangle {
         x: 0;
         y: root.height + 4px;
         width: root.width;
-        Rectangle {
-            background: Theme.card;
-            border-radius: Theme.radius-float;
-            border-width: 1px;
-            border-color: Theme.border;
-            drop-shadow-blur: 20px;
-            drop-shadow-offset-y: 4px;
-            drop-shadow-color: #0000006b;
+        Flyout {
             VerticalLayout {
                 // Two at the ends rather than four, because each row insets its
                 // own highlight by another two: what should be even is the gap

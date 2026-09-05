@@ -298,12 +298,7 @@ impl<H: PeerConnectionHandler> PeerConnection<H> {
                 self.connector.connect(self.addr),
             )
             .await?;
-            // TCP only, and belt and braces: the session already turns uTP off
-            // whenever encryption is on, because the handshake completes over
-            // uTP and the message stream then stalls. This is here so that a
-            // caller who sets the options directly cannot get a uTP connection
-            // that claims to be encrypted.
-            if !encrypting || !matches!(ckind, ConnectionKind::Tcp) {
+            if !encrypting {
                 break (ckind, read, write, false);
             }
             match self.encrypt(read, write, &write_buf[..hsz], rwtimeout).await {

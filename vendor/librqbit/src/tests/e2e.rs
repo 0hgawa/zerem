@@ -40,13 +40,19 @@ async fn test_e2e_download_utp() {
 // listener working out which kind of connection arrived. Everything else about
 // the encryption is tested in `zerem-mse` against a pipe, which cannot catch a
 // stream wired up backwards.
-// There is no uTP counterpart, and that is the finding. The handshake
-// completes over uTP and the message stream then stalls; the session turns uTP
-// off whenever encryption is on rather than ship a transport that quietly
-// fails, so there is no such combination left to test.
 #[tokio::test(flavor = "multi_thread")]
 async fn test_e2e_download_tcp_encrypted() {
     _test_e2e_download_timeout_and_cleanups(ListenerMode::TcpOnly, Encryption::Require).await
+}
+
+// The one that was failing, and the reason the deciphering reader stopped
+// handing whole sets of buffers down: uTP advances an `IoSliceMut` past what it
+// wrote and TCP does not, so afterwards the slices were not a map of where the
+// bytes went. Every encrypted connection over uTP finished its handshake and
+// then talked nonsense. This is what says it does not any more.
+#[tokio::test(flavor = "multi_thread")]
+async fn test_e2e_download_utp_encrypted() {
+    _test_e2e_download_timeout_and_cleanups(ListenerMode::UtpOnly, Encryption::Require).await
 }
 
 async fn _test_e2e_download_timeout_and_cleanups(mode: ListenerMode, encryption: Encryption) {

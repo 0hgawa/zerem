@@ -102,20 +102,28 @@ where
         cx: &mut Context<'_>,
         vec: &mut [IoSliceMut<'_>],
     ) -> Poll<std::io::Result<usize>> {
-        let this = self.get_mut();
-        let read = ready!(Pin::new(&mut this.inner).poll_read_vectored(cx, vec))?;
-        // The keystream runs across the buffers in the order they were filled,
-        // not one stream per buffer.
-        let mut left = read;
-        for slice in vec.iter_mut() {
-            if left == 0 {
-                break;
-            }
-            let take = left.min(slice.len());
-            this.cipher.apply(&mut slice[..take]);
-            left -= take;
-        }
-        Poll::Ready(Ok(read))
+        // Into the first buffer with room, through the plain read above, which
+        // is where the deciphering is.
+        //
+        // It used to hand the whole set down and decipher afterwards by walking
+        // the slices in order, and that is wrong on one of the two transports
+        // here. `IoSliceMut::advance` shrinks a slice from the front, and uTP
+        // calls it on every buffer it fills; TCP does not touch them. So once
+        // the inner read has returned, the slices are not a map of where the
+        // bytes went -- on uTP they point at the space *after* them. The
+        // deciphering was applied to that space, the received bytes were never
+        // deciphered at all, and every encrypted connection over uTP completed
+        // its handshake and then talked nonsense.
+        //
+        // Reading one buffer at a time costs an occasional extra call. Nothing
+        // else, and nothing that a wrong answer is worth.
+        let Some(first) = vec.iter_mut().find(|slice| !slice.is_empty()) else {
+            return Poll::Ready(Ok(0));
+        };
+        let mut buf = ReadBuf::new(first);
+        ready!(self.poll_read(cx, &mut buf))?;
+        let filled = buf.filled().len();
+        Poll::Ready(Ok(filled))
     }
 }
 

@@ -68,14 +68,11 @@ impl Default for EngineConfig {
             upnp: true,
             keep_dir: None,
             watch_dir: None,
-            // Off, and it would not be if it were free. Offering it costs
-            // nothing in peers -- it falls back for anyone who will not -- but
-            // it does cost uTP, which stalls under it, and uTP is what keeps a
-            // client from taking the whole line. Turning that off for everybody
-            // to protect the few being interfered with is the wrong trade. It
-            // is one dropdown away for anybody who needs it, and the default
-            // becomes "prefer" the day the uTP stall is understood.
-            encryption: "off".to_owned(),
+            // Offered and not demanded. It costs nothing to offer -- a peer
+            // that will not encrypt is talked to in the clear -- and demanding
+            // it turns away every peer that will not, which on a healthy swarm
+            // is most of the ones holding the data.
+            encryption: "prefer".to_owned(),
         }
     }
 }
@@ -84,18 +81,7 @@ impl EngineConfig {
     pub(crate) fn to_session_options(&self) -> SessionOptions {
         SessionOptions {
             listen: Some(ListenerOptions {
-                // uTP is off whenever encryption is on, and that is a real
-                // limitation rather than a preference. The encrypted handshake
-                // is proven over TCP by an end-to-end test in the vendored
-                // engine; over uTP it completes and then the message stream
-                // stalls, and shipping a transport that quietly fails is worse
-                // than shipping one fewer transport. The row that offers
-                // encryption says so, so nobody has to find out.
-                mode: if self.utp && self.encryption == "off" {
-                    ListenerMode::TcpAndUtp
-                } else {
-                    ListenerMode::TcpOnly
-                },
+                mode: if self.utp { ListenerMode::TcpAndUtp } else { ListenerMode::TcpOnly },
                 // An IPv6 unspecified address is dual-stack; `ipv4_only` stays
                 // false, so this listens on both families.
                 listen_addr: SocketAddr::from((Ipv6Addr::UNSPECIFIED, self.port)),

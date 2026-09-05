@@ -686,21 +686,9 @@ cada versão nova do Rust deixa o CI vermelho em código que ninguém tocou.
 
 ## Limitações conhecidas
 
-**A criptografia de protocolo é só sobre TCP.** Ela existe — está em
-[`crates/zerem-mse`](crates/zerem-mse), com a troca de chaves, o RC4 e o aperto
-de mão dos dois lados, e o download cifrado ponta a ponta é provado por um teste
-no motor vendorizado. Mas sobre uTP o aperto de mão completa e o fluxo de
-mensagens trava, e a causa não foi encontrada. Então o uTP é desligado enquanto a
-criptografia estiver ligada, e o painel de Conexão diz isso na própria linha.
-
-Por isso ela vem **desligada por padrão**. Oferecê-la não custa peers — cai para
-texto claro com quem não aceita — mas custa o uTP, que é o que impede o cliente
-de tomar a linha inteira. Ligue-a se o seu provedor molda BitTorrent ou se um
-tracker exige.
-
 **Trackers privados filtram por `peer_id`**, e um cliente próprio não passa no
-whitelist deles. A criptografia removeu um dos dois motivos pelos quais eles
-recusariam o Zerem; o `peer_id` continua sendo o outro.
+whitelist deles. A criptografia de protocolo removeu um dos dois motivos pelos
+quais eles recusariam o Zerem; o `peer_id` continua sendo o outro.
 
 Duas limitações ficam dentro do motor: a escolha de peças é por ordem de arquivo
 e **não rarest-first**, e não há *fast extension*. Nenhuma das duas é uma decisão

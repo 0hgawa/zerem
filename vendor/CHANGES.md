@@ -47,25 +47,34 @@ peer has already been sent bytes it could not read, and there is no taking them
 back. So `Prefer` reconnects and tries again in the clear, which is what every
 client that does this does.
 
-## Encryption is TCP only, and that is a finding rather than a choice
+## The one that took two attempts: reading a vectored buffer
 
-Over uTP the handshake completes and the message stream then stalls: both ends
-report the other as silent. The adapters are not the cause — they are tested
-against a writer that accepts seven bytes at a time, which is more hostile than
-anything a socket does — and the cause is not known.
+Over uTP every encrypted connection finished its handshake and then talked
+nonsense. The adapters were not obviously at fault — they pass against a writer
+that accepts seven bytes at a time, which is more hostile than any socket — and
+the first answer was to turn uTP off whenever encryption was on.
 
-So `EngineConfig::to_session_options` turns uTP off whenever encryption is on,
-and `manage_peer_outgoing` refuses to encrypt a connection that is not TCP even
-if one arrives. Shipping a transport that quietly fails is worse than shipping
-one fewer transport. The Connection panel says so on the card.
+That was wrong, and the cause is worth writing down because it is a trap the
+trait sets for anyone who implements it.
 
-`test_e2e_download_tcp_encrypted` is the proof that the rest works: a real
-download between two sessions, both refusing to speak in the clear.
+`IoSliceMut::advance` shrinks a slice from the front. **uTP calls it on every
+buffer it fills; TCP does not touch them.** So after `poll_read_vectored`
+returns, the slices are not a map of where the bytes landed — on uTP they point
+at the space *after* them. The deciphering reader was handing the whole set down
+and then walking the slices in order to decipher what had arrived, which on uTP
+deciphered empty space and left the real bytes enciphered.
+
+It reads into one buffer at a time now, through its own `poll_read`, where the
+deciphering already was. An occasional extra call, and no way to be wrong about
+where the bytes are.
+
+`test_e2e_download_tcp_encrypted` and `test_e2e_download_utp_encrypted` are the
+proof: real downloads between two sessions, both refusing to speak in the clear,
+over each transport.
 
 ## Not done yet
 
-Nothing outstanding on the encryption itself, for TCP. The uTP stall is the one
-open question, and it is open — not worked around in a way that hides it.
+Nothing outstanding on the encryption.
 
 ## Taking a new upstream release
 
