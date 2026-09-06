@@ -525,7 +525,8 @@ export component DetailDrawer inherits Rectangle {
         // the panel answers, and everything in it comes from the same row the
         // table draws so the two cannot disagree.
         Rectangle {
-            height: 92px;
+            // Four pixels of bar and the eight above it, gone with the bar.
+            height: DetailState.progress < 1.0 ? 92px : 80px;
             VerticalLayout {
                 padding-left: 13px;
                 padding-right: 13px;
@@ -533,7 +534,15 @@ export component DetailDrawer inherits Rectangle {
                 spacing: 8px;
 
                 // The bar first: it is read without being read.
-                Rectangle {
+                //
+                // And only while there is something left to read. The table
+                // stopped drawing a full bar long ago and this did not, so a
+                // finished torrent opened onto a saturated band running the
+                // width of the panel — the loudest thing on screen, saying
+                // "done", which the word beneath it and that word's colour
+                // were already saying. Three ways of saying one thing is how
+                // the one that matters stops being heard.
+                if DetailState.progress < 1.0: Rectangle {
                     height: 4px;
                     border-radius: 2px;
                     background: Theme.track;
@@ -582,16 +591,24 @@ export component DetailDrawer inherits Rectangle {
                     }
                 }
 
-                // The four numbers, in the marks the status bar already taught.
+                // The numbers, in the marks the status bar already taught.
+                //
+                // A rate with nothing in it is left out rather than drawn as a
+                // dash. An em dash holds a column's width, which is what it is
+                // for in the table; here it made half a row of marks into
+                // placeholders — two icons and two dashes reporting absence,
+                // beside two numbers reporting something. The row reads as a
+                // group of facts now, and it is shorter when there are fewer.
                 HorizontalLayout {
                     spacing: 14px;
-                    Stat {
+                    alignment: start;
+                    if DetailState.down != "": Stat {
                         glyph: Lucide.arrow-down;
                         value: DetailState.down;
                         hint: @tr("Download speed");
                         tint: Theme.accent;
                     }
-                    Stat {
+                    if DetailState.up != "": Stat {
                         glyph: Lucide.arrow-up;
                         value: DetailState.up;
                         hint: @tr("Upload speed");
@@ -603,7 +620,9 @@ export component DetailDrawer inherits Rectangle {
                         hint: @tr("Peers");
                         tint: Theme.text-dim;
                     }
-                    Rectangle { horizontal-stretch: 1; }
+                    // Together, not split. A stretch used to push the ratio to
+                    // the far edge, which left one mark adrift from the three
+                    // it belongs with and made the row read as two things.
                     Stat {
                         glyph: Lucide.zap;
                         value: DetailState.ratio;
@@ -642,14 +661,26 @@ export component DetailDrawer inherits Rectangle {
                 //
                 // And a primary exists to say "this is the one" where there is
                 // a decision. These are three peer actions; there is no one.
+                // And no outlines, which is the fourth thing.
+                //
+                // Three bordered pills of three different widths, one of them
+                // red, in a panel whose job is to be read: the row was three
+                // frames competing with the file list under it. Without the
+                // borders they are three quiet marks with words beside them,
+                // the same weight as the tabs below and the row buttons in the
+                // table — and the red on Remove stops being one box among three
+                // and becomes the only colour in the row, which is what a
+                // warning is supposed to be.
                 Button {
                     label: DetailState.running ? @tr("Pause") : @tr("Start");
                     glyph: DetailState.running ? Lucide.pause : Lucide.play;
+                    kind: ButtonKind.text;
                     clicked => { DetailState.toggle-running(); }
                 }
                 Button {
                     label: @tr("Open folder");
                     glyph: Lucide.folder-open;
+                    kind: ButtonKind.text;
                     clicked => { DetailState.open-folder(); }
                 }
                 Rectangle { horizontal-stretch: 1; }
@@ -657,6 +688,11 @@ export component DetailDrawer inherits Rectangle {
                     label: @tr("Remove…");
                     glyph: Lucide.trash;
                     kind: ButtonKind.danger;
+                    // The colour without the weight. It keeps the red — and
+                    // with the borders gone it is the only colour in the row,
+                    // which is what a warning should be rather than one framed
+                    // box among three.
+                    outlined: false;
                     clicked => { DetailState.remove(); }
                 }
             }

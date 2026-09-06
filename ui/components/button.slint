@@ -72,8 +72,17 @@ export component Button inherits Rectangle {
         : ta.has-hover ? Theme.hover
         : transparent;
 
+    /// Whether it wears an edge.
+    ///
+    /// Follows the kind, and can be told otherwise. `ButtonKind` conflates two
+    /// things — how heavy a button is and what colour it carries — and the
+    /// detail panel wants the second without the first: a Remove that is red
+    /// but sits as quietly as the text buttons beside it. In a dialog the same
+    /// red button is the destructive answer to a question and keeps its edge.
+    in property <bool> outlined: root.kind != ButtonKind.text;
+
     // Not on a text button, which is a word and nothing else.
-    border-width: !enabled || kind == ButtonKind.text ? 0px : 1px;
+    border-width: !enabled || !root.outlined ? 0px : 1px;
     border-color: Theme.stroke;
     animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
 

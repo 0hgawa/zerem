@@ -657,8 +657,8 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
         push!(detail, get_state, set_state, row.status_text().into());
         push!(detail, get_kind, set_kind, row.status_kind());
         push!(detail, get_running, set_running, row.is_active());
-        push!(detail, get_down, set_down, fmt::speed(row.down_bps).into());
-        push!(detail, get_up, set_up, fmt::speed(row.up_bps).into());
+        push!(detail, get_down, set_down, moving(row.down_bps));
+        push!(detail, get_up, set_up, moving(row.up_bps));
         // Empty rather than "∞" when there is no time to give. The table's ETA
         // column has a heading saying what it is, so an infinity there reads as
         // "not finishing"; alone on a line beside the state it is a symbol with
@@ -770,6 +770,20 @@ fn build_files(
             icon: node.at.and_then(|at| icons.get(at).cloned()).unwrap_or_default(),
         })
         .collect()
+}
+
+/// A rate the panel would rather leave out than draw as a dash.
+///
+/// `fmt::speed` answers an em dash for nothing, which is right in a column that
+/// has to hold its width and wrong in a row of marks: an idle torrent gave two
+/// icons and two dashes reporting absence beside two numbers reporting
+/// something, and half the row was placeholder. Empty, and the panel omits it.
+fn moving(bps: u64) -> SharedString {
+    if bps == 0 {
+        SharedString::new()
+    } else {
+        fmt::speed(bps).into()
+    }
 }
 
 /// The address out of a `host:port`, brackets and all.
