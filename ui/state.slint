@@ -464,7 +464,15 @@ export global SessionState {
 export global TorrentList {
     // --- pushed from Rust ---
     in-out property <[Row]> rows;
-    in-out property <[length]> col-w: [300px, 200px, 108px, 96px, 96px, 84px, 84px, 66px];
+    /// The starting widths. Dragging one remembers it, so these are only ever
+    /// the first answer.
+    ///
+    /// State is 148 and not 108, because that column does not hold a word — it
+    /// holds a sentence. "Paused" fits anywhere; "No one is sharing" is the
+    /// state that most needs reading and it was the one being cut to "No one is
+    /// sh…", which says nothing at all. The column is as wide as the diagnosis
+    /// it exists to show.
+    in-out property <[length]> col-w: [300px, 200px, 148px, 96px, 96px, 84px, 84px, 66px];
     /// Which columns are drawn. Index 0 — the name — is never turned off.
     in-out property <[bool]> col-visible: [true, true, true, true, true, true, true, true];
     /// The headings, pushed from Rust so the header and the column menu name

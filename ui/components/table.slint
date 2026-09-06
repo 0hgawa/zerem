@@ -87,12 +87,20 @@ export component ProgressCell inherits Rectangle {
                 // colours. Downloading is `accent-fill` rather than `accent`
                 // -- they are a true blue and a violet-blue, and side by side
                 // the difference reads as a second meaning that is not there.
-                // Stalled and queued are the two states the panel never has to
-                // draw, because it is only ever showing one torrent.
+                //
+                // A stalled torrent takes the grey, not the warning colour.
+                // The warning belongs on the *word* -- it is a diagnosis, and a
+                // diagnosis is something to read. Poured across half a row at
+                // thirty per cent it stopped being a warning and became a slab
+                // of mud: `warn` on a light theme is a dark mustard, chosen so
+                // it can be read as text, and no colour picked to be legible at
+                // full strength survives being washed out over a bar.
+                //
+                // Grey says the honest thing anyway. The torrent is still
+                // downloading; it simply is not moving, which is what the grey
+                // means everywhere else in this window.
                 background: root.kind == 4 ? Theme.danger
                     : root.kind == 2 ? Theme.seeding
-                    : root.kind == 3 ? Theme.idle
-                    : root.kind == 5 ? Theme.warn
                     : root.kind == 1 ? Theme.accent-fill
                     : Theme.idle;
                 // Sits behind the figures, so it has to stay quiet enough to

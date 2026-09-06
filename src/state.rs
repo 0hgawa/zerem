@@ -34,7 +34,17 @@ pub const MIN_DRAWER_W: f32 = 256.0;
 pub const MAX_DRAWER_W: f32 = 480.0;
 pub const DEFAULT_DRAWER_W: f32 = 420.0;
 
-const DEFAULT_WIDTHS: [f32; 8] = [300.0, 200.0, 108.0, 96.0, 96.0, 84.0, 84.0, 66.0];
+/// The starting widths, which dragging a column then remembers.
+///
+/// State is 148 and not 108 because that column does not hold a word, it holds
+/// a sentence: "Paused" fits anywhere, and "No one is sharing" — the state that
+/// most needs reading — was being cut to "No one is sh…", which says nothing.
+/// The column is as wide as the diagnosis it exists to show.
+///
+/// `TorrentList.col-w` in `state.slint` declares the same list, because a Slint
+/// property needs a default of the right arity. This one is the answer: it is
+/// pushed over the top before the first frame. Change one, change the other.
+const DEFAULT_WIDTHS: [f32; 8] = [300.0, 200.0, 148.0, 96.0, 96.0, 84.0, 84.0, 66.0];
 
 /// How long a message the UI raised itself stays up. Long enough to read,
 /// short enough that it never becomes furniture.
