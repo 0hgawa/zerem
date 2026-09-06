@@ -240,6 +240,19 @@ export component TableRow inherits Rectangle {
     // use most, on whichever row the cursor happens to be over — which is not
     // necessarily the row the panel is showing.
     run := TouchArea {
+        // A `TouchArea` is invisible to a screen reader — it is a rectangle that
+        // happens to react. These two are the most-pressed controls in the whole
+        // app and they announced nothing, so a reader was handed the row and
+        // then found empty space where its buttons are.
+        accessible-role: button;
+        accessible-label: data.active ? @tr("Pause") : @tr("Start");
+        accessible-action-default => {
+            if (data.active) {
+                TorrentList.pause-row(root.index);
+            } else {
+                TorrentList.start-row(root.index);
+            }
+        }
         x: 6px;
         y: (parent.height - self.height) / 2;
         width: 22px;
@@ -277,6 +290,9 @@ export component TableRow inherits Rectangle {
     // table is narrower with it out, and two buttons for the one destructive
     // verb is one too many. Play does not — see above.
     del := TouchArea {
+        accessible-role: button;
+        accessible-label: @tr("Remove");
+        accessible-action-default => { TorrentList.remove-row(root.index); }
         visible: !DetailState.open;
         x: parent.width - self.width - 6px;
         y: (parent.height - self.height) / 2;

@@ -316,9 +316,6 @@ msgstr "Tüm ayarları geri al"
 msgid "Queued"
 msgstr "Sırada"
 
-msgid "Ratio"
-msgstr "Oran"
-
 msgid "Reading torrent…"
 msgstr "Torrent okunuyor…"
 

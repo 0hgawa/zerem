@@ -316,9 +316,6 @@ msgstr "Restablecer todos los ajustes"
 msgid "Queued"
 msgstr "En cola"
 
-msgid "Ratio"
-msgstr "Proporción"
-
 msgid "Reading torrent…"
 msgstr "Leyendo el torrent…"
 

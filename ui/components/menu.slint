@@ -67,13 +67,38 @@ component Item inherits Rectangle {
         }
     }
 
+    // Every one of these was a rectangle that happened to react. A `TouchArea`
+    // is invisible to a screen reader, so all three menus in this app — the
+    // row's, the file's and the column list — announced nothing at all: a
+    // reader moving through an open menu found empty space where the choices
+    // were.
+    //
+    // The shortcut goes in the description and not the label, because the label
+    // is what somebody chooses by and "Remove Del" is not the name of anything.
+    // `accessible-enabled` earns its place here more than most: half these
+    // items grey out depending on what was clicked, and an item that cannot be
+    // chosen has to say so rather than be quietly ignored.
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-description: root.shortcut;
+    accessible-action-default => { root.choose(); }
+
+    /// One route to choosing, so the pointer and the reader cannot drift apart.
+    function choose() {
+        if (!root.enabled) {
+            return;
+        }
+        if (root.closes) {
+            TorrentList.close-menu();
+        }
+        root.chosen();
+    }
+
     ta := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
-        clicked => {
-            if (root.closes) { TorrentList.close-menu(); }
-            root.chosen();
-        }
+        clicked => { root.choose(); }
     }
 }
 

@@ -113,6 +113,13 @@ component FileLine inherits Rectangle {
     accessible-label: root.entry.path;
     accessible-checkable: true;
     accessible-checked: root.entry.wanted;
+    // The chevron is a `TouchArea`, which a reader cannot see at all, so the
+    // row says it instead — and this is the right place for it anyway: what is
+    // expanded is the folder, not a button beside it. A reader now hears
+    // "collapsed" on a shut folder rather than finding a tree with no way
+    // through it.
+    accessible-expandable: root.entry.is-folder;
+    accessible-expanded: root.entry.open;
     accessible-description: root.entry.first ? @tr("Being fetched before the others")
         : root.entry.complete ? @tr("Finished")
         : root.entry.pct;
@@ -593,17 +600,6 @@ export component DetailDrawer inherits Rectangle {
                         font-size: Theme.fs-label;
                         font-family: Theme.font;
                         vertical-alignment: center;
-                    }
-                    // The ratio belongs with the facts, not with the rates. It
-                    // is a property of the torrent like its size and its state,
-                    // where a rate is what is happening this second — and on a
-                    // seeding torrent that has gone quiet it was the last mark
-                    // left in a row of its own, which is a row for one number.
-                    Stat {
-                        glyph: Lucide.zap;
-                        value: DetailState.ratio;
-                        hint: @tr("Ratio");
-                        tint: Theme.text-dim;
                     }
                 }
 

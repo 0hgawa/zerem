@@ -316,9 +316,6 @@ msgstr "सारी सेटिंग वापस करें"
 msgid "Queued"
 msgstr "कतार में"
 
-msgid "Ratio"
-msgstr "अनुपात"
-
 msgid "Reading torrent…"
 msgstr "टोरेंट पढ़ा जा रहा है…"
 

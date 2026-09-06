@@ -669,7 +669,6 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
             set_eta,
             row.eta.map_or_else(SharedString::default, |secs| fmt::eta(Some(secs)).into())
         );
-        push!(detail, get_ratio, set_ratio, fmt::ratio(row.ratio_x100).into());
         // Onto the tab, which is where this number was being asked for twice.
         // The tab said how many rows its table had; the mark above it said the
         // same count and the size of the swarm behind it — and that second half

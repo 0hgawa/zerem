@@ -10,8 +10,7 @@
 
 use std::rc::Rc;
 
-use slint::{ComponentHandle, ModelRc, SharedString};
-use zerem_core::sort;
+use slint::{ComponentHandle, ModelRc};
 use zerem_engine::{Command, Engine, EngineConfig};
 use zerem_shell as shell;
 
@@ -108,11 +107,10 @@ fn main() -> Result<(), slint::PlatformError> {
     let list = ui.global::<TorrentList>();
     list.set_col_w(ModelRc::from(state.widths.clone()));
     list.set_col_visible(ModelRc::from(state.columns.clone()));
-    // The headings, once. They come from core so the header and the column
-    // menu cannot drift apart, and so the `.slint` invents no text.
-    list.set_col_title(ModelRc::from(
-        sort::TITLES.iter().map(|&t| SharedString::from(t)).collect::<Vec<_>>().as_slice(),
-    ));
+    // The headings. From core, so the header and the column menu cannot drift
+    // apart and the `.slint` invents no text — and no longer "once": they are
+    // words, and a word has to change when the language does.
+    bridge::prefs::show_titles(&ui);
     list.set_rows(ModelRc::from(state.model.clone()));
     state.restore_view(&settings);
     state.adopt_shelves(&settings);

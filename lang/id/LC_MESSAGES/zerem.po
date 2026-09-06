@@ -316,9 +316,6 @@ msgstr "Kembalikan semua pengaturan"
 msgid "Queued"
 msgstr "Dalam antrean"
 
-msgid "Ratio"
-msgstr "Rasio"
-
 msgid "Reading torrent…"
 msgstr "Membaca torrent…"
 

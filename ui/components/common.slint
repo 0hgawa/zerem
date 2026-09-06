@@ -755,6 +755,16 @@ export component Dropdown inherits Rectangle {
     accessible-role: combobox;
     accessible-label: root.hint;
     accessible-value: root.options[root.current];
+    // Expandable, and a way to expand it — which a `TouchArea` alone does not
+    // give a reader.
+    //
+    // No `accessible-expanded` to go with it. A `PopupWindow`'s visibility
+    // cannot be read from outside it, and the flag this component could keep
+    // instead would go stale the moment somebody dismissed the list by clicking
+    // elsewhere. A reader saying "collapsed" about an open list is worse than
+    // one that does not mention it.
+    accessible-expandable: true;
+    accessible-action-default => { pop.show(); }
 
     HorizontalLayout {
         padding-left: 10px;

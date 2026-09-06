@@ -316,9 +316,6 @@ msgstr "Đặt lại mọi thiết lập"
 msgid "Queued"
 msgstr "Trong hàng đợi"
 
-msgid "Ratio"
-msgstr "Tỷ lệ"
-
 msgid "Reading torrent…"
 msgstr "Đang đọc torrent…"
 

@@ -323,9 +323,6 @@ msgid "Off"
 msgstr "Desligar"
 
 # O resumo no topo do painel de detalhes.
-msgid "Ratio"
-msgstr "Proporção"
-
 # Reverificação forçada, no menu de botão direito.
 msgid "Force recheck"
 msgstr "Forçar reverificação"

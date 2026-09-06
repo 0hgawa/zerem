@@ -316,9 +316,6 @@ msgstr "Rétablir tous les réglages"
 msgid "Queued"
 msgstr "En file d'attente"
 
-msgid "Ratio"
-msgstr "Ratio"
-
 msgid "Reading torrent…"
 msgstr "Lecture du torrent…"
 

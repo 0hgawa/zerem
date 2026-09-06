@@ -316,9 +316,6 @@ msgstr "Alle Einstellungen zurücksetzen"
 msgid "Queued"
 msgstr "In Warteschlange"
 
-msgid "Ratio"
-msgstr "Verhältnis"
-
 msgid "Reading torrent…"
 msgstr "Torrent wird gelesen…"
 

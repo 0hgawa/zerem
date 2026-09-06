@@ -316,9 +316,6 @@ msgstr "Вернуть все настройки"
 msgid "Queued"
 msgstr "В очереди"
 
-msgid "Ratio"
-msgstr "Рейтинг"
-
 msgid "Reading torrent…"
 msgstr "Чтение торрента…"
 

@@ -19,7 +19,7 @@
 /// Fixed strings, keyed by the English original.
 ///
 /// Sorted by key: the lookup is a binary search and a test enforces it.
-pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
+pub(super) const TABLE: [(&str, [&str; 10]); 34] = [
     (
         "Another program has one of the files open",
         [
@@ -65,6 +65,29 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Đang kết nối",
         ],
     ),
+    // The table's own column headings, which reached the window as plain Rust
+    // strings and were English in all eleven languages. Nothing caught it: the
+    // `.po` test compares the `.slint` against the catalogues, and these are in
+    // neither — `sort::TITLES` went straight to `set_col_title` without passing
+    // through `tr` at all.
+    //
+    // Short on purpose. These sit over columns a person drags narrow, and a
+    // heading that elides is a heading that says less than the number under it.
+    (
+        "Down",
+        [
+            "تنزيل",
+            "Runter",
+            "Bajada",
+            "Réception",
+            "डाउन",
+            "Unduh",
+            "Descida",
+            "Приём",
+            "İndirme",
+            "Tải xuống",
+        ],
+    ),
     (
         "Downloading",
         [
@@ -78,6 +101,21 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Загрузка",
             "İndiriliyor",
             "Đang tải xuống",
+        ],
+    ),
+    (
+        "ETA",
+        [
+            "الوقت المتبقي",
+            "Restzeit",
+            "Restante",
+            "Restant",
+            "शेष समय",
+            "Sisa waktu",
+            "Restante",
+            "Осталось",
+            "Kalan",
+            "Còn lại",
         ],
     ),
     ("Error", ["خطأ", "Fehler", "Error", "Erreur", "त्रुटि", "Galat", "Erro", "Ошибка", "Hata", "Lỗi"]),
@@ -111,6 +149,7 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Đã sao chép liên kết magnet",
         ],
     ),
+    ("Name", ["الاسم", "Name", "Nombre", "Nom", "नाम", "Nama", "Nome", "Имя", "Ad", "Tên"]),
     (
         "No files selected",
         [
@@ -216,6 +255,7 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Đã tạm dừng",
         ],
     ),
+    ("Peers", ["الأقران", "Peers", "Pares", "Pairs", "पीयर", "Peer", "Peers", "Пиры", "Eşler", "Peer"]),
     (
         "Queued",
         [
@@ -232,6 +272,21 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
         ],
     ),
     (
+        "Ratio",
+        [
+            "النسبة",
+            "Verhältnis",
+            "Proporción",
+            "Ratio",
+            "अनुपात",
+            "Rasio",
+            "Proporção",
+            "Рейтинг",
+            "Oran",
+            "Tỷ lệ",
+        ],
+    ),
+    (
         "Seeding",
         [
             "جارٍ البذر",
@@ -244,6 +299,25 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Раздача",
             "Gönderiliyor",
             "Đang chia sẻ",
+        ],
+    ),
+    (
+        "Size",
+        ["الحجم", "Größe", "Tamaño", "Taille", "आकार", "Ukuran", "Tamanho", "Размер", "Boyut", "Kích thước"],
+    ),
+    (
+        "State",
+        [
+            "الحالة",
+            "Status",
+            "Estado",
+            "État",
+            "स्थिति",
+            "Status",
+            "Estado",
+            "Состояние",
+            "Durum",
+            "Trạng thái",
         ],
     ),
     (
@@ -396,6 +470,7 @@ pub(super) const TABLE: [(&str, [&str; 10]); 26] = [
             "Thư mục tải về chỉ đọc",
         ],
     ),
+    ("Up", ["رفع", "Hoch", "Subida", "Envoi", "अप", "Unggah", "Subida", "Отдача", "Gönderme", "Tải lên"]),
 ];
 
 /// "12 of 300" — how much of the list a filter is showing.

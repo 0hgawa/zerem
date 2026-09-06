@@ -101,9 +101,19 @@ export component Button inherits Rectangle {
             color: root.ink;
             font-size: Theme.fs-label;
             font-family: Theme.font;
-            // The recommended action still reads as the recommended one without a
-            // fill to say so.
-            font-weight: root.coloured ? Theme.semibold : 400;
+            // Every button, not only the coloured ones.
+            //
+            // M3 sets a button's label in Label Large, which is Medium — 500 —
+            // and the reason is that a button is a *target*: the word is the
+            // thing being aimed at, and at 400 it read as a caption that
+            // happened to sit inside a shape. The weight is what makes it look
+            // pressable before the cursor arrives.
+            //
+            // 550 rather than 500 because this app ships two weights and that
+            // is one of them, and the difference between them is smaller than
+            // the difference between either and 400. A third cut for fifty
+            // units is a token nobody could tell from its neighbour.
+            font-weight: Theme.semibold;
             vertical-alignment: center;
         }
     }

@@ -142,6 +142,25 @@ fn apply_language(stored: &str) {
     }
 }
 
+/// The table's column headings, in the language the app is in.
+///
+/// They were set once at startup, straight out of `sort::TITLES` and never
+/// through `tr` — eight English words over the columns of an app that ships
+/// eleven languages, and nothing caught it: the `.po` test compares the
+/// `.slint` against the catalogues, and these were in neither.
+///
+/// Called again whenever the language changes, because `@tr` in a `.slint`
+/// redraws itself and a string handed over from Rust does not.
+pub fn show_titles(ui: &MainWindow) {
+    ui.global::<crate::TorrentList>().set_col_title(slint::ModelRc::from(
+        zerem_core::sort::TITLES
+            .iter()
+            .map(|&title| slint::SharedString::from(zerem_core::tr(title)))
+            .collect::<Vec<_>>()
+            .as_slice(),
+    ));
+}
+
 pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store>, views: &Rc<super::Views>) {
     let prefs = ui.global::<Prefs>();
 
@@ -233,6 +252,9 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
             // has to change with the language it sits in.
             apply_language(&chosen);
             offer_languages(&ui.global::<Prefs>(), &chosen);
+            // The headings are Rust strings handed over once; a `@tr` in a
+            // `.slint` redraws itself and these cannot.
+            show_titles(&ui);
         }
     });
 
