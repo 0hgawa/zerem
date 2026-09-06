@@ -494,246 +494,274 @@ export component DetailDrawer inherits Rectangle {
     VerticalLayout {
         spacing: 0px;
 
-        // The title gets a line of its own, which the drawer under the table
-        // never had room for: it used to be dim, right-aligned and elided into
-        // whatever the tabs left over.
-        Rectangle {
-            height: 38px;
-            HorizontalLayout {
-                padding-left: 13px;
-                padding-right: 8px;
-                spacing: 6px;
-                Text {
-                    text: DetailState.title;
-                    color: Theme.text;
-                    font-size: Theme.fs-title;
-                    font-family: Theme.font;
-                    vertical-alignment: center;
-                    overflow: elide;
-                    horizontal-stretch: 1;
-                }
+        // The head on a card of its own.
+        //
+        // The panel was one flat surface from its title to the last file, and
+        // four bands of chrome sitting on the same ground as the list read as
+        // four strips rather than as one thing. What they are is one thing:
+        // this is the torrent, and these are the facts about it and what can be
+        // done to it. A card says that in the shape rather than in a divider.
+        //
+        // The same vocabulary the preferences already use — `Theme.card` at the
+        // float radius — so the panel is not inventing a surface of its own.
+        //
+        // Eight out and five in, which puts the text back at the thirteen it
+        // has always been. The card is a new object; the words are where they
+        // were, and nothing below the card moved at all.
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Rectangle {
+                background: Theme.card;
+                border-radius: Theme.radius-float;
                 VerticalLayout {
-                    alignment: center;
-                    IconButton {
-                        glyph: Lucide.x;
-                        label: @tr("Close the details panel");
-                        clicked => { DetailState.close(); }
-                    }
-                }
-            }
-        }
-
-
-        // How the torrent is doing, which the panel never said.
-        //
-        // You could open the insides of a torrent and not tell whether it was
-        // moving — the name, then straight into a file list. This is the first
-        // question anybody has when they click a row, so it is the first thing
-        // the panel answers, and everything in it comes from the same row the
-        // table draws so the two cannot disagree.
-        Rectangle {
-            // What is here, and nothing for what is not. Ninety-two is the
-            // height with everything in it; a band that leaves takes its own
-            // height and the spacing above it with it, so a seeding torrent on
-            // a quiet line gives back both and the head is a third shorter.
-            height: 92px
-                - (DetailState.progress < 1.0 ? 0px : 12px)
-                - (DetailState.down != "" || DetailState.up != "" ? 0px : 26px);
-            VerticalLayout {
-                padding-left: 13px;
-                padding-right: 13px;
-                padding-bottom: 10px;
-                spacing: 8px;
-
-                // The bar first: it is read without being read.
-                //
-                // And only while there is something left to read. The table
-                // stopped drawing a full bar long ago and this did not, so a
-                // finished torrent opened onto a saturated band running the
-                // width of the panel — the loudest thing on screen, saying
-                // "done", which the word beneath it and that word's colour
-                // were already saying. Three ways of saying one thing is how
-                // the one that matters stops being heard.
-                if DetailState.progress < 1.0: Rectangle {
-                    height: 4px;
-                    border-radius: 2px;
-                    background: Theme.track;
-                    Rectangle {
-                        x: 0;
-                        width: parent.width * DetailState.progress;
-                        height: parent.height;
-                        border-radius: parent.border-radius;
-                        background: DetailState.kind == 4 ? Theme.danger
-                            : DetailState.kind == 2 ? Theme.seeding
-                            : DetailState.kind == 3 ? Theme.idle
-                            : Theme.accent-fill;
-                        animate width { duration: Theme.quick; easing: Theme.ease-standard(); }
-                    }
-                }
-
-                // Then the sentence: what it is doing, how fast, and how long.
-                // One line, because three facts on three lines is a form.
+                    spacing: 0px;
+            // The title gets a line of its own, which the drawer under the table
+            // never had room for: it used to be dim, right-aligned and elided into
+            // whatever the tabs left over.
+            Rectangle {
+                height: 38px;
                 HorizontalLayout {
-                    spacing: 10px;
+                    padding-left: 5px;
+                    padding-right: 8px;
+                    spacing: 6px;
                     Text {
-                        text: DetailState.state;
-                        color: DetailState.kind == 4 ? Theme.danger
-                            : DetailState.kind == 2 ? Theme.seeding
-                            : DetailState.kind == 1 ? Theme.accent
-                            : Theme.text-dim;
-                        font-size: Theme.fs-label;
-                        font-family: Theme.font;
-                        font-weight: Theme.semibold;
-                        vertical-alignment: center;
-                    }
-                    Text {
-                        text: DetailState.progress-text;
+                        text: DetailState.title;
                         color: Theme.text;
-                        font-size: Theme.fs-label;
+                        font-size: Theme.fs-title;
                         font-family: Theme.font;
                         vertical-alignment: center;
+                        overflow: elide;
                         horizontal-stretch: 1;
                     }
-                    if DetailState.eta != "": Text {
-                        text: DetailState.eta;
-                        color: Theme.text-dim;
-                        font-size: Theme.fs-label;
-                        font-family: Theme.font;
-                        vertical-alignment: center;
-                    }
-                }
-
-                // The rates, and only while there are any.
-                //
-                // What is left after the peers went to their own tab and the
-                // ratio joined the facts above: two marks that exist when
-                // something is moving and nothing at all when it is not. A
-                // seeding torrent with a quiet line loses this band entirely,
-                // which is the difference between a panel with six rows of
-                // chrome over its content and one with four.
-                //
-                // An em dash held a column's width in the table; here it made
-                // half the row into placeholders — icons reporting absence
-                // beside numbers reporting something.
-                if DetailState.down != "" || DetailState.up != "": HorizontalLayout {
-                    spacing: 14px;
-                    alignment: start;
-                    if DetailState.down != "": Stat {
-                        glyph: Lucide.arrow-down;
-                        value: DetailState.down;
-                        hint: @tr("Download speed");
-                        tint: Theme.accent;
-                    }
-                    if DetailState.up != "": Stat {
-                        glyph: Lucide.arrow-up;
-                        value: DetailState.up;
-                        hint: @tr("Upload speed");
-                        tint: Theme.seeding;
-                    }
-                }
-            }
-        }
-
-        // And what can be done about it, on the torrent this panel is about —
-        // not on the selection, which may be three other rows. Every one of
-        // these has another route: the button on the hovered row, the menu,
-        // the keyboard. This is the route for somebody who is already looking
-        // at the thing.
-        Rectangle {
-            height: 44px;
-            HorizontalLayout {
-                padding-left: 13px;
-                padding-right: 13px;
-                padding-bottom: 10px;
-                spacing: 8px;
-                alignment: start;
-
-                // Not the accent, and it used to be. Three things:
-                //
-                // The progress bar sixty pixels above it is accent-filled, and
-                // that blue means "this much has arrived". A second blue right
-                // under it meaning "press here" is one colour saying two
-                // things within one glance.
-                //
-                // The accent says *do this*, and a switch is not a
-                // recommendation — half the presses stop something. The label
-                // even inverts, so it would be a fixed blue for an action that
-                // is not fixed.
-                //
-                // And a primary exists to say "this is the one" where there is
-                // a decision. These are three peer actions; there is no one.
-                // And no outlines, which is the fourth thing.
-                //
-                // Three bordered pills of three different widths, one of them
-                // red, in a panel whose job is to be read: the row was three
-                // frames competing with the file list under it. Without the
-                // borders they are three quiet marks with words beside them,
-                // the same weight as the tabs below and the row buttons in the
-                // table — and the red on Remove stops being one box among three
-                // and becomes the only colour in the row, which is what a
-                // warning is supposed to be.
-                Button {
-                    label: DetailState.running ? @tr("Pause") : @tr("Start");
-                    glyph: DetailState.running ? Lucide.pause : Lucide.play;
-                    kind: ButtonKind.text;
-                    clicked => { DetailState.toggle-running(); }
-                }
-                Button {
-                    label: @tr("Open folder");
-                    glyph: Lucide.folder-open;
-                    kind: ButtonKind.text;
-                    clicked => { DetailState.open-folder(); }
-                }
-                Rectangle { horizontal-stretch: 1; }
-                Button {
-                    label: @tr("Remove…");
-                    glyph: Lucide.trash;
-                    kind: ButtonKind.danger;
-                    // The colour without the weight. It keeps the red — and
-                    // with the borders gone it is the only colour in the row,
-                    // which is what a warning should be rather than one framed
-                    // box among three.
-                    outlined: false;
-                    clicked => { DetailState.remove(); }
-                }
-            }
-        }
-        // A failure gets the top of the panel, above the tabs, because it is
-        // the answer to the question that brought someone here. The message
-        // wraps rather than elides — the state column already tried eliding it,
-        // and that is what this is for.
-        //
-        // Try again is a real retry, not a hopeful one: starting an errored
-        // torrent makes librqbit re-initialise it, hash what is on disk and
-        // carry on. Whatever went wrong has to be fixed first, which is why the
-        // button says what it does and does not pretend to fix it.
-        if DetailState.fault != "": Rectangle {
-            background: Theme.danger.with-alpha(0.12);
-            VerticalLayout {
-                padding: 12px;
-                spacing: 8px;
-                HorizontalLayout {
-                    spacing: 8px;
                     VerticalLayout {
-                        alignment: start;
-                        Icon { glyph: Lucide.triangle-alert; tint: Theme.danger; size: 15px; }
-                    }
-                    Text {
-                        text: DetailState.fault;
-                        color: Theme.danger;
-                        font-size: Theme.fs-body;
-                        font-family: Theme.font;
-                        wrap: word-wrap;
-                        horizontal-stretch: 1;
+                        alignment: center;
+                        IconButton {
+                            glyph: Lucide.x;
+                            label: @tr("Close the details panel");
+                            clicked => { DetailState.close(); }
+                        }
                     }
                 }
-                HorizontalLayout {
-                    alignment: end;
-                    Button {
-                        label: @tr("Try again");
-                        glyph: Lucide.play;
-                        clicked => { DetailState.retry(); }
+            }
+
+
+            // How the torrent is doing, which the panel never said.
+            //
+            // You could open the insides of a torrent and not tell whether it was
+            // moving — the name, then straight into a file list. This is the first
+            // question anybody has when they click a row, so it is the first thing
+            // the panel answers, and everything in it comes from the same row the
+            // table draws so the two cannot disagree.
+            Rectangle {
+                // What is here, and nothing for what is not. Ninety-two is the
+                // height with everything in it; a band that leaves takes its own
+                // height and the spacing above it with it, so a seeding torrent on
+                // a quiet line gives back both and the head is a third shorter.
+                height: 92px
+                    - (DetailState.progress < 1.0 ? 0px : 12px)
+                    - (DetailState.down != "" || DetailState.up != "" ? 0px : 26px);
+                VerticalLayout {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    padding-bottom: 10px;
+                    spacing: 8px;
+
+                    // The bar first: it is read without being read.
+                    //
+                    // And only while there is something left to read. The table
+                    // stopped drawing a full bar long ago and this did not, so a
+                    // finished torrent opened onto a saturated band running the
+                    // width of the panel — the loudest thing on screen, saying
+                    // "done", which the word beneath it and that word's colour
+                    // were already saying. Three ways of saying one thing is how
+                    // the one that matters stops being heard.
+                    if DetailState.progress < 1.0: Rectangle {
+                        height: 4px;
+                        border-radius: 2px;
+                        background: Theme.track;
+                        Rectangle {
+                            x: 0;
+                            width: parent.width * DetailState.progress;
+                            height: parent.height;
+                            border-radius: parent.border-radius;
+                            background: DetailState.kind == 4 ? Theme.danger
+                                : DetailState.kind == 2 ? Theme.seeding
+                                : DetailState.kind == 3 ? Theme.idle
+                                : Theme.accent-fill;
+                            animate width { duration: Theme.quick; easing: Theme.ease-standard(); }
+                        }
                     }
+
+                    // Then the sentence: what it is doing, how fast, and how long.
+                    // One line, because three facts on three lines is a form.
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Text {
+                            text: DetailState.state;
+                            color: DetailState.kind == 4 ? Theme.danger
+                                : DetailState.kind == 2 ? Theme.seeding
+                                : DetailState.kind == 1 ? Theme.accent
+                                : Theme.text-dim;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            font-weight: Theme.semibold;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: DetailState.progress-text;
+                            color: Theme.text;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        if DetailState.eta != "": Text {
+                            text: DetailState.eta;
+                            color: Theme.text-dim;
+                            font-size: Theme.fs-label;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    // The rates, and only while there are any.
+                    //
+                    // What is left after the peers went to their own tab and the
+                    // ratio joined the facts above: two marks that exist when
+                    // something is moving and nothing at all when it is not. A
+                    // seeding torrent with a quiet line loses this band entirely,
+                    // which is the difference between a panel with six rows of
+                    // chrome over its content and one with four.
+                    //
+                    // An em dash held a column's width in the table; here it made
+                    // half the row into placeholders — icons reporting absence
+                    // beside numbers reporting something.
+                    if DetailState.down != "" || DetailState.up != "": HorizontalLayout {
+                        spacing: 14px;
+                        alignment: start;
+                        if DetailState.down != "": Stat {
+                            glyph: Lucide.arrow-down;
+                            value: DetailState.down;
+                            hint: @tr("Download speed");
+                            tint: Theme.accent;
+                        }
+                        if DetailState.up != "": Stat {
+                            glyph: Lucide.arrow-up;
+                            value: DetailState.up;
+                            hint: @tr("Upload speed");
+                            tint: Theme.seeding;
+                        }
+                    }
+                }
+            }
+
+            // And what can be done about it, on the torrent this panel is about —
+            // not on the selection, which may be three other rows. Every one of
+            // these has another route: the button on the hovered row, the menu,
+            // the keyboard. This is the route for somebody who is already looking
+            // at the thing.
+            Rectangle {
+                height: 44px;
+                HorizontalLayout {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    padding-bottom: 10px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    // Not the accent, and it used to be. Three things:
+                    //
+                    // The progress bar sixty pixels above it is accent-filled, and
+                    // that blue means "this much has arrived". A second blue right
+                    // under it meaning "press here" is one colour saying two
+                    // things within one glance.
+                    //
+                    // The accent says *do this*, and a switch is not a
+                    // recommendation — half the presses stop something. The label
+                    // even inverts, so it would be a fixed blue for an action that
+                    // is not fixed.
+                    //
+                    // And a primary exists to say "this is the one" where there is
+                    // a decision. These are three peer actions; there is no one.
+                    // And no outlines, which is the fourth thing.
+                    //
+                    // Three bordered pills of three different widths, one of them
+                    // red, in a panel whose job is to be read: the row was three
+                    // frames competing with the file list under it. Without the
+                    // borders they are three quiet marks with words beside them,
+                    // the same weight as the tabs below and the row buttons in the
+                    // table — and the red on Remove stops being one box among three
+                    // and becomes the only colour in the row, which is what a
+                    // warning is supposed to be.
+                    Button {
+                        label: DetailState.running ? @tr("Pause") : @tr("Start");
+                        glyph: DetailState.running ? Lucide.pause : Lucide.play;
+                        kind: ButtonKind.text;
+                        clicked => { DetailState.toggle-running(); }
+                    }
+                    Button {
+                        label: @tr("Open folder");
+                        glyph: Lucide.folder-open;
+                        kind: ButtonKind.text;
+                        clicked => { DetailState.open-folder(); }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Button {
+                        label: @tr("Remove…");
+                        glyph: Lucide.trash;
+                        kind: ButtonKind.danger;
+                        // The colour without the weight. It keeps the red — and
+                        // with the borders gone it is the only colour in the row,
+                        // which is what a warning should be rather than one framed
+                        // box among three.
+                        outlined: false;
+                        clicked => { DetailState.remove(); }
+                    }
+                }
+            }
+            // A failure gets the top of the panel, above the tabs, because it is
+            // the answer to the question that brought someone here. The message
+            // wraps rather than elides — the state column already tried eliding it,
+            // and that is what this is for.
+            //
+            // Try again is a real retry, not a hopeful one: starting an errored
+            // torrent makes librqbit re-initialise it, hash what is on disk and
+            // carry on. Whatever went wrong has to be fixed first, which is why the
+            // button says what it does and does not pretend to fix it.
+            if DetailState.fault != "": Rectangle {
+                background: Theme.danger.with-alpha(0.12);
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        VerticalLayout {
+                            alignment: start;
+                            Icon { glyph: Lucide.triangle-alert; tint: Theme.danger; size: 15px; }
+                        }
+                        Text {
+                            text: DetailState.fault;
+                            color: Theme.danger;
+                            font-size: Theme.fs-body;
+                            font-family: Theme.font;
+                            wrap: word-wrap;
+                            horizontal-stretch: 1;
+                        }
+                    }
+                    HorizontalLayout {
+                        alignment: end;
+                        Button {
+                            label: @tr("Try again");
+                            glyph: Lucide.play;
+                            clicked => { DetailState.retry(); }
+                        }
+                    }
+                }
+            }
+
                 }
             }
         }
