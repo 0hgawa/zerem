@@ -32,9 +32,11 @@ Rust + [Slint](https://slint.dev) · um processo · sem WebView · renderizaçã
 >
 > **O que falta é a Fase 4**: instalador NSIS (o script existe, falta compilar),
 > registro de `magnet:` e `.torrent` — que depende do instalador — e auto-update
-> com minisign. E **a licença do Slint** precisa ser escolhida antes de qualquer
-> release: GPLv3, royalty-free desktop ou comercial. A ordem está no
-> [roadmap](ROADMAP.md).
+> com minisign. A ordem está no [roadmap](ROADMAP.md).
+>
+> A licença **está escolhida: GPLv3** — ver [LICENSE](LICENSE). O Slint exige
+> que o binário distribuído esteja coberto por uma das licenças dele, e essa é
+> a que não tem condições a acompanhar.
 
 ## Preferências
 
@@ -681,7 +683,7 @@ cada versão nova do Rust deixa o CI vermelho em código que ninguém tocou.
 
 | Componente | Termos |
 |---|---|
-| **Slint** (toolkit de UI) | Licenciamento próprio — GPLv3, royalty-free desktop, ou comercial. Um binário distribuído tem de estar coberto por uma delas; ver [slint.dev](https://slint.dev). **A escolha para o Zerem é decisão da Fase 4, antes do primeiro release.** |
+| **Slint** (toolkit de UI) | Licenciamento próprio — GPLv3, royalty-free desktop, ou comercial. Um binário distribuído tem de estar coberto por uma delas; ver [slint.dev](https://slint.dev). **O Zerem entra pela GPLv3**, e é por isso que o próprio Zerem é GPLv3 — ver [LICENSE](LICENSE). |
 | **librqbit** (engine BitTorrent) | Apache-2.0. Fonte em [github.com/ikatson/rqbit](https://github.com/ikatson/rqbit). **Uma cópia patcheada vive em [`vendor/librqbit`](vendor/librqbit)** — ele não tem costura por onde passar criptografia de protocolo, e [`vendor/CHANGES.md`](vendor/CHANGES.md) lista cada alteração. |
 
 ## Limitações conhecidas
@@ -696,10 +698,18 @@ deste projeto; são o que o librqbit cobre hoje.
 
 ## Licença
 
-MIT © Ohgawa.
+**GPLv3** © Ohgawa — o texto completo está em [LICENSE](LICENSE).
 
-**Ainda não resolvido, e bloqueia o primeiro release:** o Slint é distribuído sob
-GPLv3, sob uma licença royalty-free para desktop, ou comercial. Um binário
-publicado precisa estar coberto por uma delas, e a escolha muda o que o MIT acima
-significa na prática. Está registrada como risco conhecido no
-[roadmap](ROADMAP.md).
+A escolha vem do toolkit. O Slint é distribuído sob GPLv3, sob uma licença
+royalty-free para desktop com condições, ou sob uma comercial paga; um binário
+publicado tem de estar coberto por uma delas. A GPLv3 é a que não deixa nada
+para acompanhar depois — sem atribuição a lembrar, sem termos a reler a cada
+release — não custa nada, e é a mesma dos clientes com que este vai ser
+comparado: qBittorrent, Transmission e Deluge.
+
+O que ela pede, este projeto já faz: o código é público, e quem recebe o binário
+recebe com ele o direito à fonte que o gerou. O que ela impede é fechar o código
+mais tarde sem antes trocar a licença do Slint.
+
+Isto dizia MIT antes de alguém ter escolhido, o que não era uma licença
+permissiva e sim uma afirmação que o binário não sustentava.

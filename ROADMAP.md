@@ -556,6 +556,6 @@ Em ordem de valor por custo. Nada entra antes da Fase 4 fechada.
 |---|---|---|
 | **uTP do librqbit** está atrás de flag e desligado por padrão | Sem ele o upload mata a latência da conexão e alguns peers ficam inalcançáveis | Validado na S0.2, **na primeira semana** — não no fim |
 | **Tabela do Slint** sem componente pronto para o que o app precisa | Retrabalho grande se descoberto tarde | S0.1 é a primeira coisa do projeto |
-| **Licença do Slint** — GPLv3, royalty-free desktop ou comercial | Um binário distribuído tem de estar coberto por uma delas | Decidir a licença do Zerem **antes** do primeiro release, e documentar como Clipo e Vayou já fazem |
+| ~~**Licença do Slint**~~ — resolvido | Um binário distribuído tem de estar coberto por uma delas | **Decidido: GPLv3.** O Slint entra pela GPLv3, então o Zerem é GPLv3 — a opção sem condições a acompanhar, e a que qBittorrent, Transmission e Deluge já usam. Ver [LICENSE](LICENSE) |
 | **Tracker privado** filtra por `peer_id` | Cliente próprio não passa no whitelist | Limitação do projeto, não bug. Documentar no README desde o início |
 | Ordenar / filtrar dentro do `.slint` | Mata o frame rate com lista grande | Regra dura: **o Slint não tem lógica**; o modelo chega pronto do Rust |

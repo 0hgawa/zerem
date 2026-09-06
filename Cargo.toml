@@ -52,7 +52,15 @@ librqbit-dualstack-sockets = { path = "vendor/librqbit-dualstack-sockets" }
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
-license = "MIT"
+# GPLv3, and the reason is the toolkit. Slint is offered under GPLv3, a
+# royalty-free desktop licence with conditions, or a paid one, and a
+# distributed binary has to be covered by one of them. GPLv3 is the option with
+# nothing to keep track of, it costs nothing, and it is what every other client
+# people compare this one to already uses -- qBittorrent, Transmission, Deluge.
+#
+# This said MIT before anyone had chosen, which was not a permissive licence so
+# much as a claim the binary could not have supported.
+license = "GPL-3.0-only"
 authors = ["Ohgawa"]
 
 [workspace.dependencies]
