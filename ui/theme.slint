@@ -182,11 +182,24 @@ export global Theme {
     public pure function ease-emphasized() -> easing { return cubic-bezier(0.05, 0.7, 0.1, 1.0); }
 
     // --- metrics ---
-    // 32 and not 28: a 14 px line in a 28 px row is Fluent's own minimum with
-    // nothing left over, and the row is the thing the cursor has to hit. It
-    // costs about one row in eight on a full window, which is the price of the
-    // list reading like the rest of the system.
-    out property <length> row-h: 32px;
+    /// How much air a row gets: `0` tight, `1` the middle, `2` roomy.
+    ///
+    /// Three and not two, because two is a switch and this is not one — it is
+    /// the choice File Explorer and Gmail both offer, and both offer it as a
+    /// list. The middle is where it starts, and is the number every other
+    /// measurement in this file was settled against.
+    in-out property <int> density: 1;
+
+    // 32 in the middle, and not 28: a 14 px line in a 28 px row is Fluent's own
+    // minimum with nothing left over, and the row is the thing the cursor has
+    // to hit. It costs about one row in eight on a full window, which is the
+    // price of the list reading like the rest of the system.
+    //
+    // Tight is that 28 — Fluent's floor and not a pixel under it, because a row
+    // is a click target before it is a line of text. Roomy gives back the six
+    // it took, which is one row in five off a full window and exactly why this
+    // is a choice rather than a decision made once for everybody.
+    out property <length> row-h: root.density == 0 ? 28px : root.density == 2 ? 38px : 32px;
     out property <length> header-h: 32px;
     // Two numbers, not three.
     //

@@ -207,6 +207,20 @@ pub fn wire(ui: &MainWindow, state: &Rc<crate::state::UiState>, store: &Rc<Store
     prefs.on_set_utp(flag(store, |s, on| s.utp = on));
     prefs.on_set_upnp(flag(store, |s, on| s.upnp = on));
 
+    prefs.on_set_density({
+        let (store, ui) = (store.clone(), ui.as_weak());
+        move |at| {
+            let Some(ui) = ui.upgrade() else { return };
+            let chosen = at.clamp(0, 2);
+            // Applied here rather than on the next tick, for the same reason
+            // the language is: the list changing under the cursor is the
+            // feedback for the click, and a quarter of a second later reads as
+            // a click that missed.
+            ui.global::<crate::Theme>().set_density(chosen);
+            store.update(|s| s.density = u8::try_from(chosen).unwrap_or(1));
+        }
+    });
+
     prefs.on_set_language({
         let (store, ui) = (store.clone(), ui.as_weak());
         move |at| {

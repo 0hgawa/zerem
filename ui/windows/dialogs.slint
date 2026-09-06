@@ -379,6 +379,26 @@ export component Preferences inherits Modal {
 
                         SettingsCard {
                             SettingsRow {
+                                title: @tr("Density");
+                                // What it costs, said on the row that offers it.
+                                // The number is the point: this is a trade of
+                                // rows on screen against room to read, and
+                                // saying which way round is more use than any
+                                // adjective.
+                                subtitle: Theme.density == 0
+                                        ? @tr("Tight rows, and the most of them on screen.")
+                                    : Theme.density == 2
+                                        ? @tr("Room to read, and about one row in five fewer.")
+                                        : @tr("The middle, and where it starts.");
+                                Dropdown {
+                                    options: [@tr("Compact"), @tr("Default"), @tr("Comfortable")];
+                                    current: Theme.density;
+                                    hint: @tr("Density");
+                                    changed(at) => { Prefs.set-density(at); }
+                                }
+                            }
+                            Divider { }
+                            SettingsRow {
                                 title: @tr("Language");
                                 subtitle: @tr("Every window changes at once. No restart.");
                                 Dropdown {

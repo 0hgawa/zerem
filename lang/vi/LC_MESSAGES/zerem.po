@@ -450,3 +450,24 @@ msgstr "uTP — nhường đường cho lưu lượng khác trên cùng đườn
 
 msgid "Minimize the state list"
 msgstr "Thu nhỏ danh sách trạng thái"
+
+msgid "Density"
+msgstr "Mật độ"
+
+msgid "Compact"
+msgstr "Gọn"
+
+msgid "Default"
+msgstr "Mặc định"
+
+msgid "Comfortable"
+msgstr "Thoáng"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Hàng sát nhau, và nhiều hàng nhất trên màn hình."
+
+msgid "The middle, and where it starts."
+msgstr "Mức giữa, và là nơi bắt đầu."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Có chỗ để đọc, và ít hơn khoảng một hàng trong mỗi năm hàng."

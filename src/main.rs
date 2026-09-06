@@ -117,6 +117,7 @@ fn main() -> Result<(), slint::PlatformError> {
     state.restore_view(&settings);
     state.adopt_shelves(&settings);
     ui.global::<TorrentList>().set_rail_state(i32::from(settings.rail_state.min(2)));
+    ui.global::<Theme>().set_density(i32::from(settings.density.min(2)));
     bridge::detail::show_width(&ui, &state);
     bridge::prefs::show(&ui, &settings);
 

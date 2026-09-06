@@ -450,3 +450,24 @@ msgstr "uTP — cede el paso al resto del tráfico de la misma línea"
 
 msgid "Minimize the state list"
 msgstr "Minimizar la lista de estados"
+
+msgid "Density"
+msgstr "Densidad"
+
+msgid "Compact"
+msgstr "Compacta"
+
+msgid "Default"
+msgstr "Predeterminada"
+
+msgid "Comfortable"
+msgstr "Cómoda"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Filas ajustadas, y la mayor cantidad de ellas en pantalla."
+
+msgid "The middle, and where it starts."
+msgstr "El término medio, y donde empieza."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Espacio para leer, y alrededor de una fila menos de cada cinco."

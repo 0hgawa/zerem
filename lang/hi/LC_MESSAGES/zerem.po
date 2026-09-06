@@ -450,3 +450,24 @@ msgstr "uTP — उसी लाइन के दूसरे ट्रैफ़
 
 msgid "Minimize the state list"
 msgstr "स्थिति सूची छोटी करें"
+
+msgid "Density"
+msgstr "घनत्व"
+
+msgid "Compact"
+msgstr "सघन"
+
+msgid "Default"
+msgstr "डिफ़ॉल्ट"
+
+msgid "Comfortable"
+msgstr "आरामदेह"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "सटी हुई पंक्तियाँ, और स्क्रीन पर सबसे ज़्यादा।"
+
+msgid "The middle, and where it starts."
+msgstr "बीच का, और यहीं से शुरू होता है।"
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "पढ़ने की जगह, और लगभग हर पाँच में से एक पंक्ति कम।"

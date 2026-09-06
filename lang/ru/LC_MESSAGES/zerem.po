@@ -450,3 +450,24 @@ msgstr "uTP — уступает другому трафику на том же 
 
 msgid "Minimize the state list"
 msgstr "Свернуть список состояний"
+
+msgid "Density"
+msgstr "Плотность"
+
+msgid "Compact"
+msgstr "Плотно"
+
+msgid "Default"
+msgstr "Обычно"
+
+msgid "Comfortable"
+msgstr "Свободно"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Тесные строки, и больше всего их на экране."
+
+msgid "The middle, and where it starts."
+msgstr "Середина, и с неё всё начинается."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Место, чтобы читать, и примерно на одну строку из пяти меньше."

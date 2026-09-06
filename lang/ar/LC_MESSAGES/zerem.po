@@ -450,3 +450,24 @@ msgstr "‏uTP — يفسح الطريق لبقية البيانات على ال
 
 msgid "Minimize the state list"
 msgstr "تصغير قائمة الحالات"
+
+msgid "Density"
+msgstr "الكثافة"
+
+msgid "Compact"
+msgstr "مضغوط"
+
+msgid "Default"
+msgstr "افتراضي"
+
+msgid "Comfortable"
+msgstr "مريح"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "صفوف ضيقة، وأكبر عدد منها على الشاشة."
+
+msgid "The middle, and where it starts."
+msgstr "الوسط، وهو نقطة البداية."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "مساحة للقراءة، وصف أقل من كل خمسة تقريبًا."

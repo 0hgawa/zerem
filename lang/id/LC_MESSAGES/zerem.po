@@ -450,3 +450,24 @@ msgstr "uTP — mengalah pada lalu lintas lain di jalur yang sama"
 
 msgid "Minimize the state list"
 msgstr "Kecilkan daftar keadaan"
+
+msgid "Density"
+msgstr "Kerapatan"
+
+msgid "Compact"
+msgstr "Rapat"
+
+msgid "Default"
+msgstr "Bawaan"
+
+msgid "Comfortable"
+msgstr "Lega"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Baris rapat, dan paling banyak muat di layar."
+
+msgid "The middle, and where it starts."
+msgstr "Di tengah, dan dari sinilah mulainya."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Ruang untuk membaca, dan sekitar satu dari lima baris lebih sedikit."

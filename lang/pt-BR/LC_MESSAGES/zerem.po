@@ -468,3 +468,24 @@ msgstr "Maximizar"
 
 msgid "Minimize the state list"
 msgstr "Minimizar a lista de estados"
+
+msgid "Density"
+msgstr "Densidade"
+
+msgid "Compact"
+msgstr "Compacta"
+
+msgid "Default"
+msgstr "Padrão"
+
+msgid "Comfortable"
+msgstr "Confortável"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Linhas apertadas, e o máximo delas na tela."
+
+msgid "The middle, and where it starts."
+msgstr "O meio-termo, e onde tudo começa."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Espaço para ler, e cerca de uma linha a menos a cada cinco."

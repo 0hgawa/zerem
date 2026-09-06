@@ -21,6 +21,11 @@ const fn wide_open() -> u8 {
     2
 }
 
+/// Rows at the height every other measurement in the theme was settled against.
+const fn middling() -> u8 {
+    1
+}
+
 /// The choices the speed menus offer, in kB/s. `0` is unlimited.
 ///
 /// A menu rather than a text field: nobody wants to type "512", and picking from
@@ -61,6 +66,13 @@ pub struct Settings {
     /// and the first frame after a launch is not the wrong colour.
     #[serde(default = "follow_the_system")]
     pub theme: String,
+    /// How much air a row gets: `0` tight, `1` the middle, `2` roomy.
+    ///
+    /// Like the column widths, nobody arrives at this from a panel — they
+    /// arrive at it from the list being denser or looser than suits them, which
+    /// is why it is a preference and not a decision made once for everybody.
+    #[serde(default = "middling")]
+    pub density: u8,
 
     /// What the app does about protocol encryption: "off", "prefer" or
     /// "require".
@@ -160,6 +172,7 @@ impl Default for Settings {
             utp: engine.utp,
             upnp: engine.upnp,
             theme: follow_the_system(),
+            density: middling(),
             encryption: offered_not_demanded(),
             dark: true,
             sort_col: 0,

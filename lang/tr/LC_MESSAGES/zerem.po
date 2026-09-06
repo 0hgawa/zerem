@@ -450,3 +450,24 @@ msgstr "uTP — aynı hattaki diğer trafiğe yol verir"
 
 msgid "Minimize the state list"
 msgstr "Durum listesini küçült"
+
+msgid "Density"
+msgstr "Yoğunluk"
+
+msgid "Compact"
+msgstr "Sıkışık"
+
+msgid "Default"
+msgstr "Varsayılan"
+
+msgid "Comfortable"
+msgstr "Ferah"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Sıkışık satırlar, ve ekranda en fazlası."
+
+msgid "The middle, and where it starts."
+msgstr "Ortası, ve başlangıç noktası."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Okumak için yer, ve yaklaşık beş satırda bir eksik."

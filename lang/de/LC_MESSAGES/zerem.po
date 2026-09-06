@@ -450,3 +450,24 @@ msgstr "uTP — weicht anderem Verkehr auf derselben Leitung"
 
 msgid "Minimize the state list"
 msgstr "Zustandsliste verkleinern"
+
+msgid "Density"
+msgstr "Dichte"
+
+msgid "Compact"
+msgstr "Kompakt"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Comfortable"
+msgstr "Komfortabel"
+
+msgid "Tight rows, and the most of them on screen."
+msgstr "Enge Zeilen, und die meisten davon auf dem Bildschirm."
+
+msgid "The middle, and where it starts."
+msgstr "Die Mitte, und wo es beginnt."
+
+msgid "Room to read, and about one row in five fewer."
+msgstr "Platz zum Lesen, und etwa jede fünfte Zeile weniger."

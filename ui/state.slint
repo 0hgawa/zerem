@@ -431,6 +431,10 @@ export global Prefs {
     /// Slint's bundled translations are a property, so every string redraws
     /// without a restart.
     callback set-language(int);
+    /// How much air a row gets: `0` tight, `1` the middle, `2` roomy. Lands on
+    /// `Theme.density`, which is what every row height is derived from, and is
+    /// remembered like the column widths are.
+    callback set-density(int);
 }
 
 export global SessionState {

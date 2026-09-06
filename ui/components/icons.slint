@@ -52,14 +52,21 @@ export global Lucide {
     /// Lucide's `panel-left-dashed`. A broken divider for the state in between:
     /// the pane is there, and there is less of it.
     out property <string> panel-left-dashed: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v2 M9 9v1 M9 14v1 M9 19v2";
-    /// The same box with the pane inked in.
+    /// The same box with only the narrow left part inked in.
     ///
-    /// The outline, then the *right* part as a shape of its own. Under even-odd
-    /// the right is covered twice and stays empty while the narrow left is
-    /// covered once and fills — one path being an outline and a solid block at
-    /// the same time. Its own left edge falls exactly where the divider is
-    /// drawn in the two above, so the three line up.
-    out property <string> panel-left-solid: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9z";
+    /// The outline, then the *right* part as a shape of its own — drawn the
+    /// other way round. Wound backwards it cancels the outline's winding
+    /// wherever the two overlap, so the wide right stays empty and only the
+    /// narrow left fills.
+    ///
+    /// Backwards rather than even-odd, and that is the point: an even-odd fill
+    /// says the same thing, and this renderer does not honour the rule. The
+    /// first attempt asked for even-odd, got non-zero, and inked the whole box.
+    /// A path that is right under both rules cannot be got wrong by either.
+    ///
+    /// Its left edge falls exactly where the divider is drawn in the two above,
+    /// so the three line up and only their contents differ.
+    out property <string> panel-left-solid: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v18h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z";
     out property <string> panel-right: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M15 3v18";
     out property <string> sun: "M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M19.07 4.93l-1.41 1.41 M6.34 17.66l-1.41 1.41";
     out property <string> moon: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z";
