@@ -447,3 +447,6 @@ msgstr "indirilmiyor"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — aynı hattaki diğer trafiğe yol verir"
+
+msgid "Minimize the state list"
+msgstr "Durum listesini küçült"

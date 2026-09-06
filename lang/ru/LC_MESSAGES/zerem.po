@@ -447,3 +447,6 @@ msgstr "не загружается"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — уступает другому трафику на том же канале"
+
+msgid "Minimize the state list"
+msgstr "Свернуть список состояний"

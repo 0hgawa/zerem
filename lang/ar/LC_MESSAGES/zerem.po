@@ -447,3 +447,6 @@ msgstr "لا يُنزَّل"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "‏uTP — يفسح الطريق لبقية البيانات على الخط نفسه"
+
+msgid "Minimize the state list"
+msgstr "تصغير قائمة الحالات"

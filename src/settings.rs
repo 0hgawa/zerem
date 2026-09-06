@@ -16,6 +16,11 @@ use serde::{Deserialize, Serialize};
 /// crash in that window costs nothing anyone would notice.
 const QUIET: std::time::Duration = std::time::Duration::from_millis(400);
 
+/// The rail showing its names and counts, which is where it starts.
+const fn wide_open() -> u8 {
+    2
+}
+
 /// The choices the speed menus offer, in kB/s. `0` is unlimited.
 ///
 /// A menu rather than a text field: nobody wants to type "512", and picking from
@@ -80,9 +85,16 @@ pub struct Settings {
     /// transfer one: librqbit neither knows nor needs to know. A `BTreeMap` so
     /// the file is stable between saves and a diff of it says something.
     pub assigned: std::collections::BTreeMap<String, String>,
-    /// Whether the state rail is on screen. Like the column widths, nobody
-    /// chooses this in a panel — they arrive at it by using the app.
-    pub rail_open: bool,
+    /// How much of the state rail is on screen: `0` gone, `1` a strip of icons,
+    /// `2` names and counts. Like the column widths, nobody chooses this in a
+    /// panel -- they arrive at it by using the app.
+    ///
+    /// It was a `bool` and became three states, which renames the field. A
+    /// settings file written by an older build has no `rail_state` in it and
+    /// gets the default, which is the state that build would have been in
+    /// anyway unless somebody had hidden the rail.
+    #[serde(default = "wide_open")]
+    pub rail_state: u8,
     /// Empty means "never resized"; the table falls back to its own defaults.
     pub column_widths: Vec<f32>,
     /// Empty means "never touched"; every column shows. Hand-editable like the
@@ -154,7 +166,7 @@ impl Default for Settings {
             sort_desc: false,
             categories: zerem_core::Shelves::new(),
             assigned: std::collections::BTreeMap::new(),
-            rail_open: true,
+            rail_state: wide_open(),
             column_widths: Vec::new(),
             column_visible: Vec::new(),
             max_active: 0,

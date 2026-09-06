@@ -151,20 +151,21 @@ component FileLine inherits Rectangle {
         // four folders deep still leaves room for the names themselves.
         Rectangle { width: root.entry.depth * 14px; }
 
+        // Chevron, tick, icon, name — the order every tree on this desktop
+        // uses, and the order the header above this list uses too.
+        //
+        // The slot is there on a file as well as a folder, holding nothing. A
+        // chevron that only some rows have would shift every tick under it by
+        // its own width, and ticks that do not line up down a column are the
+        // first thing the eye catches in a list this long.
         VerticalLayout {
-            alignment: center;
-            Tick { on: entry.wanted; partial: entry.partial; }
-        }
-
-        // The chevron, for a folder, in the slot the file icon uses. Pointing
-        // right when shut and down when open, which is what every tree on this
-        // desktop draws — the direction is the state, and it needs no legend.
-        if entry.is-folder: VerticalLayout {
             alignment: center;
             Rectangle {
                 width: 16px;
                 height: 16px;
-                Icon {
+                if root.entry.is-folder: Icon {
+                    // Right when shut, down when open. The direction is the
+                    // state, which is how a tree says it without a legend.
                     glyph: root.entry.open ? Lucide.chevron-down : Lucide.chevron-right;
                     tint: Theme.text-dim;
                     size: 14px;
@@ -174,17 +175,24 @@ component FileLine inherits Rectangle {
             }
         }
 
-        // The desktop's own icon for this kind of file. Whatever the user
-        // installed to open it is what they will recognise, and a glyph drawn
-        // here would be a second opinion about something already answered.
-        if !entry.is-folder: VerticalLayout {
+        VerticalLayout {
+            alignment: center;
+            Tick { on: entry.wanted; partial: entry.partial; }
+        }
+
+        // The desktop's own icon: its folder for a folder, and for a file
+        // whatever the user installed to open that kind. A glyph drawn here
+        // would be a second opinion about something already answered — and a
+        // folder with no icon at all, which is what this row had, reads as a
+        // file whose kind nobody knew.
+        VerticalLayout {
             alignment: center;
             Image {
-                source: entry.icon;
+                source: root.entry.is-folder ? DetailState.folder-icon : entry.icon;
                 width: 16px;
                 height: 16px;
                 image-fit: contain;
-                // A file nobody asked for fades with its name.
+                // Anything nobody asked for fades with its name.
                 opacity: entry.wanted ? 1.0 : 0.45;
             }
         }
@@ -282,20 +290,33 @@ component FileLine inherits Rectangle {
         }
     }
 
-    // The gutter the tick sits in — 38 px wide and the full height of the row,
-    // which is still more than twice the square itself.
-    //
-    // It used to be the whole line, on the reasoning that a 16 px box is a
-    // small thing to ask somebody to hit fifty times in a row. That was right
-    // about the target and wrong about the line: once the line grew a second
-    // action, a click on the path, the size or the progress bar silently
-    // switched the file off.
+    // Where the row's own controls start, once the indent has had its share.
+    // The layout above places them; these areas have to land on top of them,
+    // and both read the same arithmetic so they cannot drift apart.
+    property <length> lead: 12px + root.entry.depth * 14px;
+
+    // The chevron's target, and only on a folder — on a file the slot is empty
+    // and a click there belongs to the row.
     //
     // Declared after the hover area so it takes its own clicks, the same order
-    // the pin below relies on.
+    // the tick and the pin below rely on.
+    if root.entry.is-folder: TouchArea {
+        x: root.lead;
+        width: 26px;
+        height: parent.height;
+        mouse-cursor: pointer;
+        clicked => { DetailState.toggle-folder(root.entry.path); }
+    }
+
+    // The gutter the tick sits in — wider than the square itself, because a
+    // 16 px box is a small thing to ask somebody to hit fifty times in a row.
+    //
+    // It used to be the whole line. That was right about the target and wrong
+    // about the line: once the line grew a second action, a click on the name,
+    // the size or the progress bar silently switched the file off.
     TouchArea {
-        x: 0;
-        width: 38px;
+        x: root.lead + 26px;
+        width: 26px;
         height: parent.height;
         mouse-cursor: pointer;
         clicked => {
@@ -723,6 +744,33 @@ export component DetailDrawer inherits Rectangle {
                 padding-right: 8px;
                 spacing: 6px;
 
+                // The fold, first in the row.
+                //
+                // It sat at the right-hand end, and the reason was written down:
+                // this was a header over a *flat* list, so a chevron ahead of
+                // the tick would have pushed that tick a chevron's width right
+                // of every tick below it, and children to the left of their
+                // parent is hierarchy read backwards.
+                //
+                // The list below is a tree now, and that premise went with it.
+                // Every row down there already leads with a chevron slot, so
+                // this row leading with one is what lines the three levels up —
+                // and a header whose expander is at the other end from every
+                // expander under it was the thing that looked wrong.
+                fold := TouchArea {
+                    width: 22px;
+                    height: parent.height;
+                    mouse-cursor: pointer;
+                    clicked => { DetailState.files-collapsed = !DetailState.files-collapsed; }
+                    Icon {
+                        glyph: DetailState.files-collapsed ? Lucide.chevron-right : Lucide.chevron-down;
+                        tint: Theme.text-dim;
+                        size: 14px;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                    }
+                }
+
                 tickbox := TouchArea {
                     width: 24px;
                     height: parent.height;
@@ -764,40 +812,6 @@ export component DetailDrawer inherits Rectangle {
                     DetailCell { text: DetailState.files-choice; }
                 }
 
-                // The fold, at the right-hand end.
-                //
-                // It was first in the row, on the reasoning that a fold belongs
-                // at the leftmost edge of what it folds. True of a tree, and
-                // this is not one: it is a header over a flat list, and putting
-                // the chevron ahead of the tick pushed that tick a chevron's
-                // width to the right of every tick below it. Children sitting
-                // to the *left* of their parent is hierarchy read backwards,
-                // and it was the first thing anyone noticed about this panel.
-                //
-                // Indenting the files instead would have squared it, and cost
-                // twenty-four pixels of name on every row in a panel where the
-                // names already elide. Windows 11 puts an expander's chevron on
-                // the right; this row is an expander; so does this.
-                fold := TouchArea {
-                    width: 24px;
-                    height: parent.height;
-                    mouse-cursor: pointer;
-                    clicked => { DetailState.files-collapsed = !DetailState.files-collapsed; }
-                    Rectangle {
-                        width: 22px;
-                        height: 22px;
-                        border-radius: 7px;
-                        x: (parent.width - self.width) / 2;
-                        y: (parent.height - self.height) / 2;
-                        background: fold.has-hover ? Theme.surface-hi : transparent;
-                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
-                        Icon {
-                            glyph: DetailState.files-collapsed ? Lucide.chevron-right : Lucide.chevron-down;
-                            tint: Theme.text-dim;
-                            size: 14px;
-                        }
-                    }
-                }
             }
 
             accessible-role: checkbox;

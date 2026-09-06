@@ -447,3 +447,6 @@ msgstr "डाउनलोड नहीं हो रहा"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — उसी लाइन के दूसरे ट्रैफ़िक को रास्ता देता है"
+
+msgid "Minimize the state list"
+msgstr "स्थिति सूची छोटी करें"

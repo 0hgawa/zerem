@@ -122,13 +122,24 @@ export component Toolbar inherits Rectangle {
         // header and was in the way of the shelves. Among the theme switch and
         // the preferences it is what it is — one of the few things in this
         // window that changes the window rather than a torrent.
+        //
+        // Three states through one button, so the glyph has to carry which one
+        // you are in: the box is the window and the line is the pane's edge.
+        // The tip names what pressing does, which is the other half — a button
+        // that only shows a state leaves you to guess what it will become.
         VerticalLayout {
             alignment: center;
             IconButton {
-                glyph: Lucide.panel-left;
-                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
-                tip: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
-                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
+                glyph: TorrentList.rail-state == 2 ? Lucide.panel-left-wide
+                    : TorrentList.rail-state == 1 ? Lucide.panel-left
+                    : Lucide.panel-left-off;
+                label: TorrentList.rail-state == 2 ? @tr("Minimize the state list")
+                    : TorrentList.rail-state == 1 ? @tr("Hide the state list")
+                    : @tr("Show the state list");
+                tip: TorrentList.rail-state == 2 ? @tr("Minimize the state list")
+                    : TorrentList.rail-state == 1 ? @tr("Hide the state list")
+                    : @tr("Show the state list");
+                tint: TorrentList.rail-state > 0 ? Theme.accent : Theme.text-dim;
                 clicked => { TorrentList.toggle-rail(); }
             }
         }

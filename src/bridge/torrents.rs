@@ -133,9 +133,16 @@ fn wire_rail(
         move || {
             let Some(ui) = ui.upgrade() else { return };
             let list = ui.global::<TorrentList>();
-            let open = !list.get_rail_open();
-            list.set_rail_open(open);
-            store.update(|s| s.rail_open = open);
+            // Open, then folded, then gone, then open again. Downwards, so
+            // the press that gives up room is the same press every time and
+            // the one that gives it back is the one after the last.
+            let next = match list.get_rail_state() {
+                2 => 1,
+                1 => 0,
+                _ => 2,
+            };
+            list.set_rail_state(next);
+            store.update(|s| s.rail_state = u8::try_from(next).unwrap_or(2));
         }
     });
 

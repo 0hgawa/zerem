@@ -447,3 +447,6 @@ msgstr "wird nicht heruntergeladen"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — weicht anderem Verkehr auf derselben Leitung"
+
+msgid "Minimize the state list"
+msgstr "Zustandsliste verkleinern"

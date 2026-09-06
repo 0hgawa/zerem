@@ -447,3 +447,6 @@ msgstr "tidak diunduh"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — mengalah pada lalu lintas lain di jalur yang sama"
+
+msgid "Minimize the state list"
+msgstr "Kecilkan daftar keadaan"

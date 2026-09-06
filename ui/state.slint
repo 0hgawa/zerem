@@ -474,8 +474,15 @@ export global TorrentList {
     in-out property <string> filter;
     /// Which state the rail has the view narrowed to — mirrors Shown::index().
     in-out property <int> shown;
-    /// Whether the rail is on screen. Persisted, like the drawer.
-    in-out property <bool> rail-open: true;
+    /// How much of the state rail is on screen: `0` gone, `1` a strip of icons,
+    /// `2` names and counts. Persisted, like the drawer.
+    ///
+    /// Three and not two, because the two useful answers are not the same
+    /// answer. Folded to icons, the filter never leaves the screen and the
+    /// counts stay one glance away — that is the one to live in. Gone entirely
+    /// is for somebody who wants every pixel for the list, and it is a real
+    /// thing to want on a narrow window.
+    in-out property <int> rail-state: 2;
     /// The shelves, with their counts. Built in Rust like every other list.
     in-out property <[CategoryEntry]> categories;
     /// Which shelf the view is on, or empty for all of them.

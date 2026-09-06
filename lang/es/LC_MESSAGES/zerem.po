@@ -447,3 +447,6 @@ msgstr "sin descargar"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — cede el paso al resto del tráfico de la misma línea"
+
+msgid "Minimize the state list"
+msgstr "Minimizar la lista de estados"

@@ -447,3 +447,6 @@ msgstr "không tải"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — nhường đường cho lưu lượng khác trên cùng đường truyền"
+
+msgid "Minimize the state list"
+msgstr "Thu nhỏ danh sách trạng thái"

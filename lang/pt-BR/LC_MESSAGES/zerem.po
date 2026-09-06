@@ -465,3 +465,6 @@ msgstr "Restaurar"
 
 msgid "Maximize"
 msgstr "Maximizar"
+
+msgid "Minimize the state list"
+msgstr "Minimizar a lista de estados"

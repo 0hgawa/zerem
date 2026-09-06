@@ -447,3 +447,6 @@ msgstr "non téléchargé"
 
 msgid "uTP — yields to other traffic on the same line"
 msgstr "uTP — cède la place au reste du trafic sur la même ligne"
+
+msgid "Minimize the state list"
+msgstr "Réduire la liste des états"
