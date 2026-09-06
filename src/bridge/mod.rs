@@ -13,7 +13,7 @@ use zerem_core::fmt;
 use zerem_engine::{Snapshot, TICK};
 
 use crate::state::UiState;
-use crate::{AddState, MainWindow, Prefs, SessionState, TorrentList};
+use crate::{MainWindow, Prefs, SessionState, TorrentList};
 
 pub mod add;
 pub mod detail;
@@ -124,15 +124,27 @@ pub fn start_tick(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<Views>) -> sl
     timer
 }
 
-/// Whether a modal is over the window.
+/// Whether a modal is over the window and showing nothing that moves.
 ///
-/// The three that exist, named rather than derived: a dialog added later has to
-/// be added here too, and a list that says so is better than a rule that looks
-/// like it already covers it.
+/// Named rather than derived: a dialog added later has to be added here too,
+/// and a list that says so is better than a rule that looks like it already
+/// covers it -- which is exactly how the add dialog ended up in here and
+/// stopped working.
 fn covered(ui: &MainWindow) -> bool {
-    ui.global::<Prefs>().get_open()
-        || ui.global::<AddState>().get_open()
-        || ui.global::<TorrentList>().get_confirming()
+    // The add dialog is deliberately not here, and the omission is the whole
+    // point of the comment.
+    //
+    // It is the one modal that *shows* the snapshot rather than merely sitting
+    // over it: a pasted magnet arrives as `pending`, and the dialog fills in
+    // from the tick that carries it. Holding refreshes while it is open froze
+    // the dialog on "Fetching the file list from the swarm…" for ever, whatever
+    // the swarm did — the answer came back and there was nothing left running
+    // to draw it.
+    //
+    // So the list behind it keeps redrawing, and can still leak through the
+    // scrim while that dialog is up. That is a blemish for a few seconds; a
+    // dialog that never fills is a feature that does not work.
+    ui.global::<Prefs>().get_open() || ui.global::<TorrentList>().get_confirming()
 }
 
 /// Pull a snapshot through to the screen — the single path by which anything
