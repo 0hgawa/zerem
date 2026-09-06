@@ -131,8 +131,8 @@ export component Toolbar inherits Rectangle {
             alignment: center;
             IconButton {
                 glyph: TorrentList.rail-state == 2 ? Lucide.panel-left-solid
-                    : TorrentList.rail-state == 1 ? Lucide.panel-left
-                    : Lucide.panel-left-off;
+                    : TorrentList.rail-state == 1 ? Lucide.panel-left-dashed
+                    : Lucide.panel-left;
                 // Filled only when the pane is open, and in the same ink as the
                 // outline. The three glyphs are already three drawings — a
                 // colour on top of that would be saying it twice, and the one

@@ -40,20 +40,25 @@ export global Lucide {
     // changes it — so the button has to say which one you are in.
     //
     // The family VS Code uses for the same control, and for the same reason:
-    // the box is the window, and what is in the left of it is the pane. Empty
-    // box, no pane. A line, a pane folded to icons. A filled block, the pane
-    // open — which needs no second colour to say it, and that matters because
-    // an accent tint was the only thing telling two of these apart before.
-    out property <string> panel-left-off: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z";
-    // Lucide's `panel-left-dashed`. A broken line rather than a solid one, which
-    // is the middle state saying exactly what it is: the pane is there, and
-    // there is less of it.
-    out property <string> panel-left: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v2 M9 9v1 M9 14v1 M9 19v2";
-    // The outline, then the *right* half as a shape of its own. Under even-odd
-    // the right is covered twice and stays empty while the left is covered once
-    // and fills — which is how one path is an outline and a solid block at the
-    // same time, and why the right half's own left edge lands exactly where the
-    // divider above is drawn.
+    // the box is the window, and the pane is the narrow part on its left. The
+    // divider stays put across all three, so what changes between them is only
+    // ever what is *in* the pane. Nothing, dashes, or ink.
+    //
+    // No accent on any of them. Three drawings say it, and the accent means
+    // "selected" everywhere else in this window.
+
+    /// Lucide's `panel-left`. The pane is there and empty: the rail is off.
+    out property <string> panel-left: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v18";
+    /// Lucide's `panel-left-dashed`. A broken divider for the state in between:
+    /// the pane is there, and there is less of it.
+    out property <string> panel-left-dashed: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v2 M9 9v1 M9 14v1 M9 19v2";
+    /// The same box with the pane inked in.
+    ///
+    /// The outline, then the *right* part as a shape of its own. Under even-odd
+    /// the right is covered twice and stays empty while the narrow left is
+    /// covered once and fills — one path being an outline and a solid block at
+    /// the same time. Its own left edge falls exactly where the divider is
+    /// drawn in the two above, so the three line up.
     out property <string> panel-left-solid: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9z";
     out property <string> panel-right: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M15 3v18";
     out property <string> sun: "M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M19.07 4.93l-1.41 1.41 M6.34 17.66l-1.41 1.41";
