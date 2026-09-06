@@ -727,14 +727,14 @@ impl TorrentSession {
     pub async fn set_file_wanted(
         &mut self,
         id: TorrentId,
-        file: Option<usize>,
+        files: Option<&[usize]>,
         wanted: bool,
     ) -> anyhow::Result<()> {
         let entry = self.entries.get_mut(&id).context("no such torrent")?;
         let count = entry.resolve_files();
         anyhow::ensure!(count > 0, "this torrent's file list has not arrived yet");
 
-        entry.wanted = zerem_core::ticked(&entry.wanted, file, wanted).context("no such file")?;
+        entry.wanted = zerem_core::ticked(&entry.wanted, files, wanted).context("no such file")?;
 
         // Un-ticking a file drops its pin with it: a file nobody is fetching
         // cannot be the one being fetched first.

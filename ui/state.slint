@@ -65,15 +65,35 @@ export struct FileEntry {
     /// extension — the window formats nothing and knows nothing about
     /// containers.
     playable: bool,
-    /// The whole relative path, which is what a screen reader is told and what
-    /// the file is opened by. What is *drawn* is the two halves below.
+    /// The whole relative path: what a screen reader is told, what the file is
+    /// opened by, and how a folder is named when it is opened or shut.
     path: string,
-    /// Where it lives, already carrying its separators, and empty for a file
-    /// at the top of the torrent. Dim, because it is not what anyone is
-    /// looking for — the name is.
-    folder: string,
-    /// What it is called.
+    /// What it is called — the last part of the path and nothing else.
+    ///
+    /// The row used to print `folder › folder › name`, and the folder ate the
+    /// width: a discography of seventeen hundred tracks was screen after screen
+    /// of rows all reading the same elided prefix, with the name off the right
+    /// edge of every one. The folders are rows of their own now.
     name: string,
+    /// Where this row's file sits in the torrent, or `-1` for a folder.
+    ///
+    /// Every callback takes this rather than the row's position in the list.
+    /// The list is a tree, so the two stopped being the same number — and a
+    /// torrent whose own file order is not sorted would have had the wrong file
+    /// toggled, quietly.
+    at: int,
+    /// How far in to draw it. Zero is the top of the torrent.
+    depth: int,
+    /// Whether this row is a folder rather than a file.
+    is-folder: bool,
+    /// Folders only: whether it is showing what is inside it.
+    open: bool,
+    /// Folders only: how many files are under it, however deep.
+    files: int,
+    /// Folders only: some of what is inside is coming down and some is not —
+    /// neither ticked nor empty, and drawing it as either is a lie somebody
+    /// would act on.
+    partial: bool,
     /// The icon the desktop itself shows for this kind of file, so a `.mkv`
     /// here carries the same picture it carries in Explorer. Empty on a
     /// platform that has no such notion, and the line falls back to a glyph.
@@ -220,6 +240,14 @@ export global DetailState {
     /// Fetch this file before the others, or stop. Same rule: applied at once,
     /// corrected by the next snapshot if the engine refused.
     callback toggle-first(int);
+    /// Show what is inside a folder, or stop showing it. By path, because a
+    /// folder has no index — and the path is what survives the list being
+    /// rebuilt on the next snapshot, which a row number would not.
+    callback toggle-folder(string);
+    /// Fetch everything under this folder, or none of it. A folder that is
+    /// partly wanted ticks whole, which is the answer somebody clicking a
+    /// half-ticked box is asking for.
+    callback toggle-folder-files(string);
 
     // --- the right-click menu on a file ---
     //

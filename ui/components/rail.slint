@@ -14,17 +14,20 @@ import { Theme } from "../theme.slint";
 import { SessionState, TorrentList } from "../state.slint";
 import { Lucide } from "icons.slint";
 import { RailItem } from "common.slint";
-import { IconButton } from "button.slint";
 
 export component Rail inherits Rectangle {
     /// Folded to a strip of icons rather than taken off screen.
     ///
-    /// It used to disappear entirely, and the button that brought it back sat
-    /// in the title bar beside the app icon — a control for the left of the
-    /// window living where the window says what it is. Folding is what every
-    /// navigation pane on this desktop does instead: Settings, File Explorer,
-    /// Photos, Mail. The filter never leaves the screen, so there is no state
-    /// to explain, and the button belongs to the pane it folds.
+    /// It used to disappear entirely. Folding is what every navigation pane on
+    /// this desktop does instead — Settings, File Explorer, Photos, Mail — and
+    /// it means the filter never leaves the screen, so there is no vanished
+    /// state for a button to have to explain.
+    ///
+    /// The button that folds it is in the toolbar, among the theme switch and
+    /// the preferences. It was beside the app icon, where it read as a function
+    /// of the app, and then in this pane's own header, where it was in the way
+    /// of the shelves; over there it sits with the other few controls that
+    /// change the window rather than a torrent.
     in property <bool> collapsed;
 
     width: root.collapsed ? 48px : 166px;
@@ -37,23 +40,6 @@ export component Rail inherits Rectangle {
         padding: 6px;
         spacing: 2px;
         alignment: start;
-
-        // The fold, at the top of the thing it folds. Left-aligned open and
-        // centred shut, which is where the hand looks for it in both.
-        HorizontalLayout {
-            height: 34px;
-            alignment: root.collapsed ? center : start;
-            VerticalLayout {
-                alignment: center;
-                IconButton {
-                    glyph: Lucide.panel-left;
-                    label: root.collapsed ? @tr("Show the state list") : @tr("Hide the state list");
-                    tip: root.collapsed ? @tr("Show the state list") : @tr("Hide the state list");
-                    tint: Theme.text-dim;
-                    clicked => { TorrentList.toggle-rail(); }
-                }
-            }
-        }
 
         RailItem {
             collapsed: root.collapsed;

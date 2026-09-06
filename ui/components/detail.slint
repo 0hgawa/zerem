@@ -116,7 +116,13 @@ component FileLine inherits Rectangle {
     accessible-description: root.entry.first ? @tr("Being fetched before the others")
         : root.entry.complete ? @tr("Finished")
         : root.entry.pct;
-    accessible-action-default => { DetailState.toggle-file(root.index); }
+    accessible-action-default => {
+        if (root.entry.is-folder) {
+            DetailState.toggle-folder-files(root.entry.path);
+        } else {
+            DetailState.toggle-file(root.entry.at);
+        }
+    }
     background: mod(index, 2) == 1 ? Theme.row-alt : transparent;
 
     // The same inset pill the table draws, for the same reason: a highlight
@@ -140,15 +146,38 @@ component FileLine inherits Rectangle {
         padding-right: 12px;
         spacing: 10px;
 
+        // How deep this row sits. Fourteen pixels a level: enough that the
+        // nesting reads down a column of names, small enough that a torrent
+        // four folders deep still leaves room for the names themselves.
+        Rectangle { width: root.entry.depth * 14px; }
+
         VerticalLayout {
             alignment: center;
-            Tick { on: entry.wanted; }
+            Tick { on: entry.wanted; partial: entry.partial; }
+        }
+
+        // The chevron, for a folder, in the slot the file icon uses. Pointing
+        // right when shut and down when open, which is what every tree on this
+        // desktop draws — the direction is the state, and it needs no legend.
+        if entry.is-folder: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 16px;
+                height: 16px;
+                Icon {
+                    glyph: root.entry.open ? Lucide.chevron-down : Lucide.chevron-right;
+                    tint: Theme.text-dim;
+                    size: 14px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
+            }
         }
 
         // The desktop's own icon for this kind of file. Whatever the user
         // installed to open it is what they will recognise, and a glyph drawn
         // here would be a second opinion about something already answered.
-        VerticalLayout {
+        if !entry.is-folder: VerticalLayout {
             alignment: center;
             Image {
                 source: entry.icon;
@@ -166,29 +195,21 @@ component FileLine inherits Rectangle {
         // every other list in this app puts numbers at. It also left the ticks
         // as a tall column of blue with nothing beside them, which is why the
         // panel read as a checkbox list rather than a file list.
-        // Two halves, dimmed apart. `Featurettes\Trailer.mkv` printed whole put
-        // the folder in the same weight as the name, and the name is the whole
-        // of what anybody is looking for — the folder only says which of two
-        // files called `01.mkv` this one is. Rust splits it; see
-        // `zerem_core::split_path`, and the rule that the window formats
-        // nothing.
-        HorizontalLayout {
+        // The name alone. It used to be `folder › folder › name` printed into
+        // one cell, which reads fine for a season pack with a `Featurettes`
+        // folder in it and not at all for anything larger: the folder took the
+        // width, elided, and every row in a big torrent was the same prefix
+        // with the name off the right edge. The folders are rows now, and the
+        // tree is built in `zerem_core::tree` — the window formats nothing.
+        DetailCell {
+            text: entry.name;
+            font-size: Theme.fs-body;
             horizontal-stretch: 1;
-            spacing: 0px;
-            if entry.folder != "": DetailCell {
-                text: entry.folder;
-                font-size: Theme.fs-body;
-                color: Theme.idle;
-            }
-            DetailCell {
-                text: entry.name;
-                font-size: Theme.fs-body;
-                horizontal-stretch: 1;
-                // A file that is not coming down dims rather than disappears:
-                // it is still in the torrent, it is just not being fetched. A
-                // finished one stops competing with the ones still moving.
-                color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
-            }
+            // A file that is not coming down dims rather than disappears: it is
+            // still in the torrent, it is just not being fetched. A finished
+            // one stops competing with the ones still moving.
+            color: !entry.wanted ? Theme.idle : entry.complete ? Theme.text-dim : Theme.text;
+            font-weight: entry.is-folder ? Theme.semibold : 400;
         }
 
         // What it is doing, in the slot before the size, so the sizes stay in
@@ -236,14 +257,29 @@ component FileLine inherits Rectangle {
     // this is the one area that covers all of it.
     ta := TouchArea {
         pointer-event(e) => {
-            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down) {
-                DetailState.open-file-menu(root.index, self.absolute-position.x + self.mouse-x,
+            // A folder has nothing the menu offers: it is not a file to open,
+            // reveal or play, and everything else on it is the tick.
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.down
+                && !root.entry.is-folder) {
+                DetailState.open-file-menu(root.entry.at, self.absolute-position.x + self.mouse-x,
                                            self.absolute-position.y + self.mouse-y);
+            }
+        }
+        // A folder opens and shuts on a single click, which is what a tree does
+        // everywhere; a file waits for a double, which is what a file does
+        // everywhere. Neither is a choice this app gets to make.
+        clicked => {
+            if (root.entry.is-folder) {
+                DetailState.toggle-folder(root.entry.path);
             }
         }
         // The same thing a double click does to a file everywhere else, and
         // the same action the menu's first row offers.
-        double-clicked => { DetailState.open-file(root.index); }
+        double-clicked => {
+            if (!root.entry.is-folder) {
+                DetailState.open-file(root.entry.at);
+            }
+        }
     }
 
     // The gutter the tick sits in — 38 px wide and the full height of the row,
@@ -262,7 +298,13 @@ component FileLine inherits Rectangle {
         width: 38px;
         height: parent.height;
         mouse-cursor: pointer;
-        clicked => { DetailState.toggle-file(root.index); }
+        clicked => {
+            if (root.entry.is-folder) {
+                DetailState.toggle-folder-files(root.entry.path);
+            } else {
+                DetailState.toggle-file(root.entry.at);
+            }
+        }
     }
 
     // Declared after the line's own touch area so it wins its own clicks — the
@@ -303,14 +345,14 @@ component FileLine inherits Rectangle {
         accessible-label: root.entry.first ? @tr("Stop fetching this one first")
             : @tr("Fetch this one before the others");
         accessible-enabled: !root.entry.complete && root.entry.wanted;
-        accessible-action-default => { DetailState.toggle-first(root.index); }
+        accessible-action-default => { DetailState.toggle-first(root.entry.at); }
 
         pin := TouchArea {
             // Off on a line that has no pin to offer, so an invisible control
             // cannot be clicked and the hover falls through to the line.
             enabled: !root.entry.complete && root.entry.wanted;
             mouse-cursor: pointer;
-            clicked => { DetailState.toggle-first(root.index); }
+            clicked => { DetailState.toggle-first(root.entry.at); }
         }
     }
 }

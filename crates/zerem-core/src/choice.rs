@@ -58,10 +58,18 @@ pub fn flags(only: Option<&[usize]>, count: usize) -> Vec<bool> {
 /// The add dialog still refuses it, and that is not the same rule: there, zero
 /// files means not adding the torrent, and the button for that says Cancel.
 #[must_use]
-pub fn ticked(current: &[bool], file: Option<usize>, wanted: bool) -> Option<Vec<bool>> {
+pub fn ticked(current: &[bool], files: Option<&[usize]>, wanted: bool) -> Option<Vec<bool>> {
     let mut next = current.to_vec();
-    match file {
-        Some(i) => *next.get_mut(i)? = wanted,
+    match files {
+        // A list rather than one index, because a folder in the tree is a
+        // click on everything under it -- and sending one command per file
+        // would be a thousand commands and a thousand snapshots for a torrent
+        // with a thousand files in a folder.
+        Some(chosen) => {
+            for &i in chosen {
+                *next.get_mut(i)? = wanted;
+            }
+        }
         None => next.fill(wanted),
     }
     Some(next)
@@ -113,8 +121,8 @@ mod tests {
 
     #[test]
     fn switching_one_file_leaves_the_rest_alone() {
-        assert_eq!(ticked(&[true; 3], Some(1), false), Some(vec![true, false, true]));
-        assert_eq!(ticked(&[true, false, false], Some(2), true), Some(vec![true, false, true]));
+        assert_eq!(ticked(&[true; 3], Some(&[1]), false), Some(vec![true, false, true]));
+        assert_eq!(ticked(&[true, false, false], Some(&[2]), true), Some(vec![true, false, true]));
     }
 
     #[test]
@@ -129,18 +137,18 @@ mod tests {
         // only worked one way — which reads as one that does not work.
         // Fetching nothing is a real answer: keep what is on disk, share it,
         // take no more. The row says so rather than the click vanishing.
-        assert_eq!(ticked(&[false, true, false], Some(1), false), Some(vec![false; 3]));
+        assert_eq!(ticked(&[false, true, false], Some(&[1]), false), Some(vec![false; 3]));
         assert_eq!(ticked(&[true; 3], None, false), Some(vec![false; 3]));
     }
 
     #[test]
     fn switching_a_file_to_what_it_already_is_changes_nothing() {
-        assert_eq!(ticked(&[true, false, true], Some(0), true), Some(vec![true, false, true]));
+        assert_eq!(ticked(&[true, false, true], Some(&[0]), true), Some(vec![true, false, true]));
     }
 
     #[test]
     fn an_index_past_the_end_is_refused_rather_than_panicking() {
-        assert_eq!(ticked(&[true; 3], Some(3), true), None);
+        assert_eq!(ticked(&[true; 3], Some(&[3]), true), None);
     }
 
     #[test]

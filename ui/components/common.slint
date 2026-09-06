@@ -52,6 +52,11 @@ export component Stat inherits HorizontalLayout {
 /// square is a small thing to ask someone to hit fifty times in a row.
 export component Tick inherits Rectangle {
     in property <bool> on;
+    /// Some of what this stands for, not all of it — a folder where two of
+    /// eleven tracks are wanted. A dash rather than a check, which is what
+    /// every tree with tickable folders draws, because ticked and empty are
+    /// both answers this box would be giving falsely.
+    in property <bool> partial;
     width: 16px;
     height: 16px;
     border-radius: 4px;
@@ -68,7 +73,7 @@ export component Tick inherits Rectangle {
     background: transparent;
     border-width: 1px;
     border-color: Theme.stroke;
-    if on: Icon {
+    if on && !root.partial: Icon {
         glyph: Lucide.check;
         // Ink: near-black on a light theme, near-white on a dark one, so it
         // keeps the same weight against the paper in both.
@@ -77,6 +82,17 @@ export component Tick inherits Rectangle {
         // Heavier than Lucide's own twelfth: at twelve pixels that is a
         // hairline, and this mark is read at a glance down a column.
         weight: 1.0 / 7.0;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+    // Drawn rather than a glyph: a dash is two coordinates, and Lucide's
+    // `minus` at this size is the same hairline the check had to be thickened
+    // out of.
+    if root.partial: Rectangle {
+        width: 8px;
+        height: 2px;
+        border-radius: 1px;
+        background: Theme.text;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }

@@ -117,6 +117,21 @@ export component Toolbar inherits Rectangle {
         // its own × closes it. A global switch for something that is always
         // *about* a selected row is a switch that does nothing half the time
         // somebody presses it.
+        // The fold, here rather than over the panel it folds. It sat beside the
+        // app icon and read as a function of the app; it sat in the rail's own
+        // header and was in the way of the shelves. Among the theme switch and
+        // the preferences it is what it is — one of the few things in this
+        // window that changes the window rather than a torrent.
+        VerticalLayout {
+            alignment: center;
+            IconButton {
+                glyph: Lucide.panel-left;
+                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tip: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
+                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
+                clicked => { TorrentList.toggle-rail(); }
+            }
+        }
         VerticalLayout {
             alignment: center;
             IconButton {

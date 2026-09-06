@@ -79,9 +79,14 @@ pub enum Command {
     /// happened in between.
     SetFileWanted {
         id: TorrentId,
-        /// Which one, or `None` for every file at once — the only thing that
+        /// Which ones, or `None` for every file at once -- the only thing that
         /// makes a torrent of four thousand files editable by hand.
-        file: Option<usize>,
+        ///
+        /// A list rather than one index because the file panel draws a tree,
+        /// and a click on a folder is a click on everything under it. One
+        /// command per file would be a thousand commands, each answered with
+        /// its own snapshot, for one click.
+        files: Option<Vec<usize>>,
         wanted: bool,
     },
     /// Fetch this file before the others, or stop doing that.

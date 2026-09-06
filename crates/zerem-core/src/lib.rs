@@ -27,6 +27,7 @@ mod relocate;
 pub mod sort;
 pub mod text;
 pub mod torrent;
+pub mod tree;
 mod watch;
 
 pub use category::Shelves;

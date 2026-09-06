@@ -35,6 +35,26 @@ pub struct Models {
     /// snapshot already on its way when the pin was clicked knows nothing about
     /// it and would un-light it for a quarter of a second.
     pins: RefCell<Vec<bool>>,
+    /// The folders somebody has shut, by path.
+    ///
+    /// Shut and not open, so a torrent nobody has touched shows its whole tree
+    /// — which is the answer the panel gave before it had folders at all, and
+    /// the one somebody expects the first time they open one.
+    ///
+    /// By path rather than by row, because the list is rebuilt from every
+    /// snapshot and a row number means nothing across two of them. It is not
+    /// persisted and not cleared between torrents either: a set of paths is a
+    /// few hundred bytes, and shutting `Disc 1` in one torrent and finding it
+    /// shut in the next one that has a `Disc 1` is a coincidence nobody is
+    /// harmed by.
+    shut: RefCell<std::collections::BTreeSet<std::sync::Arc<str>>>,
+    /// Every file's path, in the torrent's own order.
+    ///
+    /// Kept because a click on a folder has to find the files under it, and a
+    /// folder that is shut has no rows to read them off. Filled beside `sizes`,
+    /// from the same snapshot, so the two cannot disagree about how many files
+    /// there are.
+    paths: RefCell<Vec<std::sync::Arc<str>>>,
     /// The desktop's own icon for each extension seen so far.
     ///
     /// Cached because the answer is the same for every `.mkv` in a season pack
@@ -75,6 +95,8 @@ impl Models {
             peers: Rc::new(VecModel::default()),
             sizes: RefCell::new(Vec::new()),
             pins: RefCell::new(Vec::new()),
+            shut: RefCell::new(std::collections::BTreeSet::new()),
+            paths: RefCell::new(Vec::new()),
             icons: RefCell::new(HashMap::new()),
             folder: RefCell::new(None),
             flags: RefCell::new(HashMap::new()),
@@ -106,8 +128,30 @@ impl Models {
         if !in_flight {
             self.guess.set(0);
             *sizes = details.files.iter().map(|f| (f.size, f.wanted)).collect();
+            *self.paths.borrow_mut() = details.files.iter().map(|f| std::sync::Arc::clone(&f.path)).collect();
             *self.pins.borrow_mut() = details.files.iter().map(|f| f.first).collect();
         }
+    }
+
+    /// Which files sit under this folder, by the index the engine knows them by.
+    ///
+    /// Read off the paths rather than off the rows: a shut folder has no rows
+    /// underneath it, and it is exactly the folder somebody is most likely to
+    /// tick without opening first.
+    fn files_under(&self, folder: &str) -> Vec<usize> {
+        self.paths
+            .borrow()
+            .iter()
+            .enumerate()
+            .filter(|(_, path)| {
+                path.len() > folder.len()
+                    && path.starts_with(folder)
+                    // The separator matters: without it `Disc 1` claims the
+                    // files of `Disc 10`.
+                    && path[folder.len()..].starts_with(std::path::is_separator)
+            })
+            .map(|(at, _)| at)
+            .collect()
     }
 
     /// Flip one line, or every line, without waiting for the engine.
@@ -124,9 +168,22 @@ impl Models {
         };
         for i in range {
             sizes[i].1 = wanted;
-            if let Some(mut row) = self.files.row_data(i) {
-                row.wanted = wanted;
-                self.files.set_row_data(i, row);
+        }
+        drop(sizes);
+
+        // The rows are a tree, so a file's index is not its row any more —
+        // setting row `i` would tick whatever happened to be there. Folder rows
+        // are left alone and catch up on the next snapshot, a quarter of a
+        // second later: what has to move on the click is the thing clicked, and
+        // clicking a folder moves every file under it at once.
+        for row in 0..self.files.row_count() {
+            let Some(mut entry) = self.files.row_data(row) else { continue };
+            let Ok(at) = usize::try_from(entry.at) else { continue };
+            if let Some(&(_, now)) = self.sizes.borrow().get(at) {
+                if entry.wanted != now {
+                    entry.wanted = now;
+                    self.files.set_row_data(row, entry);
+                }
             }
         }
     }
@@ -332,7 +389,7 @@ pub fn wire(
             views.detail.set_wanted(Some(index), wanted);
             show_choice(&ui, &views.detail);
             if let Some(id) = *views.detail.shown.borrow() {
-                state.engine.send(Command::SetFileWanted { id, file: Some(index), wanted });
+                state.engine.send(Command::SetFileWanted { id, files: Some(vec![index]), wanted });
             }
         }
     });
@@ -364,6 +421,8 @@ pub fn wire(
         }
     });
 
+    wire_folders(ui, state, views);
+
     detail.on_set_all_files({
         let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
         move |wanted| {
@@ -372,7 +431,7 @@ pub fn wire(
             views.detail.set_wanted(None, wanted);
             show_choice(&ui, &views.detail);
             if let Some(id) = *views.detail.shown.borrow() {
-                state.engine.send(Command::SetFileWanted { id, file: None, wanted });
+                state.engine.send(Command::SetFileWanted { id, files: None, wanted });
             }
         }
     });
@@ -619,7 +678,10 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
     models.adopt(snapshot.seq, details);
     // Gathered before the borrow below, because looking one up can insert one.
     let icons: Vec<Image> = details.files.iter().map(|f| models.icon_for(&f.path)).collect();
-    apply(&models.files, build_files(details, &models.sizes.borrow(), &models.pins.borrow(), &icons));
+    apply(
+        &models.files,
+        build_files(details, &models.sizes.borrow(), &models.pins.borrow(), &icons, &models.shut.borrow()),
+    );
     let flags: Vec<Image> = details.peers.iter().map(|p| models.flag_for(&p.addr)).collect();
     apply(&models.peers, build_peers(details, &flags));
     show_choice(ui, models);
@@ -658,26 +720,54 @@ fn apply<T: Clone + PartialEq + 'static>(model: &Rc<VecModel<T>>, next: Vec<T>) 
 
 /// `chosen` is what the drawer believes, which is the snapshot's answer except
 /// while a click is still in flight — see [`Models::adopt`].
-fn build_files(details: &Details, chosen: &[(u64, bool)], pins: &[bool], icons: &[Image]) -> Vec<FileEntry> {
-    details
+///
+/// `shut` is the folders somebody has closed, by path. Closed rather than open,
+/// so a torrent nobody has touched shows its whole tree — which is the answer
+/// the panel gave before it had folders at all.
+fn build_files(
+    details: &Details,
+    chosen: &[(u64, bool)],
+    pins: &[bool],
+    icons: &[Image],
+    shut: &std::collections::BTreeSet<std::sync::Arc<str>>,
+) -> Vec<FileEntry> {
+    // The optimistic edits go on before the tree is built rather than after: a
+    // folder adds up what is under it, and adding up the snapshot's answer
+    // while the ticks show the click's would draw a half-ticked folder over a
+    // column of ticked files.
+    let files: Vec<zerem_core::detail::FileRow> = details
         .files
         .iter()
         .enumerate()
-        .map(|(i, f)| {
-            let (folder, name) = zerem_core::split_path(&f.path);
-            FileEntry {
-                playable: zerem_core::is_playable(&f.path),
-                path: f.path.as_ref().into(),
-                folder: folder.into(),
-                name: name.into(),
-                size: fmt::bytes(f.size).into(),
-                pct: fmt::percent(f.done, f.size).into(),
-                progress: f.progress_bp() as f32 / 10_000.0,
-                complete: f.is_complete(),
-                wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
-                first: pins.get(i).copied().unwrap_or(f.first),
-                icon: icons.get(i).cloned().unwrap_or_default(),
-            }
+        .map(|(i, f)| zerem_core::detail::FileRow {
+            wanted: chosen.get(i).map_or(f.wanted, |&(_, wanted)| wanted),
+            first: pins.get(i).copied().unwrap_or(f.first),
+            ..f.clone()
+        })
+        .collect();
+
+    zerem_core::tree::flatten(&files, &|path| shut.contains(path))
+        .into_iter()
+        .map(|node| FileEntry {
+            playable: node.at.is_some() && zerem_core::is_playable(&node.path),
+            path: node.path.as_ref().into(),
+            name: node.name.as_ref().into(),
+            // `-1` for a folder, which nothing indexes with. Every callback
+            // taking a file takes this, and the `.slint` asks `is-folder`
+            // before it uses one.
+            at: node.at.map_or(-1, |at| i32::try_from(at).unwrap_or(-1)),
+            depth: i32::try_from(node.depth).unwrap_or(0),
+            is_folder: node.is_folder(),
+            open: node.open,
+            files: i32::try_from(node.files).unwrap_or(0),
+            partial: node.wanted == zerem_core::tree::Wanted::Part,
+            size: fmt::bytes(node.size).into(),
+            pct: fmt::percent(node.done, node.size).into(),
+            progress: node.progress_bp() as f32 / 10_000.0,
+            complete: node.size > 0 && node.done >= node.size,
+            wanted: node.wanted != zerem_core::tree::Wanted::None,
+            first: node.first,
+            icon: node.at.and_then(|at| icons.get(at).cloned()).unwrap_or_default(),
         })
         .collect()
 }
@@ -708,4 +798,56 @@ fn build_peers(details: &Details, flags: &[Image]) -> Vec<PeerEntry> {
             up: fmt::bytes(p.uploaded).into(),
         })
         .collect()
+}
+
+/// The two the file tree added, in their own function: `wire` was over the
+/// hundred lines this workspace allows, and these are the pair that pushed it
+/// there. They belong together anyway -- one opens a folder and the other ticks
+/// one, and nothing else in the panel knows what a folder is.
+fn wire_folders(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
+    let detail = ui.global::<DetailState>();
+    // Open or shut a folder. Nothing is sent to the engine: which folders are
+    // showing is the window's own business, and the engine has no opinion about
+    // it. The list is rebuilt at once rather than on the next tick, because a
+    // chevron that turns a quarter of a second after the click reads as a click
+    // that missed.
+    detail.on_toggle_folder({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |path| {
+            let Some(ui) = ui.upgrade() else { return };
+            {
+                let mut shut = views.detail.shut.borrow_mut();
+                let path: std::sync::Arc<str> = std::sync::Arc::from(path.as_str());
+                if !shut.remove(&path) {
+                    shut.insert(path);
+                }
+            }
+            super::refresh_now(&ui, &state, &views);
+        }
+    });
+
+    // Tick or untick everything under a folder, in one command.
+    //
+    // A folder that is partly wanted ticks whole, which is the answer somebody
+    // clicking a half-ticked box is asking for — the other reading, "untick the
+    // rest", is a thing nobody wants a checkbox to do.
+    detail.on_toggle_folder_files({
+        let (state, ui, views) = (state.clone(), ui.as_weak(), views.clone());
+        move |path| {
+            let Some(ui) = ui.upgrade() else { return };
+            let under = views.detail.files_under(&path);
+            if under.is_empty() {
+                return;
+            }
+            let wanted = !under.iter().all(|&i| views.detail.is_wanted(i));
+            views.detail.expect(state.snapshot().seq);
+            for &i in &under {
+                views.detail.set_wanted(Some(i), wanted);
+            }
+            show_choice(&ui, &views.detail);
+            if let Some(id) = *views.detail.shown.borrow() {
+                state.engine.send(Command::SetFileWanted { id, files: Some(under), wanted });
+            }
+        }
+    });
 }

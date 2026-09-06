@@ -217,7 +217,9 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
             session.cancel_add();
             Ok(())
         }
-        Command::SetFileWanted { id, file, wanted } => session.set_file_wanted(id, file, wanted).await,
+        Command::SetFileWanted { id, ref files, wanted } => {
+            session.set_file_wanted(id, files.as_deref(), wanted).await
+        }
         Command::SetFileFirst { id, file, first } => session.set_file_first(id, file, first).await,
         Command::Start(id) => session.set_running(id, true).await,
         Command::Pause(id) => session.set_running(id, false).await,
