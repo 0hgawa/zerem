@@ -525,8 +525,13 @@ export component DetailDrawer inherits Rectangle {
         // the panel answers, and everything in it comes from the same row the
         // table draws so the two cannot disagree.
         Rectangle {
-            // Four pixels of bar and the eight above it, gone with the bar.
-            height: DetailState.progress < 1.0 ? 92px : 80px;
+            // What is here, and nothing for what is not. Ninety-two is the
+            // height with everything in it; a band that leaves takes its own
+            // height and the spacing above it with it, so a seeding torrent on
+            // a quiet line gives back both and the head is a third shorter.
+            height: 92px
+                - (DetailState.progress < 1.0 ? 0px : 12px)
+                - (DetailState.down != "" || DetailState.up != "" ? 0px : 26px);
             VerticalLayout {
                 padding-left: 13px;
                 padding-right: 13px;
@@ -589,17 +594,32 @@ export component DetailDrawer inherits Rectangle {
                         font-family: Theme.font;
                         vertical-alignment: center;
                     }
+                    // The ratio belongs with the facts, not with the rates. It
+                    // is a property of the torrent like its size and its state,
+                    // where a rate is what is happening this second — and on a
+                    // seeding torrent that has gone quiet it was the last mark
+                    // left in a row of its own, which is a row for one number.
+                    Stat {
+                        glyph: Lucide.zap;
+                        value: DetailState.ratio;
+                        hint: @tr("Ratio");
+                        tint: Theme.text-dim;
+                    }
                 }
 
-                // The numbers, in the marks the status bar already taught.
+                // The rates, and only while there are any.
                 //
-                // A rate with nothing in it is left out rather than drawn as a
-                // dash. An em dash holds a column's width, which is what it is
-                // for in the table; here it made half a row of marks into
-                // placeholders — two icons and two dashes reporting absence,
-                // beside two numbers reporting something. The row reads as a
-                // group of facts now, and it is shorter when there are fewer.
-                HorizontalLayout {
+                // What is left after the peers went to their own tab and the
+                // ratio joined the facts above: two marks that exist when
+                // something is moving and nothing at all when it is not. A
+                // seeding torrent with a quiet line loses this band entirely,
+                // which is the difference between a panel with six rows of
+                // chrome over its content and one with four.
+                //
+                // An em dash held a column's width in the table; here it made
+                // half the row into placeholders — icons reporting absence
+                // beside numbers reporting something.
+                if DetailState.down != "" || DetailState.up != "": HorizontalLayout {
                     spacing: 14px;
                     alignment: start;
                     if DetailState.down != "": Stat {
@@ -613,21 +633,6 @@ export component DetailDrawer inherits Rectangle {
                         value: DetailState.up;
                         hint: @tr("Upload speed");
                         tint: Theme.seeding;
-                    }
-                    Stat {
-                        glyph: Lucide.users;
-                        value: DetailState.swarm;
-                        hint: @tr("Peers");
-                        tint: Theme.text-dim;
-                    }
-                    // Together, not split. A stretch used to push the ratio to
-                    // the far edge, which left one mark adrift from the three
-                    // it belongs with and made the row read as two things.
-                    Stat {
-                        glyph: Lucide.zap;
-                        value: DetailState.ratio;
-                        hint: @tr("Ratio");
-                        tint: Theme.text-dim;
                     }
                 }
             }

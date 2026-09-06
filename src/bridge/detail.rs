@@ -670,10 +670,20 @@ pub fn refresh(ui: &MainWindow, snapshot: &Snapshot, models: &Models) {
             row.eta.map_or_else(SharedString::default, |secs| fmt::eta(Some(secs)).into())
         );
         push!(detail, get_ratio, set_ratio, fmt::ratio(row.ratio_x100).into());
-        push!(detail, get_swarm, set_swarm, fmt::peers(row.peers_connected, row.peers_total).into());
+        // Onto the tab, which is where this number was being asked for twice.
+        // The tab said how many rows its table had; the mark above it said the
+        // same count and the size of the swarm behind it — and that second half
+        // is the one worth knowing, because nought connected out of two hundred
+        // is a very different afternoon from nought out of nought. One number
+        // now, the richer one, in the one place somebody goes looking for it.
+        push!(
+            detail,
+            get_peers_summary,
+            set_peers_summary,
+            fmt::peers(row.peers_connected, row.peers_total).into()
+        );
     }
     push!(detail, get_files_summary, set_files_summary, details.files.len().to_string().into());
-    push!(detail, get_peers_summary, set_peers_summary, details.peers.len().to_string().into());
 
     models.adopt(snapshot.seq, details);
     // Gathered before the borrow below, because looking one up can insert one.
