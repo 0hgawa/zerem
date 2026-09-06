@@ -13,7 +13,7 @@ use zerem_core::fmt;
 use zerem_engine::{Snapshot, TICK};
 
 use crate::state::UiState;
-use crate::{MainWindow, SessionState, TorrentList};
+use crate::{AddState, MainWindow, Prefs, SessionState, TorrentList};
 
 pub mod add;
 pub mod detail;
@@ -98,6 +98,21 @@ pub fn start_tick(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<Views>) -> sl
                 tracing::debug!(visible, "window visibility changed, engine follows");
             }
 
+            // Nothing behind a dialog can be read, and redrawing it is how the
+            // window underneath comes through the scrim: this renderer works
+            // out what to repaint from the geometry of whatever changed, and a
+            // row that changes under a modal repaints *over* it. Pieces of the
+            // list appeared inside the preferences card, a few at a time, for
+            // as long as anything was downloading.
+            //
+            // Held rather than dropped — `applied_seq` is not advanced, so the
+            // first tick after the dialog closes applies the newest snapshot
+            // and nothing is missed. It also stops the app redrawing a list
+            // nobody can see, which was never worth the frames.
+            if covered(&ui) {
+                return;
+            }
+
             let snapshot = state.snapshot();
             if snapshot.seq == applied_seq.get() {
                 return;
@@ -107,6 +122,17 @@ pub fn start_tick(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<Views>) -> sl
         }
     });
     timer
+}
+
+/// Whether a modal is over the window.
+///
+/// The three that exist, named rather than derived: a dialog added later has to
+/// be added here too, and a list that says so is better than a rule that looks
+/// like it already covers it.
+fn covered(ui: &MainWindow) -> bool {
+    ui.global::<Prefs>().get_open()
+        || ui.global::<AddState>().get_open()
+        || ui.global::<TorrentList>().get_confirming()
 }
 
 /// Pull a snapshot through to the screen — the single path by which anything
