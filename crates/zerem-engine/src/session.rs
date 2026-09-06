@@ -170,6 +170,9 @@ pub struct TorrentSession {
     /// from `self` inside a `select!` cannot coexist with the other arms that
     /// need `&mut self`.
     reads_rx: Option<tokio::sync::mpsc::UnboundedReceiver<Read>>,
+    /// The read still in flight, so it can be dropped when nobody is waiting
+    /// for it any more.
+    reading: Option<tokio::task::JoinHandle<()>>,
     pub entries: HashMap<TorrentId, Entry>,
     seq: u64,
     generation: u64,
@@ -263,7 +266,16 @@ async fn read_torrent(session: &Arc<Session>, source: Arc<str>) -> Read {
             session.add_torrent(add, Some(AddTorrentOptions { list_only: true, ..Default::default() })),
         )
         .await
-        .map_err(|_| anyhow::anyhow!("nobody answered with the file list"))?
+        // Translated, and the only message here that is.
+        //
+        // Every other failure in this dialog carries librqbit's own words —
+        // a malformed link, a file that will not open — and those are English
+        // wherever they surface. This one is different in kind: it is not a
+        // fault, it is the ordinary answer for a link nobody is seeding any
+        // more, and it is the only one a person is at all likely to meet. A
+        // sentence that common has no business being in a language the rest of
+        // the window is not speaking.
+        .map_err(|_| anyhow::anyhow!("{}", zerem_core::tr("Nobody answered with the file list")))?
         .context("reading the torrent")?;
 
         match listed {
@@ -353,6 +365,7 @@ impl TorrentSession {
             watching: None,
             reads: reads_tx,
             reads_rx: Some(reads_rx),
+            reading: None,
             pending: None,
             pending_bytes: None,
             history: History::default(),
@@ -487,16 +500,18 @@ impl TorrentSession {
     /// It looked alive, because the window still redrew. It was not. It was one
     /// paste away from being a picture of itself.
     pub fn begin_inspect(&mut self, source: &str) {
+        // Whatever was being read is not what is being asked about any more.
+        self.stop_reading();
         self.pending = Some(Pending::fetching(source));
 
         let session = Arc::clone(&self.session);
         let sender = self.reads.clone();
         let source: Arc<str> = Arc::from(source);
-        tokio::spawn(async move {
+        self.reading = Some(tokio::spawn(async move {
             // The loop is gone if the app is closing, and a read nobody is
             // waiting for is not a failure.
             let _ = sender.send(read_torrent(&session, source).await);
-        });
+        }));
     }
 
     /// The channel finished reads arrive on. Taken once, by the loop.
@@ -584,8 +599,23 @@ impl TorrentSession {
 
     /// Throw away what `inspect` found.
     pub fn cancel_add(&mut self) {
+        self.stop_reading();
         self.pending = None;
         self.pending_bytes = None;
+    }
+
+    /// Drop whatever read is still in flight.
+    ///
+    /// `adopt_read` would throw its answer away regardless, so nothing was ever
+    /// *wrong* without this — but a magnet nobody is seeding leaves a task
+    /// talking to a swarm for two minutes about a dialog that was dismissed in
+    /// two seconds, and the person who dismissed it is entitled to have meant
+    /// it. Also called before a new read starts, so a second paste does not
+    /// leave the first still running.
+    fn stop_reading(&mut self) {
+        if let Some(reading) = self.reading.take() {
+            reading.abort();
+        }
     }
 
     /// Add without asking. Used for what arrives on the command line, where

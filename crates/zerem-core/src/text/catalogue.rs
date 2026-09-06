@@ -19,7 +19,7 @@
 /// Fixed strings, keyed by the English original.
 ///
 /// Sorted by key: the lookup is a binary search and a test enforces it.
-pub(super) const TABLE: [(&str, [&str; 10]); 34] = [
+pub(super) const TABLE: [(&str, [&str; 10]); 35] = [
     (
         "Another program has one of the files open",
         [
@@ -223,6 +223,21 @@ pub(super) const TABLE: [(&str, [&str; 10]); 34] = [
             "Нет прав на запись в папку загрузок",
             "İndirme klasörüne yazma izni yok",
             "Không có quyền ghi vào thư mục tải về",
+        ],
+    ),
+    (
+        "Nobody answered with the file list",
+        [
+            "لم يرد أحد بقائمة الملفات",
+            "Niemand hat mit der Dateiliste geantwortet",
+            "Nadie respondió con la lista de archivos",
+            "Personne n'a répondu avec la liste des fichiers",
+            "किसी ने फ़ाइल सूची नहीं भेजी",
+            "Tidak ada yang menjawab dengan daftar berkas",
+            "Ninguém respondeu com a lista de arquivos",
+            "Никто не прислал список файлов",
+            "Dosya listesiyle kimse yanıt vermedi",
+            "Không ai trả lời kèm danh sách tệp",
         ],
     ),
     (
