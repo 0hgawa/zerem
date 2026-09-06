@@ -102,21 +102,35 @@ export component WindowControls inherits HorizontalLayout {
         }
     }
 
+    // All three inside one box: 4 to 20 on the 24 grid, sixteen units square,
+    // centred on 12.
+    //
+    // They were 16, 15 and 12 wide. The cross was a quarter smaller than the
+    // dash beside it and it showed — and a cross is the one shape that has to
+    // be drawn *at least* as large as its neighbours to look their equal,
+    // because a square outlines its whole extent while a cross marks only two
+    // diagonals across it. Windows draws its own three to one box for this.
+    //
+    // Sixteen and not fourteen because the dash was measured against Windows
+    // and set there on purpose: at this size it lands near the ten pixels the
+    // system draws. The other two came up to meet it rather than it coming down
+    // to them.
     Control {
         glyph: "M4 12h16";
         label: @tr("Minimize");
         chosen => { Shell.minimize(); }
     }
     Control {
-        // A square, or two offset squares once it is already maximised.
+        // A square, or two offset squares once it is already maximised — and
+        // the pair together fill the same box the single one does.
         glyph: Shell.maximized
-            ? "M7 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z M9 6h9a2 2 0 0 1 2 2v9"
-            : "M6 5h13a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z";
+            ? "M5 7h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z M8 4h10a2 2 0 0 1 2 2v10"
+            : "M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z";
         label: Shell.maximized ? @tr("Restore") : @tr("Maximize");
         chosen => { Shell.toggle-maximize(); }
     }
     Control {
-        glyph: "M18 6 6 18 M6 6l12 12";
+        glyph: "M20 4 4 20 M4 4l16 16";
         label: @tr("Close");
         danger: true;
         chosen => { Shell.close(); }
