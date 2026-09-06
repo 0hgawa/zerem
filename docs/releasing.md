@@ -33,7 +33,9 @@ effect, which is why the backup matters more than it looks.
 1. Runs the same gate every commit runs. A tag is the one build that cannot be
    fixed afterwards, because it is the one that installs itself on other
    people's machines.
-2. Builds `zerem.exe` in release.
+2. Builds `zerem.exe` in release, then the NSIS installer around it —
+   `installer/build.ps1 -NoBuild -Version <tag>`, so the installer is stamped
+   with the tag rather than with `Cargo.toml`.
 3. Signs it, then **verifies the signature against the key read out of
    `src/update.rs`** — not against a copy pasted into the workflow. A second
    copy of that key is a second thing to get wrong, and what it buys is a
@@ -52,10 +54,26 @@ effect, which is why the backup matters more than it looks.
    }
    ```
 
-5. Creates a **draft** release with the binary, its `.minisig` and the feed.
+5. Signs the installer too, and verifies that as well. Nothing in the app
+   checks it — the updater only ever fetches the bare exe — but it is the file
+   most people download, and an unsigned installer is one nobody can check came
+   from here.
+6. Creates a **draft** release with the installer, the binary, both `.minisig`
+   files and the feed.
 
 The draft is the safety catch. `releases/latest/download/` resolves to the newest
 *published* release, so nothing reaches anybody until a person presses publish.
+
+## Two downloads, and which is which
+
+`Zerem-Setup.exe` is for a person. It installs under `%LOCALAPPDATA%\Programs`
+without administrator or UAC, and it is what makes the app able to claim
+`magnet:` — the app writes those associations itself on first run and refuses to
+unless it is running from that location, so a bare exe left in the Downloads
+folder never becomes the handler for a magnet link.
+
+`zerem.exe` is for the updater. It replaces a binary that is already installed,
+in place, which is why the feed points at it and not at the installer.
 
 ## The version number
 

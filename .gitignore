@@ -4,3 +4,7 @@ target/
 # The release signing key. Its public half is compiled into src/update.rs;
 # this is the half that must never be anywhere but a backup and a CI secret.
 .keys/
+
+# What `installer/build.ps1` produces. A built installer is an artefact of a
+# release, not a source of one — the workflow makes it fresh from the tag.
+installer/Zerem-Setup.exe

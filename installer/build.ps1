@@ -7,7 +7,14 @@
 [CmdletBinding()]
 param(
     # Skip the cargo build and package whatever is already in target\release.
-    [switch]$NoBuild
+    [switch]$NoBuild,
+
+    # What to stamp the installer with. Passed at release time, where the tag is
+    # the one source of truth -- the release workflow reads Cargo.toml for
+    # nothing, because the two would disagree eventually and the number people
+    # see is whichever the feed carries. Omitted locally, where Cargo.toml is
+    # the only answer there is.
+    [string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,8 +27,11 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 
 # The one source of truth for the version. NSIS is told rather than asked, so
 # the installer and the executable can never disagree.
-$version = (Select-String -Path Cargo.toml -Pattern '^version\.workspace|^version = "([^"]+)"' |
-            Select-Object -First 1).Matches.Groups[1].Value
+$version = $Version
+if (-not $version) {
+    $version = (Select-String -Path Cargo.toml -Pattern '^version\.workspace|^version = "([^"]+)"' |
+                Select-Object -First 1).Matches.Groups[1].Value
+}
 if (-not $version) {
     $version = (Select-String -Path Cargo.toml -Pattern '^\s*version = "([^"]+)"' |
                 Select-Object -First 1).Matches.Groups[1].Value

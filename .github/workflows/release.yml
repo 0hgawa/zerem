@@ -36,6 +36,21 @@ jobs:
       - name: Build
         run: cargo build --release
 
+      # The installer, and not as an extra. A first download of the bare exe is
+      # a program sitting in the Downloads folder, and the app refuses to claim
+      # `magnet:` unless it is running from the install location — so without
+      # this, the first thing anybody does with a torrent client, click a magnet
+      # link in a browser, does not work. The updater still fetches the bare
+      # exe: it replaces a binary that is already installed.
+      #
+      # NSIS is on the Windows runner image already. The version is the tag
+      # rather than Cargo.toml, for the reason at the top of this file.
+      - name: Installer
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          ./installer/build.ps1 -NoBuild -Version $tag.TrimStart('v')
+
       - name: Sign it and build the update feed
         shell: bash
         env:
@@ -81,6 +96,15 @@ jobs:
           echo "verifying against the key in src/update.rs: $pub"
           "$ms" -V -P "$pub" -m "$exe"
 
+          # The installer too. Nothing in the app verifies this one — the
+          # updater only ever fetches the bare exe — but it is the file most
+          # people download, and an unsigned installer is one nobody can check
+          # came from here. Same key, same prehashed form, verified the same way.
+          setup=installer/Zerem-Setup.exe
+          [ -f "$setup" ] || { echo 'the installer did not build' >&2; exit 1; }
+          "$ms" -S -H -s "$key" -m "$setup" < "$pw"
+          "$ms" -V -P "$pub" -m "$setup"
+
           # The feed src/update.rs reads: `signature` is the whole .minisig
           # text, `version` is compared with semver against the running build,
           # and the platform key is the one that build looks itself up under.
@@ -98,4 +122,4 @@ jobs:
           # release, which means a draft cannot offer a half-finished build to
           # everybody already running the app.
           gh release create "$tag" --draft --title "Zerem $tag" --generate-notes \
-            "$exe" "$exe.minisig" latest.json
+            "$setup" "$setup.minisig" "$exe" "$exe.minisig" latest.json

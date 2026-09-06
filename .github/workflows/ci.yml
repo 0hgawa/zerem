@@ -93,3 +93,18 @@ jobs:
           $mb = [math]::Round((Get-Item target/release/zerem.exe).Length / 1MB, 2)
           Write-Host "zerem.exe is $mb MB"
           if ($mb -gt 19) { throw "binary is $mb MB, over the 19 MB budget" }
+
+      # The installer is a release asset, and a release is the one build nobody
+      # can fix afterwards. Building it here means a broken `.nsi` — a renamed
+      # file, a missing icon, a directive NSIS stopped accepting — is a red pull
+      # request rather than a discovery made with a tag already pushed. NSIS is
+      # on the runner image, and it takes seconds against the build above it.
+      - name: The installer builds
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./installer/build.ps1 -NoBuild
+          $setup = 'installer/Zerem-Setup.exe'
+          if (-not (Test-Path $setup)) { throw 'makensis produced no installer' }
+          $mb = [math]::Round((Get-Item $setup).Length / 1MB, 2)
+          Write-Host "Zerem-Setup.exe is $mb MB"
