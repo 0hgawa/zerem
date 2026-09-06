@@ -1,0 +1,449 @@
+# Zerem — Hindi.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "निगरानी वाले फ़ोल्डर में छोड़ी गई .torrent फ़ाइल अपने आप जुड़ जाती है।"
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "एक बिटटोरेंट क्लाइंट जो रास्ते में नहीं आता।"
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "मेटाडेटा आने तक मैग्नेट के पास कोई नहीं होती।"
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "मैग्नेट लिंक फ़ाइल सूची नहीं लाता — उसे माँगना पड़ता है।"
+
+msgid "A paused torrent has none."
+msgstr "रुके हुए टोरेंट के पास कोई नहीं होता।"
+
+msgid "About"
+msgstr "परिचय"
+
+msgid "Active"
+msgstr "सक्रिय"
+
+msgid "Add"
+msgstr "जोड़ें"
+
+msgid "Add .torrent file"
+msgstr ".torrent फ़ाइल जोड़ें"
+
+msgid "Add file"
+msgstr "फ़ाइल जोड़ें"
+
+msgid "Add torrent"
+msgstr "टोरेंट जोड़ें"
+
+msgid "Add torrents stopped"
+msgstr "टोरेंट रुकी हुई हालत में जोड़ें"
+
+msgid "All"
+msgstr "सभी"
+
+msgid "Also move the data to the recycle bin"
+msgstr "डेटा भी रीसायकल बिन में भेजें"
+
+msgid "Alternative limits"
+msgstr "वैकल्पिक सीमाएँ"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "बिना सीमा का अपलोड ऊपर की लाइन भर देता है और कनेक्शन पर बाकी सब रोक देता है।"
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "राउटर से पोर्ट खोलने को कहें (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "पूरी गति सीमाओं पर वापस"
+
+msgid "Being fetched before the others"
+msgstr "बाकियों से पहले लाई जा रही है"
+
+msgid "Cancel"
+msgstr "रद्द करें"
+
+msgid "Categories"
+msgstr "श्रेणियाँ"
+
+msgid "Category"
+msgstr "श्रेणी"
+
+msgid "Change"
+msgstr "बदलें"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "इसे बदलने से सूची में पहले से मौजूद टोरेंट नहीं हटते।"
+
+msgid "Check now"
+msgstr "अभी जाँचें"
+
+msgid "Clear filter"
+msgstr "फ़िल्टर हटाएँ"
+
+msgid "Clear the filter"
+msgstr "फ़िल्टर हटाएँ"
+
+msgid "Close"
+msgstr "बंद करें"
+
+msgid "Close the details panel"
+msgstr "विवरण पैनल बंद करें"
+
+msgid "Connection"
+msgstr "कनेक्शन"
+
+msgid "Copy magnet link"
+msgstr "मैग्नेट लिंक कॉपी करें"
+
+msgid "Could not update: {}"
+msgstr "अपडेट नहीं हो सका: {}"
+
+msgid "Dark"
+msgstr "गहरा"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "डाउनलोड न करें"
+
+msgid "Download"
+msgstr "डाउनलोड करें"
+
+msgid "Download at once"
+msgstr "एक साथ डाउनलोड"
+
+msgid "Download limit"
+msgstr "डाउनलोड सीमा"
+
+msgid "Download speed"
+msgstr "डाउनलोड गति"
+
+msgid "Downloading"
+msgstr "डाउनलोड हो रहा है"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "डाउनलोड हो रहा है, और देखा जा रहा है कि इस पर हस्ताक्षर किसके हैं…"
+
+msgid "Downloads"
+msgstr "डाउनलोड"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "जहाँ पीयर तैयार हो वहाँ एन्क्रिप्ट करें। बिटटोरेंट को धीमा करने वाले कनेक्शन से ट्रैफ़िक छिपाता है।"
+
+msgid "Engine"
+msgstr "इंजन"
+
+msgid "Error"
+msgstr "त्रुटि"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "हर सेटिंग पहली बार खोलने वाली हालत में लौट आती है। टोरेंट को छुआ नहीं जाता।"
+
+msgid "Every window changes at once. No restart."
+msgstr "हर विंडो तुरंत बदल जाती है। दोबारा शुरू करने की ज़रूरत नहीं।"
+
+msgid "Fetch this one before the others"
+msgstr "इसे बाकियों से पहले लाएँ"
+
+msgid "Fetch this one first"
+msgstr "पहले इसे लाएँ"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "झुंड से फ़ाइल सूची मँगाई जा रही है…"
+
+msgid "Files"
+msgstr "फ़ाइलें"
+
+msgid "Filter"
+msgstr "फ़िल्टर"
+
+msgid "Filter the list by name"
+msgstr "सूची को नाम से छाँटें"
+
+msgid "Finished"
+msgstr "पूरे हुए"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "पूरे हुए टोरेंट उसी फ़ोल्डर में रहते हैं जहाँ वे डाउनलोड हुए थे।"
+
+msgid "Folder"
+msgstr "फ़ोल्डर"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "फ़ोल्डर, सीमाएँ, भाषा और थीम — सब कुछ।"
+
+msgid "Force recheck"
+msgstr "दोबारा जाँच कराएँ"
+
+msgid "General"
+msgstr "सामान्य"
+
+msgid "Hide the state list"
+msgstr "स्थिति सूची छिपाएँ"
+
+msgid "Install"
+msgstr "इंस्टॉल करें"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "इस मशीन पर सबके लिए इंस्टॉल है — अपडेट आपके पैकेज मैनेजर से आते हैं।"
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "सैंडबॉक्स में इंस्टॉल है — अपडेट रनटाइम के साथ आते हैं।"
+
+msgid "Installed. Restart to run it."
+msgstr "इंस्टॉल हो गया। चलाने के लिए दोबारा शुरू करें।"
+
+msgid "Installing…"
+msgstr "इंस्टॉल हो रहा है…"
+
+msgid "Language"
+msgstr "भाषा"
+
+msgid "Light"
+msgstr "हल्का"
+
+msgid "Listening port"
+msgstr "सुनने वाला पोर्ट"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "ऐप हर बार खुलने पर अपने आप देखा जाता है।"
+
+msgid "Looking…"
+msgstr "देखा जा रहा है…"
+
+msgid "Matching the filter"
+msgstr "फ़िल्टर से मेल खाते"
+
+msgid "Maximize"
+msgstr "बड़ा करें"
+
+msgid "Minimize"
+msgstr "छोटा करें"
+
+msgid "Move here when finished"
+msgstr "पूरा होने पर यहाँ ले जाएँ"
+
+msgid "Never"
+msgstr "कभी नहीं"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "कभी नहीं। लाइन पर नज़र रखने वाला कोई भी देख सकता है कि यह क्या है।"
+
+msgid "No file list yet"
+msgstr "अभी फ़ाइल सूची नहीं है"
+
+msgid "No limit"
+msgstr "कोई सीमा नहीं"
+
+msgid "No peers connected"
+msgstr "कोई पीयर जुड़ा नहीं"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "किसी टोरेंट के नाम में आपके लिखे सारे शब्द नहीं हैं।"
+
+msgid "No torrents yet"
+msgstr "अभी कोई टोरेंट नहीं"
+
+msgid "None"
+msgstr "कोई नहीं"
+
+msgid "Nothing here"
+msgstr "यहाँ कुछ नहीं"
+
+msgid "Nothing matches"
+msgstr "कुछ मेल नहीं खाता"
+
+msgid "Off"
+msgstr "बंद"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "सिर्फ़ वे पीयर जो एन्क्रिप्ट करते हैं। लाइन पर कुछ नहीं बताता कि यह क्या है, और पीयर कम मिलेंगे।"
+
+msgid "Open"
+msgstr "खोलें"
+
+msgid "Open containing folder"
+msgstr "इसका फ़ोल्डर खोलें"
+
+msgid "Open folder"
+msgstr "फ़ोल्डर खोलें"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Ctrl+V से मैग्नेट लिंक चिपकाएँ, या .torrent फ़ाइल जोड़ें।"
+
+msgid "Paste magnet"
+msgstr "मैग्नेट चिपकाएँ"
+
+msgid "Pause"
+msgstr "रोकें"
+
+msgid "Paused"
+msgstr "रुका हुआ"
+
+msgid "Peers"
+msgstr "पीयर"
+
+msgid "Play now"
+msgstr "अभी चलाएँ"
+
+msgid "Prefer"
+msgstr "पसंद करें"
+
+msgid "Preferences"
+msgstr "प्राथमिकताएँ"
+
+msgid "Protocol encryption"
+msgstr "प्रोटोकॉल एन्क्रिप्शन"
+
+msgid "Put every setting back"
+msgstr "सारी सेटिंग वापस करें"
+
+msgid "Queued"
+msgstr "कतार में"
+
+msgid "Ratio"
+msgstr "अनुपात"
+
+msgid "Reading torrent…"
+msgstr "टोरेंट पढ़ा जा रहा है…"
+
+msgid "Releases"
+msgstr "रिलीज़"
+
+msgid "Remove"
+msgstr "हटाएँ"
+
+msgid "Remove…"
+msgstr "हटाएँ…"
+
+msgid "Require"
+msgstr "अनिवार्य करें"
+
+msgid "Reset everything"
+msgstr "सब कुछ रीसेट करें"
+
+msgid "Reset…"
+msgstr "रीसेट करें…"
+
+msgid "Restart now"
+msgstr "अभी दोबारा शुरू करें"
+
+msgid "Restore"
+msgstr "पहले जैसा करें"
+
+msgid "Save to"
+msgstr "यहाँ सहेजें"
+
+msgid "Seeding"
+msgstr "सीड हो रहा है"
+
+msgid "Show all"
+msgstr "सभी दिखाएँ"
+
+msgid "Show the state list"
+msgstr "स्थिति सूची दिखाएँ"
+
+msgid "Slow download"
+msgstr "धीमा डाउनलोड"
+
+msgid "Slow upload"
+msgstr "धीमा अपलोड"
+
+msgid "Space"
+msgstr "जगह"
+
+msgid "Speed"
+msgstr "गति"
+
+msgid "Start"
+msgstr "शुरू करें"
+
+msgid "Stop fetching this one first"
+msgstr "इसे पहले लाना बंद करें"
+
+msgid "Switch to the dark theme"
+msgstr "गहरी थीम पर जाएँ"
+
+msgid "Switch to the light theme"
+msgstr "हल्की थीम पर जाएँ"
+
+msgid "Switch to the slow limits"
+msgstr "धीमी सीमाओं पर जाएँ"
+
+msgid "System"
+msgstr "सिस्टम"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "फ़ाइलें रीसायकल बिन में जाती हैं, इसलिए इसे वापस लिया जा सकता है।"
+
+msgid "The files stay where they are."
+msgstr "फ़ाइलें जहाँ हैं वहीं रहती हैं।"
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "बाकी अपनी बारी का इंतज़ार करते हैं। सीडिंग कभी इंतज़ार नहीं करती।"
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "दूसरी जोड़ी, जब लाइन किसी और काम के लिए चाहिए हो। टूलबार का बटन इन पर बदल देता है।"
+
+msgid "Theme"
+msgstr "थीम"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "ये Zerem के अगली बार शुरू होने पर लागू होते हैं।"
+
+msgid "This is the newest version."
+msgstr "यह सबसे नया संस्करण है।"
+
+msgid "Total"
+msgstr "कुल"
+
+msgid "Try again"
+msgstr "फिर कोशिश करें"
+
+msgid "Unlimited"
+msgstr "असीमित"
+
+msgid "Updates"
+msgstr "अपडेट"
+
+msgid "Upload limit"
+msgstr "अपलोड सीमा"
+
+msgid "Upload speed"
+msgstr "अपलोड गति"
+
+msgid "Version {} is ready to install."
+msgstr "संस्करण {} इंस्टॉल के लिए तैयार है।"
+
+msgid "Watch this folder"
+msgstr "इस फ़ोल्डर पर नज़र रखें"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "आपके पास टोरेंट हैं, बस सूची के इस हिस्से में कोई नहीं।"
+
+msgid "kB/s"
+msgstr "kB/s"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, और झंडे उस जानकारी से आते हैं जो पाँच इंटरनेट रजिस्ट्रियाँ प्रकाशित करती हैं।"
+
+msgid "not downloading"
+msgstr "डाउनलोड नहीं हो रहा"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — उसी लाइन के दूसरे ट्रैफ़िक को रास्ता देता है"

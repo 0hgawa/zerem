@@ -1,0 +1,449 @@
+# Zerem — Arabic.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "ملف ‎.torrent يوضَع في مجلد مراقَب يُضاف من تلقاء نفسه."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "عميل بِت​تورنت لا يقف في طريقك."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "المغناطيس لا يملك أيًّا منها حتى تصل بياناته الوصفية."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "رابط المغناطيس لا يحمل قائمة الملفات — لا بد من طلبها."
+
+msgid "A paused torrent has none."
+msgstr "التورنت المتوقف مؤقتًا لا يملك أيًّا منها."
+
+msgid "About"
+msgstr "عن البرنامج"
+
+msgid "Active"
+msgstr "النشطة"
+
+msgid "Add"
+msgstr "إضافة"
+
+msgid "Add .torrent file"
+msgstr "إضافة ملف ‎.torrent"
+
+msgid "Add file"
+msgstr "إضافة ملف"
+
+msgid "Add torrent"
+msgstr "إضافة تورنت"
+
+msgid "Add torrents stopped"
+msgstr "إضافة التورنتات متوقفة"
+
+msgid "All"
+msgstr "الكل"
+
+msgid "Also move the data to the recycle bin"
+msgstr "نقل البيانات إلى سلة المحذوفات أيضًا"
+
+msgid "Alternative limits"
+msgstr "حدود بديلة"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "الرفع بلا حد يملأ قناة الإرسال ويعطّل كل شيء آخر على الاتصال."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "اطلب من الموجّه فتح المنفذ (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "العودة إلى حدود السرعة الكاملة"
+
+msgid "Being fetched before the others"
+msgstr "يُجلب قبل غيره"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Categories"
+msgstr "الفئات"
+
+msgid "Category"
+msgstr "الفئة"
+
+msgid "Change"
+msgstr "تغيير"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "تغيير هذا لا ينقل التورنتات الموجودة في القائمة أصلًا."
+
+msgid "Check now"
+msgstr "تحقق الآن"
+
+msgid "Clear filter"
+msgstr "مسح المرشّح"
+
+msgid "Clear the filter"
+msgstr "مسح المرشّح"
+
+msgid "Close"
+msgstr "إغلاق"
+
+msgid "Close the details panel"
+msgstr "إغلاق لوحة التفاصيل"
+
+msgid "Connection"
+msgstr "الاتصال"
+
+msgid "Copy magnet link"
+msgstr "نسخ رابط المغناطيس"
+
+msgid "Could not update: {}"
+msgstr "تعذر التحديث: {}"
+
+msgid "Dark"
+msgstr "داكن"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "لا تُنزّل"
+
+msgid "Download"
+msgstr "تنزيل"
+
+msgid "Download at once"
+msgstr "التنزيلات المتزامنة"
+
+msgid "Download limit"
+msgstr "حد التنزيل"
+
+msgid "Download speed"
+msgstr "سرعة التنزيل"
+
+msgid "Downloading"
+msgstr "جارٍ التنزيل"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "جارٍ التنزيل، والتحقق ممن وقّعه…"
+
+msgid "Downloads"
+msgstr "التنزيلات"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "التشفير حيثما وافق القرين. يُخفي البيانات عن اتصال يخنق بِت​تورنت."
+
+msgid "Engine"
+msgstr "المحرك"
+
+msgid "Error"
+msgstr "خطأ"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "كل إعداد يعود إلى ما كان عليه عند أول تشغيل. التورنتات لا تُمس."
+
+msgid "Every window changes at once. No restart."
+msgstr "كل نافذة تتغير في الحال. دون إعادة تشغيل."
+
+msgid "Fetch this one before the others"
+msgstr "اجلب هذا قبل غيره"
+
+msgid "Fetch this one first"
+msgstr "اجلب هذا أولًا"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "جارٍ جلب قائمة الملفات من السرب…"
+
+msgid "Files"
+msgstr "الملفات"
+
+msgid "Filter"
+msgstr "ترشيح"
+
+msgid "Filter the list by name"
+msgstr "ترشيح القائمة بالاسم"
+
+msgid "Finished"
+msgstr "المكتملة"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "التورنتات المكتملة تبقى في المجلد الذي نُزّلت إليه."
+
+msgid "Folder"
+msgstr "المجلد"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "المجلدات والحدود واللغة والسمة — كل ذلك."
+
+msgid "Force recheck"
+msgstr "فرض إعادة التحقق"
+
+msgid "General"
+msgstr "عام"
+
+msgid "Hide the state list"
+msgstr "إخفاء قائمة الحالات"
+
+msgid "Install"
+msgstr "تثبيت"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "مثبَّت لكل المستخدمين على هذا الجهاز — التحديثات تأتي من مدير الحزم لديك."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "مثبَّت في صندوق رملي — التحديثات تصل مع بيئة التشغيل."
+
+msgid "Installed. Restart to run it."
+msgstr "تم التثبيت. أعد التشغيل لتشغيله."
+
+msgid "Installing…"
+msgstr "جارٍ التثبيت…"
+
+msgid "Language"
+msgstr "اللغة"
+
+msgid "Light"
+msgstr "فاتح"
+
+msgid "Listening port"
+msgstr "منفذ الاستماع"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "يُبحث عنها تلقائيًا في كل مرة يُفتح فيها التطبيق."
+
+msgid "Looking…"
+msgstr "جارٍ البحث…"
+
+msgid "Matching the filter"
+msgstr "المطابقة للمرشّح"
+
+msgid "Maximize"
+msgstr "تكبير"
+
+msgid "Minimize"
+msgstr "تصغير"
+
+msgid "Move here when finished"
+msgstr "انقل إلى هنا عند الاكتمال"
+
+msgid "Never"
+msgstr "أبدًا"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "أبدًا. كل من يراقب الخط يرى ما هذا."
+
+msgid "No file list yet"
+msgstr "لا توجد قائمة ملفات بعد"
+
+msgid "No limit"
+msgstr "بلا حد"
+
+msgid "No peers connected"
+msgstr "لا أقران متصلين"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "لا يحتوي اسم أي تورنت على كل الكلمات التي كتبتها."
+
+msgid "No torrents yet"
+msgstr "لا توجد تورنتات بعد"
+
+msgid "None"
+msgstr "لا شيء"
+
+msgid "Nothing here"
+msgstr "لا شيء هنا"
+
+msgid "Nothing matches"
+msgstr "لا شيء يطابق"
+
+msgid "Off"
+msgstr "معطّل"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "الأقران المشفِّرون فقط. لا شيء على الخط يكشف ما هذا، وسيقل عدد الأقران."
+
+msgid "Open"
+msgstr "فتح"
+
+msgid "Open containing folder"
+msgstr "فتح المجلد الحاوي"
+
+msgid "Open folder"
+msgstr "فتح المجلد"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "الصق رابط مغناطيس بـ Ctrl+V، أو أضف ملف ‎.torrent."
+
+msgid "Paste magnet"
+msgstr "لصق مغناطيس"
+
+msgid "Pause"
+msgstr "إيقاف مؤقت"
+
+msgid "Paused"
+msgstr "متوقف مؤقتًا"
+
+msgid "Peers"
+msgstr "الأقران"
+
+msgid "Play now"
+msgstr "شغّل الآن"
+
+msgid "Prefer"
+msgstr "تفضيل"
+
+msgid "Preferences"
+msgstr "التفضيلات"
+
+msgid "Protocol encryption"
+msgstr "تشفير البروتوكول"
+
+msgid "Put every setting back"
+msgstr "إعادة كل الإعدادات"
+
+msgid "Queued"
+msgstr "في الانتظار"
+
+msgid "Ratio"
+msgstr "النسبة"
+
+msgid "Reading torrent…"
+msgstr "جارٍ قراءة التورنت…"
+
+msgid "Releases"
+msgstr "الإصدارات"
+
+msgid "Remove"
+msgstr "إزالة"
+
+msgid "Remove…"
+msgstr "إزالة…"
+
+msgid "Require"
+msgstr "إلزام"
+
+msgid "Reset everything"
+msgstr "إعادة تعيين كل شيء"
+
+msgid "Reset…"
+msgstr "إعادة تعيين…"
+
+msgid "Restart now"
+msgstr "أعد التشغيل الآن"
+
+msgid "Restore"
+msgstr "استعادة"
+
+msgid "Save to"
+msgstr "الحفظ في"
+
+msgid "Seeding"
+msgstr "جارٍ البذر"
+
+msgid "Show all"
+msgstr "إظهار الكل"
+
+msgid "Show the state list"
+msgstr "إظهار قائمة الحالات"
+
+msgid "Slow download"
+msgstr "تنزيل بطيء"
+
+msgid "Slow upload"
+msgstr "رفع بطيء"
+
+msgid "Space"
+msgstr "المساحة"
+
+msgid "Speed"
+msgstr "السرعة"
+
+msgid "Start"
+msgstr "بدء"
+
+msgid "Stop fetching this one first"
+msgstr "أوقف جلب هذا أولًا"
+
+msgid "Switch to the dark theme"
+msgstr "التبديل إلى السمة الداكنة"
+
+msgid "Switch to the light theme"
+msgstr "التبديل إلى السمة الفاتحة"
+
+msgid "Switch to the slow limits"
+msgstr "التبديل إلى الحدود البطيئة"
+
+msgid "System"
+msgstr "النظام"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "تذهب الملفات إلى سلة المحذوفات، فيمكن التراجع عن هذا."
+
+msgid "The files stay where they are."
+msgstr "تبقى الملفات في مكانها."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "الباقي ينتظر دوره. البذر لا ينتظر أبدًا."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "الزوج الثاني، لحين الحاجة إلى الخط لشيء آخر. زر شريط الأدوات يبدّل إليهما."
+
+msgid "Theme"
+msgstr "السمة"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "يسري هذا عند تشغيل Zerem في المرة القادمة."
+
+msgid "This is the newest version."
+msgstr "هذه أحدث نسخة."
+
+msgid "Total"
+msgstr "الإجمالي"
+
+msgid "Try again"
+msgstr "أعد المحاولة"
+
+msgid "Unlimited"
+msgstr "بلا حد"
+
+msgid "Updates"
+msgstr "التحديثات"
+
+msgid "Upload limit"
+msgstr "حد الرفع"
+
+msgid "Upload speed"
+msgstr "سرعة الرفع"
+
+msgid "Version {} is ready to install."
+msgstr "النسخة {} جاهزة للتثبيت."
+
+msgid "Watch this folder"
+msgstr "راقب هذا المجلد"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "لديك تورنتات، لكن لا شيء منها في هذا الجزء من القائمة."
+
+msgid "kB/s"
+msgstr "ك.ب/ث"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "‏librqbit، والأعلام مأخوذة مما تنشره سجلات الإنترنت الخمسة."
+
+msgid "not downloading"
+msgstr "لا يُنزَّل"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "‏uTP — يفسح الطريق لبقية البيانات على الخط نفسه"

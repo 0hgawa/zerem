@@ -1,0 +1,449 @@
+# Zerem — Spanish.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "Un archivo .torrent que se deje en una carpeta vigilada se añade solo."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "Un cliente BitTorrent que no se interpone."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "Un magnet no tiene ninguno hasta que llegan sus metadatos."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "Un enlace magnet no lleva la lista de archivos — hay que pedirla."
+
+msgid "A paused torrent has none."
+msgstr "Un torrent en pausa no tiene ninguno."
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Active"
+msgstr "Activos"
+
+msgid "Add"
+msgstr "Añadir"
+
+msgid "Add .torrent file"
+msgstr "Añadir archivo .torrent"
+
+msgid "Add file"
+msgstr "Añadir archivo"
+
+msgid "Add torrent"
+msgstr "Añadir torrent"
+
+msgid "Add torrents stopped"
+msgstr "Añadir los torrents detenidos"
+
+msgid "All"
+msgstr "Todos"
+
+msgid "Also move the data to the recycle bin"
+msgstr "Mover también los datos a la papelera"
+
+msgid "Alternative limits"
+msgstr "Límites alternativos"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "Una subida sin límite llena el enlace y frena todo lo demás en la conexión."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Pedir al router que abra el puerto (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "Volver a los límites completos"
+
+msgid "Being fetched before the others"
+msgstr "Se está obteniendo antes que los demás"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Categories"
+msgstr "Categorías"
+
+msgid "Category"
+msgstr "Categoría"
+
+msgid "Change"
+msgstr "Cambiar"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "Cambiar esto no mueve los torrents que ya están en la lista."
+
+msgid "Check now"
+msgstr "Comprobar ahora"
+
+msgid "Clear filter"
+msgstr "Borrar filtro"
+
+msgid "Clear the filter"
+msgstr "Borrar el filtro"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Close the details panel"
+msgstr "Cerrar el panel de detalles"
+
+msgid "Connection"
+msgstr "Conexión"
+
+msgid "Copy magnet link"
+msgstr "Copiar enlace magnet"
+
+msgid "Could not update: {}"
+msgstr "No se pudo actualizar: {}"
+
+msgid "Dark"
+msgstr "Oscuro"
+
+msgid "Del"
+msgstr "Supr"
+
+msgid "Do not download"
+msgstr "No descargar"
+
+msgid "Download"
+msgstr "Descargar"
+
+msgid "Download at once"
+msgstr "Descargas a la vez"
+
+msgid "Download limit"
+msgstr "Límite de descarga"
+
+msgid "Download speed"
+msgstr "Velocidad de descarga"
+
+msgid "Downloading"
+msgstr "Descargando"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "Descargando y comprobando quién lo firmó…"
+
+msgid "Downloads"
+msgstr "Descargas"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Cifrar cuando el par acepte. Oculta el tráfico ante una conexión que limita BitTorrent."
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "Cada ajuste vuelve a como estaba el primer día. Los torrents no se tocan."
+
+msgid "Every window changes at once. No restart."
+msgstr "Todas las ventanas cambian al momento. Sin reiniciar."
+
+msgid "Fetch this one before the others"
+msgstr "Obtener este antes que los demás"
+
+msgid "Fetch this one first"
+msgstr "Obtener este primero"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "Pidiendo la lista de archivos al enjambre…"
+
+msgid "Files"
+msgstr "Archivos"
+
+msgid "Filter"
+msgstr "Filtrar"
+
+msgid "Filter the list by name"
+msgstr "Filtrar la lista por nombre"
+
+msgid "Finished"
+msgstr "Terminados"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Los torrents terminados se quedan en la carpeta donde se descargaron."
+
+msgid "Folder"
+msgstr "Carpeta"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "Carpetas, límites, idioma y tema — todo."
+
+msgid "Force recheck"
+msgstr "Forzar verificación"
+
+msgid "General"
+msgstr "General"
+
+msgid "Hide the state list"
+msgstr "Ocultar la lista de estados"
+
+msgid "Install"
+msgstr "Instalar"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Instalado para todos en este equipo — las actualizaciones vienen del gestor de paquetes."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Instalado en un espacio aislado — las actualizaciones llegan con el entorno."
+
+msgid "Installed. Restart to run it."
+msgstr "Instalado. Reinicia para ejecutarlo."
+
+msgid "Installing…"
+msgstr "Instalando…"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Listening port"
+msgstr "Puerto de escucha"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Se busca automáticamente cada vez que se abre la aplicación."
+
+msgid "Looking…"
+msgstr "Buscando…"
+
+msgid "Matching the filter"
+msgstr "Coinciden con el filtro"
+
+msgid "Maximize"
+msgstr "Maximizar"
+
+msgid "Minimize"
+msgstr "Minimizar"
+
+msgid "Move here when finished"
+msgstr "Mover aquí al terminar"
+
+msgid "Never"
+msgstr "Nunca"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Nunca. Cualquiera que vigile la línea ve de qué se trata."
+
+msgid "No file list yet"
+msgstr "Todavía no hay lista de archivos"
+
+msgid "No limit"
+msgstr "Sin límite"
+
+msgid "No peers connected"
+msgstr "Ningún par conectado"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "El nombre de ningún torrent contiene todas las palabras que escribiste."
+
+msgid "No torrents yet"
+msgstr "Todavía no hay torrents"
+
+msgid "None"
+msgstr "Ninguno"
+
+msgid "Nothing here"
+msgstr "Aquí no hay nada"
+
+msgid "Nothing matches"
+msgstr "No coincide nada"
+
+msgid "Off"
+msgstr "Desactivado"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Solo pares que cifran. Nada en la línea dice de qué se trata, y habrá menos pares."
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Open containing folder"
+msgstr "Abrir la carpeta que lo contiene"
+
+msgid "Open folder"
+msgstr "Abrir carpeta"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Pega un enlace magnet con Ctrl+V, o añade un archivo .torrent."
+
+msgid "Paste magnet"
+msgstr "Pegar magnet"
+
+msgid "Pause"
+msgstr "Pausar"
+
+msgid "Paused"
+msgstr "En pausa"
+
+msgid "Peers"
+msgstr "Pares"
+
+msgid "Play now"
+msgstr "Reproducir ahora"
+
+msgid "Prefer"
+msgstr "Preferir"
+
+msgid "Preferences"
+msgstr "Preferencias"
+
+msgid "Protocol encryption"
+msgstr "Cifrado del protocolo"
+
+msgid "Put every setting back"
+msgstr "Restablecer todos los ajustes"
+
+msgid "Queued"
+msgstr "En cola"
+
+msgid "Ratio"
+msgstr "Proporción"
+
+msgid "Reading torrent…"
+msgstr "Leyendo el torrent…"
+
+msgid "Releases"
+msgstr "Versiones"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Remove…"
+msgstr "Quitar…"
+
+msgid "Require"
+msgstr "Exigir"
+
+msgid "Reset everything"
+msgstr "Restablecer todo"
+
+msgid "Reset…"
+msgstr "Restablecer…"
+
+msgid "Restart now"
+msgstr "Reiniciar ahora"
+
+msgid "Restore"
+msgstr "Restaurar"
+
+msgid "Save to"
+msgstr "Guardar en"
+
+msgid "Seeding"
+msgstr "Compartiendo"
+
+msgid "Show all"
+msgstr "Mostrar todos"
+
+msgid "Show the state list"
+msgstr "Mostrar la lista de estados"
+
+msgid "Slow download"
+msgstr "Descarga lenta"
+
+msgid "Slow upload"
+msgstr "Subida lenta"
+
+msgid "Space"
+msgstr "Espacio"
+
+msgid "Speed"
+msgstr "Velocidad"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop fetching this one first"
+msgstr "Dejar de obtener este primero"
+
+msgid "Switch to the dark theme"
+msgstr "Cambiar al tema oscuro"
+
+msgid "Switch to the light theme"
+msgstr "Cambiar al tema claro"
+
+msgid "Switch to the slow limits"
+msgstr "Cambiar a los límites lentos"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "Los archivos van a la papelera, así que esto se puede deshacer."
+
+msgid "The files stay where they are."
+msgstr "Los archivos se quedan donde están."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "El resto espera su turno. Compartir nunca espera."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "El segundo par, para cuando la línea hace falta para otra cosa. El botón de la barra de herramientas cambia a ellos."
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Esto surte efecto la próxima vez que se abra Zerem."
+
+msgid "This is the newest version."
+msgstr "Esta es la versión más reciente."
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Try again"
+msgstr "Reintentar"
+
+msgid "Unlimited"
+msgstr "Sin límite"
+
+msgid "Updates"
+msgstr "Actualizaciones"
+
+msgid "Upload limit"
+msgstr "Límite de subida"
+
+msgid "Upload speed"
+msgstr "Velocidad de subida"
+
+msgid "Version {} is ready to install."
+msgstr "La versión {} está lista para instalar."
+
+msgid "Watch this folder"
+msgstr "Vigilar esta carpeta"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Tienes torrents, solo que ninguno en esta parte de la lista."
+
+msgid "kB/s"
+msgstr "kB/s"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, y las banderas salen de lo que publican los cinco registros de internet."
+
+msgid "not downloading"
+msgstr "sin descargar"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — cede el paso al resto del tráfico de la misma línea"

@@ -1,0 +1,449 @@
+# Zerem — Turkish.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "İzlenen bir klasöre bırakılan .torrent dosyası kendiliğinden eklenir."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "Yolunuza çıkmayan bir BitTorrent istemcisi."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "Bir magnet, üstverisi gelene kadar hiçbirine sahip değildir."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "Magnet bağlantısı dosya listesi taşımaz — listenin istenmesi gerekir."
+
+msgid "A paused torrent has none."
+msgstr "Duraklatılmış bir torrentte hiçbiri yoktur."
+
+msgid "About"
+msgstr "Hakkında"
+
+msgid "Active"
+msgstr "Etkin"
+
+msgid "Add"
+msgstr "Ekle"
+
+msgid "Add .torrent file"
+msgstr ".torrent dosyası ekle"
+
+msgid "Add file"
+msgstr "Dosya ekle"
+
+msgid "Add torrent"
+msgstr "Torrent ekle"
+
+msgid "Add torrents stopped"
+msgstr "Torrentleri durdurulmuş olarak ekle"
+
+msgid "All"
+msgstr "Tümü"
+
+msgid "Also move the data to the recycle bin"
+msgstr "Verileri de geri dönüşüm kutusuna taşı"
+
+msgid "Alternative limits"
+msgstr "Alternatif sınırlar"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "Sınırsız gönderim yukarı hattı doldurur ve bağlantıdaki her şeyi yavaşlatır."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Yönlendiriciden bağlantı noktasını açmasını iste (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "Tam hız sınırlarına dön"
+
+msgid "Being fetched before the others"
+msgstr "Diğerlerinden önce alınıyor"
+
+msgid "Cancel"
+msgstr "Vazgeç"
+
+msgid "Categories"
+msgstr "Kategoriler"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Change"
+msgstr "Değiştir"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "Bunu değiştirmek listedeki torrentleri taşımaz."
+
+msgid "Check now"
+msgstr "Şimdi denetle"
+
+msgid "Clear filter"
+msgstr "Süzgeci temizle"
+
+msgid "Clear the filter"
+msgstr "Süzgeci temizle"
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Close the details panel"
+msgstr "Ayrıntılar panelini kapat"
+
+msgid "Connection"
+msgstr "Bağlantı"
+
+msgid "Copy magnet link"
+msgstr "Magnet bağlantısını kopyala"
+
+msgid "Could not update: {}"
+msgstr "Güncellenemedi: {}"
+
+msgid "Dark"
+msgstr "Koyu"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "İndirme"
+
+msgid "Download"
+msgstr "İndir"
+
+msgid "Download at once"
+msgstr "Aynı anda indirme"
+
+msgid "Download limit"
+msgstr "İndirme sınırı"
+
+msgid "Download speed"
+msgstr "İndirme hızı"
+
+msgid "Downloading"
+msgstr "İndiriliyor"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "İndiriliyor ve imzalayanın kim olduğu denetleniyor…"
+
+msgid "Downloads"
+msgstr "İndirilenler"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Eş kabul ettiğinde şifrele. Trafiği, BitTorrent'i kısan bir bağlantıdan gizler."
+
+msgid "Engine"
+msgstr "Motor"
+
+msgid "Error"
+msgstr "Hata"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "Her tercih ilk açılıştaki haline döner. Torrentlere dokunulmaz."
+
+msgid "Every window changes at once. No restart."
+msgstr "Tüm pencereler anında değişir. Yeniden başlatma yok."
+
+msgid "Fetch this one before the others"
+msgstr "Bunu diğerlerinden önce al"
+
+msgid "Fetch this one first"
+msgstr "Önce bunu al"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "Dosya listesi sürüden alınıyor…"
+
+msgid "Files"
+msgstr "Dosyalar"
+
+msgid "Filter"
+msgstr "Süz"
+
+msgid "Filter the list by name"
+msgstr "Listeyi ada göre süz"
+
+msgid "Finished"
+msgstr "Tamamlananlar"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Tamamlanan torrentler indirildikleri klasörde kalır."
+
+msgid "Folder"
+msgstr "Klasör"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "Klasörler, sınırlar, dil ve tema — hepsi."
+
+msgid "Force recheck"
+msgstr "Yeniden denetlemeye zorla"
+
+msgid "General"
+msgstr "Genel"
+
+msgid "Hide the state list"
+msgstr "Durum listesini gizle"
+
+msgid "Install"
+msgstr "Kur"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Bu makinede herkes için kurulu — güncellemeler paket yöneticinizden gelir."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Bir kum havuzunda kurulu — güncellemeler çalışma ortamıyla birlikte gelir."
+
+msgid "Installed. Restart to run it."
+msgstr "Kuruldu. Çalıştırmak için yeniden başlatın."
+
+msgid "Installing…"
+msgstr "Kuruluyor…"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Light"
+msgstr "Açık"
+
+msgid "Listening port"
+msgstr "Dinlenen bağlantı noktası"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Uygulama her açıldığında kendiliğinden aranır."
+
+msgid "Looking…"
+msgstr "Aranıyor…"
+
+msgid "Matching the filter"
+msgstr "Süzgece uyanlar"
+
+msgid "Maximize"
+msgstr "Büyüt"
+
+msgid "Minimize"
+msgstr "Küçült"
+
+msgid "Move here when finished"
+msgstr "Bitince buraya taşı"
+
+msgid "Never"
+msgstr "Asla"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Asla. Hattı izleyen herkes bunun ne olduğunu görebilir."
+
+msgid "No file list yet"
+msgstr "Henüz dosya listesi yok"
+
+msgid "No limit"
+msgstr "Sınırsız"
+
+msgid "No peers connected"
+msgstr "Bağlı eş yok"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "Hiçbir torrentin adı yazdığınız sözcüklerin tümünü içermiyor."
+
+msgid "No torrents yet"
+msgstr "Henüz torrent yok"
+
+msgid "None"
+msgstr "Hiçbiri"
+
+msgid "Nothing here"
+msgstr "Burada bir şey yok"
+
+msgid "Nothing matches"
+msgstr "Eşleşen yok"
+
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Yalnızca şifreleyen eşler. Hatta bunun ne olduğunu söyleyen hiçbir şey olmaz, ve eş sayısı azalır."
+
+msgid "Open"
+msgstr "Aç"
+
+msgid "Open containing folder"
+msgstr "Bulunduğu klasörü aç"
+
+msgid "Open folder"
+msgstr "Klasörü aç"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Ctrl+V ile bir magnet bağlantısı yapıştırın ya da bir .torrent dosyası ekleyin."
+
+msgid "Paste magnet"
+msgstr "Magnet yapıştır"
+
+msgid "Pause"
+msgstr "Duraklat"
+
+msgid "Paused"
+msgstr "Duraklatıldı"
+
+msgid "Peers"
+msgstr "Eşler"
+
+msgid "Play now"
+msgstr "Şimdi oynat"
+
+msgid "Prefer"
+msgstr "Yeğle"
+
+msgid "Preferences"
+msgstr "Tercihler"
+
+msgid "Protocol encryption"
+msgstr "Protokol şifrelemesi"
+
+msgid "Put every setting back"
+msgstr "Tüm ayarları geri al"
+
+msgid "Queued"
+msgstr "Sırada"
+
+msgid "Ratio"
+msgstr "Oran"
+
+msgid "Reading torrent…"
+msgstr "Torrent okunuyor…"
+
+msgid "Releases"
+msgstr "Sürümler"
+
+msgid "Remove"
+msgstr "Kaldır"
+
+msgid "Remove…"
+msgstr "Kaldır…"
+
+msgid "Require"
+msgstr "Zorunlu tut"
+
+msgid "Reset everything"
+msgstr "Her şeyi sıfırla"
+
+msgid "Reset…"
+msgstr "Sıfırla…"
+
+msgid "Restart now"
+msgstr "Şimdi yeniden başlat"
+
+msgid "Restore"
+msgstr "Geri yükle"
+
+msgid "Save to"
+msgstr "Şuraya kaydet"
+
+msgid "Seeding"
+msgstr "Gönderiliyor"
+
+msgid "Show all"
+msgstr "Tümünü göster"
+
+msgid "Show the state list"
+msgstr "Durum listesini göster"
+
+msgid "Slow download"
+msgstr "Yavaş indirme"
+
+msgid "Slow upload"
+msgstr "Yavaş gönderme"
+
+msgid "Space"
+msgstr "Alan"
+
+msgid "Speed"
+msgstr "Hız"
+
+msgid "Start"
+msgstr "Başlat"
+
+msgid "Stop fetching this one first"
+msgstr "Bunu önce almayı bırak"
+
+msgid "Switch to the dark theme"
+msgstr "Koyu temaya geç"
+
+msgid "Switch to the light theme"
+msgstr "Açık temaya geç"
+
+msgid "Switch to the slow limits"
+msgstr "Yavaş sınırlara geç"
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "Dosyalar geri dönüşüm kutusuna gider, yani bu geri alınabilir."
+
+msgid "The files stay where they are."
+msgstr "Dosyalar oldukları yerde kalır."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "Kalanlar sırasını bekler. Gönderim asla beklemez."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "İkinci çift, hat başka bir iş için gerektiğinde. Araç çubuğundaki düğme bunlara geçer."
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Bunlar Zerem'in bir sonraki açılışında geçerli olur."
+
+msgid "This is the newest version."
+msgstr "Bu en yeni sürüm."
+
+msgid "Total"
+msgstr "Toplam"
+
+msgid "Try again"
+msgstr "Yeniden dene"
+
+msgid "Unlimited"
+msgstr "Sınırsız"
+
+msgid "Updates"
+msgstr "Güncellemeler"
+
+msgid "Upload limit"
+msgstr "Gönderme sınırı"
+
+msgid "Upload speed"
+msgstr "Gönderme hızı"
+
+msgid "Version {} is ready to install."
+msgstr "{} sürümü kurulmaya hazır."
+
+msgid "Watch this folder"
+msgstr "Bu klasörü izle"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Torrentleriniz var, yalnızca listenin bu bölümünde yok."
+
+msgid "kB/s"
+msgstr "kB/sn"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, ve bayraklar beş internet kayıt kuruluşunun yayımladığı verilerden geliyor."
+
+msgid "not downloading"
+msgstr "indirilmiyor"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — aynı hattaki diğer trafiğe yol verir"

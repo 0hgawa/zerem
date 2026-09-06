@@ -1,0 +1,449 @@
+# Zerem — Vietnamese.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "Tệp .torrent thả vào thư mục đang theo dõi sẽ tự được thêm vào."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "Một ứng dụng BitTorrent không làm vướng chân bạn."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "Một magnet chưa có gì cho tới khi siêu dữ liệu của nó về."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "Liên kết magnet không mang theo danh sách tệp — phải đi hỏi mới có."
+
+msgid "A paused torrent has none."
+msgstr "Torrent đang tạm dừng thì không có."
+
+msgid "About"
+msgstr "Giới thiệu"
+
+msgid "Active"
+msgstr "Đang hoạt động"
+
+msgid "Add"
+msgstr "Thêm"
+
+msgid "Add .torrent file"
+msgstr "Thêm tệp .torrent"
+
+msgid "Add file"
+msgstr "Thêm tệp"
+
+msgid "Add torrent"
+msgstr "Thêm torrent"
+
+msgid "Add torrents stopped"
+msgstr "Thêm torrent ở trạng thái dừng"
+
+msgid "All"
+msgstr "Tất cả"
+
+msgid "Also move the data to the recycle bin"
+msgstr "Chuyển luôn dữ liệu vào thùng rác"
+
+msgid "Alternative limits"
+msgstr "Giới hạn thay thế"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "Tải lên không giới hạn sẽ chiếm hết đường lên và làm nghẽn mọi thứ khác trên kết nối."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Nhờ bộ định tuyến mở cổng (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "Trở lại giới hạn tốc độ đầy đủ"
+
+msgid "Being fetched before the others"
+msgstr "Đang được lấy trước những tệp khác"
+
+msgid "Cancel"
+msgstr "Huỷ"
+
+msgid "Categories"
+msgstr "Danh mục"
+
+msgid "Category"
+msgstr "Danh mục"
+
+msgid "Change"
+msgstr "Đổi"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "Đổi mục này không làm dời những torrent đã có trong danh sách."
+
+msgid "Check now"
+msgstr "Kiểm tra ngay"
+
+msgid "Clear filter"
+msgstr "Xoá bộ lọc"
+
+msgid "Clear the filter"
+msgstr "Xoá bộ lọc"
+
+msgid "Close"
+msgstr "Đóng"
+
+msgid "Close the details panel"
+msgstr "Đóng bảng chi tiết"
+
+msgid "Connection"
+msgstr "Kết nối"
+
+msgid "Copy magnet link"
+msgstr "Sao chép liên kết magnet"
+
+msgid "Could not update: {}"
+msgstr "Không thể cập nhật: {}"
+
+msgid "Dark"
+msgstr "Tối"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "Không tải"
+
+msgid "Download"
+msgstr "Tải xuống"
+
+msgid "Download at once"
+msgstr "Tải cùng lúc"
+
+msgid "Download limit"
+msgstr "Giới hạn tải xuống"
+
+msgid "Download speed"
+msgstr "Tốc độ tải xuống"
+
+msgid "Downloading"
+msgstr "Đang tải xuống"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "Đang tải xuống và kiểm tra ai đã ký…"
+
+msgid "Downloads"
+msgstr "Tải xuống"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Mã hoá khi peer đồng ý. Giấu lưu lượng khỏi đường truyền có bóp băng thông BitTorrent."
+
+msgid "Engine"
+msgstr "Động cơ"
+
+msgid "Error"
+msgstr "Lỗi"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "Mọi tuỳ chọn trở về như lần chạy đầu tiên. Các torrent không bị đụng tới."
+
+msgid "Every window changes at once. No restart."
+msgstr "Mọi cửa sổ đổi ngay lập tức. Không cần khởi động lại."
+
+msgid "Fetch this one before the others"
+msgstr "Lấy tệp này trước những tệp khác"
+
+msgid "Fetch this one first"
+msgstr "Lấy tệp này trước"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "Đang lấy danh sách tệp từ bầy…"
+
+msgid "Files"
+msgstr "Tệp"
+
+msgid "Filter"
+msgstr "Lọc"
+
+msgid "Filter the list by name"
+msgstr "Lọc danh sách theo tên"
+
+msgid "Finished"
+msgstr "Đã xong"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Torrent đã xong vẫn nằm trong thư mục mà nó đã tải về."
+
+msgid "Folder"
+msgstr "Thư mục"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "Thư mục, giới hạn, ngôn ngữ và giao diện — tất cả."
+
+msgid "Force recheck"
+msgstr "Buộc kiểm tra lại"
+
+msgid "General"
+msgstr "Chung"
+
+msgid "Hide the state list"
+msgstr "Ẩn danh sách trạng thái"
+
+msgid "Install"
+msgstr "Cài đặt"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Đã cài cho mọi người trên máy này — bản cập nhật đến từ trình quản lý gói của bạn."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Đã cài trong hộp cát — bản cập nhật đi kèm môi trường chạy."
+
+msgid "Installed. Restart to run it."
+msgstr "Đã cài. Khởi động lại để chạy."
+
+msgid "Installing…"
+msgstr "Đang cài đặt…"
+
+msgid "Language"
+msgstr "Ngôn ngữ"
+
+msgid "Light"
+msgstr "Sáng"
+
+msgid "Listening port"
+msgstr "Cổng lắng nghe"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Tự động tìm mỗi lần mở ứng dụng."
+
+msgid "Looking…"
+msgstr "Đang tìm…"
+
+msgid "Matching the filter"
+msgstr "Khớp với bộ lọc"
+
+msgid "Maximize"
+msgstr "Phóng to"
+
+msgid "Minimize"
+msgstr "Thu nhỏ"
+
+msgid "Move here when finished"
+msgstr "Chuyển vào đây khi xong"
+
+msgid "Never"
+msgstr "Không bao giờ"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Không bao giờ. Bất cứ ai theo dõi đường truyền đều thấy đây là gì."
+
+msgid "No file list yet"
+msgstr "Chưa có danh sách tệp"
+
+msgid "No limit"
+msgstr "Không giới hạn"
+
+msgid "No peers connected"
+msgstr "Chưa có peer nào kết nối"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "Không tên torrent nào chứa đủ mọi từ bạn đã gõ."
+
+msgid "No torrents yet"
+msgstr "Chưa có torrent nào"
+
+msgid "None"
+msgstr "Không có"
+
+msgid "Nothing here"
+msgstr "Chẳng có gì ở đây"
+
+msgid "Nothing matches"
+msgstr "Không có gì khớp"
+
+msgid "Off"
+msgstr "Tắt"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Chỉ những peer có mã hoá. Không gì trên đường truyền tiết lộ đây là gì, và sẽ ít peer hơn."
+
+msgid "Open"
+msgstr "Mở"
+
+msgid "Open containing folder"
+msgstr "Mở thư mục chứa"
+
+msgid "Open folder"
+msgstr "Mở thư mục"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Dán liên kết magnet bằng Ctrl+V, hoặc thêm một tệp .torrent."
+
+msgid "Paste magnet"
+msgstr "Dán magnet"
+
+msgid "Pause"
+msgstr "Tạm dừng"
+
+msgid "Paused"
+msgstr "Đã tạm dừng"
+
+msgid "Peers"
+msgstr "Peer"
+
+msgid "Play now"
+msgstr "Phát ngay"
+
+msgid "Prefer"
+msgstr "Ưu tiên"
+
+msgid "Preferences"
+msgstr "Tuỳ chọn"
+
+msgid "Protocol encryption"
+msgstr "Mã hoá giao thức"
+
+msgid "Put every setting back"
+msgstr "Đặt lại mọi thiết lập"
+
+msgid "Queued"
+msgstr "Trong hàng đợi"
+
+msgid "Ratio"
+msgstr "Tỷ lệ"
+
+msgid "Reading torrent…"
+msgstr "Đang đọc torrent…"
+
+msgid "Releases"
+msgstr "Phiên bản phát hành"
+
+msgid "Remove"
+msgstr "Xoá"
+
+msgid "Remove…"
+msgstr "Xoá…"
+
+msgid "Require"
+msgstr "Bắt buộc"
+
+msgid "Reset everything"
+msgstr "Đặt lại tất cả"
+
+msgid "Reset…"
+msgstr "Đặt lại…"
+
+msgid "Restart now"
+msgstr "Khởi động lại ngay"
+
+msgid "Restore"
+msgstr "Khôi phục"
+
+msgid "Save to"
+msgstr "Lưu vào"
+
+msgid "Seeding"
+msgstr "Đang chia sẻ"
+
+msgid "Show all"
+msgstr "Hiện tất cả"
+
+msgid "Show the state list"
+msgstr "Hiện danh sách trạng thái"
+
+msgid "Slow download"
+msgstr "Tải xuống chậm"
+
+msgid "Slow upload"
+msgstr "Tải lên chậm"
+
+msgid "Space"
+msgstr "Dung lượng"
+
+msgid "Speed"
+msgstr "Tốc độ"
+
+msgid "Start"
+msgstr "Bắt đầu"
+
+msgid "Stop fetching this one first"
+msgstr "Thôi lấy tệp này trước"
+
+msgid "Switch to the dark theme"
+msgstr "Chuyển sang giao diện tối"
+
+msgid "Switch to the light theme"
+msgstr "Chuyển sang giao diện sáng"
+
+msgid "Switch to the slow limits"
+msgstr "Chuyển sang giới hạn chậm"
+
+msgid "System"
+msgstr "Hệ thống"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "Các tệp vào thùng rác, nên việc này có thể hoàn tác."
+
+msgid "The files stay where they are."
+msgstr "Các tệp vẫn nằm nguyên chỗ cũ."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "Số còn lại chờ tới lượt. Việc chia sẻ thì không bao giờ phải chờ."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "Cặp thứ hai, cho lúc đường truyền cần dùng việc khác. Nút trên thanh công cụ sẽ chuyển sang cặp này."
+
+msgid "Theme"
+msgstr "Giao diện"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Những mục này có hiệu lực ở lần mở Zerem kế tiếp."
+
+msgid "This is the newest version."
+msgstr "Đây là phiên bản mới nhất."
+
+msgid "Total"
+msgstr "Tổng"
+
+msgid "Try again"
+msgstr "Thử lại"
+
+msgid "Unlimited"
+msgstr "Không giới hạn"
+
+msgid "Updates"
+msgstr "Cập nhật"
+
+msgid "Upload limit"
+msgstr "Giới hạn tải lên"
+
+msgid "Upload speed"
+msgstr "Tốc độ tải lên"
+
+msgid "Version {} is ready to install."
+msgstr "Phiên bản {} đã sẵn sàng để cài."
+
+msgid "Watch this folder"
+msgstr "Theo dõi thư mục này"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Bạn có torrent, chỉ là không có trong phần này của danh sách."
+
+msgid "kB/s"
+msgstr "kB/s"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, và các lá cờ lấy từ dữ liệu do năm cơ quan đăng ký internet công bố."
+
+msgid "not downloading"
+msgstr "không tải"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — nhường đường cho lưu lượng khác trên cùng đường truyền"

@@ -11,19 +11,74 @@
 //! figures — but a translator does have to visit both, and saying so beats
 //! letting them find out.
 //!
-//! Two shapes, and the split is not stylistic. A fixed string goes in `TABLE`
-//! and is looked up by its English self, exactly as gettext does it. A string
-//! with a number in it cannot: `format!` needs a literal, so those are written
-//! out per language in the functions below, where the word order is free to
-//! differ and the compiler still checks the arguments.
+//! # Shapes
+//!
+//! A fixed string goes in [`catalogue::TABLE`] and is looked up by its English
+//! self, exactly as gettext does it. A string with a value in it goes in one of
+//! the pattern arrays, where `{0}` marks where the value lands — so a language
+//! that wants the number last is free to put it last, and Hindi and Turkish
+//! both do.
+//!
+//! `format!` was the obvious thing, and it does not survive eleven languages:
+//! it needs a literal, so every sentence became a `match` arm per language, and
+//! the check that bought is not the one that matters. The compiler can only
+//! tell that the literal in front of it agrees with its arguments — it cannot
+//! see that a translator dropped a `{1}`, because the arm they edited still
+//! compiles. A test can, across all eleven at once, which is why the patterns
+//! are data now.
 
+mod catalogue;
+
+use crate::language::SHIPPED;
+use catalogue::{
+    CLIPBOARD_FAILED, FETCHING_FIRST, FETCHING_FIRST_WAITING, FILES_PART, FILES_WHOLE, FINISHED_MANY,
+    FINISHED_ONE, MATCHED, MOVE_FAILED, SHORTFALL, TABLE, WATCH_FAILED,
+};
 use std::sync::atomic::{AtomicU8, Ordering};
 
+/// A language the binary carries, and its position in [`SHIPPED`].
+///
+/// The two orders are the same thing on purpose, and a test says so: it is what
+/// lets [`set`] take a tag without a second table to forget to update. Adding a
+/// language stays what `language.rs` promises — a folder, a line in `SHIPPED` —
+/// plus the translations themselves, and nothing else.
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
 pub enum Lang {
     #[default]
     En,
+    Ar,
+    De,
+    Es,
+    Fr,
+    Hi,
+    Id,
     PtBr,
+    Ru,
+    Tr,
+    Vi,
+}
+
+impl Lang {
+    /// In [`SHIPPED`] order, which is also the order of every array in
+    /// [`catalogue`].
+    const ALL: [Self; 11] = [
+        Self::En,
+        Self::Ar,
+        Self::De,
+        Self::Es,
+        Self::Fr,
+        Self::Hi,
+        Self::Id,
+        Self::PtBr,
+        Self::Ru,
+        Self::Tr,
+        Self::Vi,
+    ];
+
+    /// Where this language sits in those arrays.
+    const fn at(self) -> usize {
+        self as usize
+    }
 }
 
 /// The language everything here answers in.
@@ -36,54 +91,18 @@ static CURRENT: AtomicU8 = AtomicU8::new(0);
 
 /// Adopt a resolved tag — the folder name under `lang/`, as
 /// [`crate::language::resolve`] returns it.
+///
+/// A tag nothing ships is the source language, which is the answer `resolve`
+/// gives and the one [`tr`] falls back to.
 pub fn set(tag: &str) {
-    let lang = if tag == "pt-BR" { Lang::PtBr } else { Lang::En };
-    CURRENT.store(lang as u8, Ordering::Relaxed);
+    let at = SHIPPED.iter().position(|(shipped, _)| *shipped == tag).unwrap_or(0);
+    CURRENT.store(u8::try_from(at).unwrap_or(0), Ordering::Relaxed);
 }
 
 #[must_use]
 pub fn current() -> Lang {
-    if CURRENT.load(Ordering::Relaxed) == Lang::PtBr as u8 {
-        Lang::PtBr
-    } else {
-        Lang::En
-    }
+    Lang::ALL.get(CURRENT.load(Ordering::Relaxed) as usize).copied().unwrap_or(Lang::En)
 }
-
-/// Fixed strings, keyed by the English original — the same contract a `.po`
-/// has, and for the same reason: the call site stays readable, and a key that
-/// stops matching is a string somebody edited without looking here.
-///
-/// Sorted, and a test says so: the lookup is a binary search, and an unsorted
-/// table would fail quietly, missing some entries while their neighbours work.
-const TABLE: [(&str, &str); 26] = [
-    ("Another program has one of the files open", "Outro programa está com um dos arquivos aberto"),
-    ("Checking", "Verificando"),
-    ("Connecting", "Conectando"),
-    ("Downloading", "Baixando"),
-    ("Error", "Erro"),
-    ("Fetching metadata", "Buscando metadata"),
-    ("Magnet link copied", "Link magnet copiado"),
-    ("No files selected", "Nenhum arquivo selecionado"),
-    ("No limit", "Sem limite"),
-    ("No one is sharing", "Ninguém está compartilhando"),
-    ("No peers found", "Nenhum peer encontrado"),
-    ("No permission to write in the download folder", "Sem permissão para escrever na pasta de destino"),
-    ("Not enough space on the disk", "Sem espaço no disco"),
-    ("Paused", "Pausado"),
-    ("Queued", "Na fila"),
-    ("Seeding", "Semeando"),
-    ("Streaming is not available", "Reprodução ao vivo indisponível"),
-    ("System", "Sistema"),
-    ("That drive is not available", "Essa unidade não está disponível"),
-    ("That file has not finished yet", "Esse arquivo ainda não terminou"),
-    ("That file is not on disk yet", "Esse arquivo ainda não está no disco"),
-    ("That torrent has no folder yet", "Esse torrent ainda não tem pasta"),
-    ("That torrent has no infohash yet", "Esse torrent ainda não tem infohash"),
-    ("The clipboard has no magnet link in it", "Não há link magnet na área de transferência"),
-    ("The download folder is not there any more", "A pasta de destino não existe mais"),
-    ("The download folder is read-only", "A pasta de destino é somente leitura"),
-];
 
 /// The translation of `source`, or `source` itself.
 ///
@@ -92,51 +111,123 @@ const TABLE: [(&str, &str); 26] = [
 /// user about a word they cannot act on.
 #[must_use]
 pub fn tr(source: &'static str) -> &'static str {
-    match current() {
-        Lang::En => source,
-        Lang::PtBr => TABLE.binary_search_by(|(key, _)| (*key).cmp(source)).map_or(source, |at| TABLE[at].1),
+    // English is the key, so there is no lookup at all on the source language.
+    let Some(at) = current().at().checked_sub(1) else {
+        return source;
+    };
+    TABLE.binary_search_by(|(key, _)| (*key).cmp(source)).map_or(source, |row| {
+        let word = TABLE[row].1[at];
+        if word.is_empty() {
+            source
+        } else {
+            word
+        }
+    })
+}
+
+/// Whether the catalogue actually has an entry for `source`.
+///
+/// [`tr`] cannot answer this and should not try: it returns the source when it
+/// finds nothing, and it returns the source *again* for a word a language
+/// keeps — "Error" is Spanish, "System" is German. The two are the same string
+/// and opposite facts, and the test that guards the catalogue is the one place
+/// that needs to tell them apart.
+#[must_use]
+pub fn has(source: &str) -> bool {
+    // Nothing to look up in the source language, and nothing missing either.
+    current().at() == 0 || TABLE.binary_search_by(|(key, _)| (*key).cmp(source)).is_ok()
+}
+
+/// Which plural form `n` takes in this language.
+///
+/// An index into the arrays in [`catalogue`], which are as long as the sentence
+/// needs rather than as long as the language's grammar — [`pick`] holds at the
+/// last form for anything past the end, so a language that says one thing
+/// however many there are declares one form and is done.
+const fn plural_at(lang: Lang, n: usize) -> usize {
+    match lang {
+        // The noun does not change after a numeral. Arabic's does, six ways,
+        // and its entries are written to not agree with the number instead —
+        // which is what Arabic interface translators do.
+        Lang::Ar | Lang::Id | Lang::Tr | Lang::Vi => 0,
+        // One, a few, many.
+        Lang::Ru => {
+            let (ten, hundred) = (n % 10, n % 100);
+            if ten == 1 && hundred != 11 {
+                0
+            } else if matches!(ten, 2..=4) && !matches!(hundred, 12..=14) {
+                1
+            } else {
+                2
+            }
+        }
+        // Two forms, and these two count zero as singular.
+        Lang::Fr | Lang::Hi => {
+            if n > 1 {
+                1
+            } else {
+                0
+            }
+        }
+        Lang::En | Lang::De | Lang::Es | Lang::PtBr => {
+            if n == 1 {
+                0
+            } else {
+                1
+            }
+        }
     }
+}
+
+/// The form at `at`, or the last one there is.
+fn pick(forms: &'static [&'static str], at: usize) -> &'static str {
+    forms.get(at).or_else(|| forms.last()).copied().unwrap_or_default()
+}
+
+/// Put `args` where the pattern's `{0}`, `{1}` … say to.
+///
+/// A placeholder nobody passed an argument for disappears rather than printing
+/// itself: a translation with one brace too many should read a word short, not
+/// show somebody `{2}`.
+fn fill(pattern: &str, args: &[&str]) -> String {
+    let mut out = String::with_capacity(pattern.len());
+    let mut rest = pattern;
+    while let Some(open) = rest.find('{') {
+        out.push_str(&rest[..open]);
+        let after = &rest[open + 1..];
+        let Some(close) = after.find('}') else {
+            // An unclosed brace is a typo in a translation, and the rest of the
+            // sentence is still worth showing.
+            out.push_str(&rest[open..]);
+            return out;
+        };
+        if let Ok(at) = after[..close].parse::<usize>() {
+            out.push_str(args.get(at).copied().unwrap_or_default());
+        }
+        rest = &after[close + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// "12 of 300" — how much of the list a filter is showing.
 #[must_use]
 pub fn matched(shown: usize, total: usize) -> String {
-    match current() {
-        Lang::En => format!("{shown} of {total}"),
-        Lang::PtBr => format!("{shown} de {total}"),
-    }
+    fill(MATCHED[current().at()], &[&shown.to_string(), &total.to_string()])
 }
 
 /// "1 file first · 11 waiting", and the plural of it.
 #[must_use]
 pub fn fetching_first(pinned: usize, waiting: usize) -> String {
-    match current() {
-        Lang::En => {
-            let files = if pinned == 1 { "file" } else { "files" };
-            if waiting == 0 {
-                format!("{pinned} {files} first")
-            } else {
-                format!("{pinned} {files} first · {waiting} waiting")
-            }
-        }
-        Lang::PtBr => {
-            let files = if pinned == 1 { "arquivo" } else { "arquivos" };
-            if waiting == 0 {
-                format!("{pinned} {files} na frente")
-            } else {
-                format!("{pinned} {files} na frente · {waiting} esperando")
-            }
-        }
-    }
+    let lang = current();
+    let forms = if waiting == 0 { FETCHING_FIRST[lang.at()] } else { FETCHING_FIRST_WAITING[lang.at()] };
+    fill(pick(forms, plural_at(lang, pinned)), &[&pinned.to_string(), &waiting.to_string()])
 }
 
 /// What the add dialog says when the download will not fit.
 #[must_use]
 pub fn shortfall(short: &str) -> String {
-    match current() {
-        Lang::En => format!("Not enough room in this folder — {short} short"),
-        Lang::PtBr => format!("Não cabe nesta pasta — faltam {short}"),
-    }
+    fill(SHORTFALL[current().at()], &[short])
 }
 
 /// A file in the watched folder that could not be added, and which one.
@@ -145,23 +236,17 @@ pub fn shortfall(short: &str) -> String {
 /// several, and "one of them failed" is not something anybody can act on.
 #[must_use]
 pub fn watch_failed(name: &str) -> String {
-    match current() {
-        Lang::En => format!("Could not add {name} from the watched folder"),
-        Lang::PtBr => format!("Não foi possível adicionar {name} da pasta vigiada"),
-    }
+    fill(WATCH_FAILED[current().at()], &[name])
 }
 
 /// The clipboard would not answer, and what it said about it.
 ///
-/// A format function rather than a table row because the reason comes from the
-/// operating system and cannot be known in advance — which is exactly why it
-/// is worth showing rather than swallowing.
+/// A pattern rather than a table row because the reason comes from the
+/// operating system and cannot be known in advance — which is exactly why it is
+/// worth showing rather than swallowing.
 #[must_use]
 pub fn clipboard_failed(why: &str) -> String {
-    match current() {
-        Lang::En => format!("Could not reach the clipboard: {why}"),
-        Lang::PtBr => format!("Não foi possível acessar a área de transferência: {why}"),
-    }
+    fill(CLIPBOARD_FAILED[current().at()], &[why])
 }
 
 /// A finished download that could not be moved to where finished ones are
@@ -172,47 +257,42 @@ pub fn clipboard_failed(why: &str) -> String {
 /// open is something only the person at the machine can fix.
 #[must_use]
 pub fn move_failed(why: &str) -> String {
-    match current() {
-        Lang::En => format!("Could not move the finished download: {why}"),
-        Lang::PtBr => format!("Não foi possível mover o download terminado: {why}"),
-    }
+    fill(MOVE_FAILED[current().at()], &[why])
 }
 
 /// What the status bar says when a download lands.
 #[must_use]
 pub fn finished_one(name: &str) -> String {
-    match current() {
-        Lang::En => format!("{name} finished"),
-        Lang::PtBr => format!("{name} terminou"),
-    }
+    fill(FINISHED_ONE[current().at()], &[name])
 }
 
 /// And when several land in the same second — one line rather than four that
 /// push each other off before any is read.
 #[must_use]
 pub fn finished_many(count: usize) -> String {
-    match current() {
-        Lang::En => format!("{count} downloads finished"),
-        Lang::PtBr => format!("{count} downloads terminaram"),
-    }
+    let lang = current();
+    fill(pick(FINISHED_MANY[lang.at()], plural_at(lang, count)), &[&count.to_string()])
 }
 
 /// "12 files · 3.72 GB", or the same with a choice made in it.
 #[must_use]
 pub fn files_choice(chosen: usize, total: usize, picked: &str, whole: &str) -> String {
-    match (current(), chosen == total) {
-        (Lang::En, true) => format!("{total} files · {whole}"),
-        (Lang::En, false) => format!("{chosen} of {total} files · {picked} of {whole}"),
-        (Lang::PtBr, true) => format!("{total} arquivos · {whole}"),
-        (Lang::PtBr, false) => format!("{chosen} de {total} arquivos · {picked} de {whole}"),
+    let lang = current();
+    let at = plural_at(lang, total);
+    if chosen == total {
+        fill(pick(FILES_WHOLE[lang.at()], at), &[&total.to_string(), whole])
+    } else {
+        fill(pick(FILES_PART[lang.at()], at), &[&chosen.to_string(), &total.to_string(), picked, whole])
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        current, fetching_first, files_choice, finished_many, finished_one, matched, set, shortfall, tr,
-        Lang, TABLE,
+        current, fetching_first, files_choice, finished_many, finished_one, matched, plural_at, set,
+        shortfall, tr, Lang, CLIPBOARD_FAILED, FETCHING_FIRST, FETCHING_FIRST_WAITING, FILES_PART,
+        FILES_WHOLE, FINISHED_MANY, FINISHED_ONE, MATCHED, MOVE_FAILED, SHIPPED, SHORTFALL, TABLE,
+        WATCH_FAILED,
     };
 
     /// One at a time, because the language is one global for the whole process
@@ -235,6 +315,121 @@ mod tests {
         set("en");
     }
 
+    /// Every one-form pattern array, named, so a new one is listed once.
+    fn flat() -> Vec<(&'static str, [&'static str; 11])> {
+        vec![
+            ("MATCHED", MATCHED),
+            ("SHORTFALL", SHORTFALL),
+            ("WATCH_FAILED", WATCH_FAILED),
+            ("CLIPBOARD_FAILED", CLIPBOARD_FAILED),
+            ("MOVE_FAILED", MOVE_FAILED),
+            ("FINISHED_ONE", FINISHED_ONE),
+        ]
+    }
+
+    /// And every one that counts something.
+    fn plural() -> Vec<(&'static str, [&'static [&'static str]; 11])> {
+        vec![
+            ("FINISHED_MANY", FINISHED_MANY),
+            ("FETCHING_FIRST", FETCHING_FIRST),
+            ("FETCHING_FIRST_WAITING", FETCHING_FIRST_WAITING),
+            ("FILES_WHOLE", FILES_WHOLE),
+            ("FILES_PART", FILES_PART),
+        ]
+    }
+
+    /// Which `{n}` a pattern uses, sorted and deduplicated.
+    fn slots(pattern: &str) -> Vec<usize> {
+        let mut found: Vec<usize> = pattern
+            .split('{')
+            .skip(1)
+            .filter_map(|piece| piece.split_once('}'))
+            .filter_map(|(digits, _)| digits.parse().ok())
+            .collect();
+        found.sort_unstable();
+        found.dedup();
+        found
+    }
+
+    #[test]
+    fn the_language_list_and_the_catalogue_are_in_the_same_order() {
+        // `set` looks a tag up in SHIPPED and stores the position, so a
+        // catalogue in a different order would hand every language its
+        // neighbour's words — silently, and only past the one that moved.
+        assert_eq!(SHIPPED.len(), Lang::ALL.len(), "a language is in one list and not the other");
+        for (at, (tag, _)) in SHIPPED.iter().enumerate() {
+            with(tag, || {
+                assert_eq!(current().at(), at, "{tag} does not sit where SHIPPED puts it");
+            });
+        }
+    }
+
+    #[test]
+    fn every_language_has_every_string() {
+        for (key, row) in TABLE {
+            for (at, word) in row.iter().enumerate() {
+                assert!(!word.is_empty(), "{key:?} has nothing in {:?}", SHIPPED[at + 1].0);
+            }
+        }
+        for (name, array) in flat() {
+            for (at, pattern) in array.iter().enumerate() {
+                assert!(!pattern.is_empty(), "{name} has nothing in {:?}", SHIPPED[at].0);
+            }
+        }
+        for (name, array) in plural() {
+            for (at, forms) in array.iter().enumerate() {
+                assert!(!forms.is_empty(), "{name} has no forms in {:?}", SHIPPED[at].0);
+                assert!(
+                    forms.iter().all(|form| !form.is_empty()),
+                    "{name} has an empty form in {:?}",
+                    SHIPPED[at].0
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_placeholders_survive_translation() {
+        // The check `format!` could never do. A translator drops a `{1}` now
+        // and then, and the sentence still reads like a sentence — right up to
+        // the moment a number is missing from it on somebody's screen.
+        for (name, array) in flat() {
+            let want = slots(array[0]);
+            for (at, pattern) in array.iter().enumerate() {
+                assert_eq!(slots(pattern), want, "{name} in {:?}: {pattern:?}", SHIPPED[at].0);
+            }
+        }
+        for (name, array) in plural() {
+            let want = slots(array[0][0]);
+            for (at, forms) in array.iter().enumerate() {
+                for form in *forms {
+                    assert_eq!(slots(form), want, "{name} in {:?}: {form:?}", SHIPPED[at].0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_plural_index_always_lands_on_a_form() {
+        // `pick` holds at the last form, so this cannot panic. What it would do
+        // instead is quietly show one language's grammar with another's count,
+        // which is worth a test rather than a comment.
+        for (name, array) in plural() {
+            for (at, lang) in Lang::ALL.iter().enumerate() {
+                let forms = array[at];
+                for n in 0..=200usize {
+                    let form = plural_at(*lang, n);
+                    assert!(
+                        form < forms.len() || forms.len() == 1,
+                        "{name} in {:?}: {n} asks for form {form} of {}",
+                        SHIPPED[at].0,
+                        forms.len()
+                    );
+                }
+            }
+        }
+    }
+
     #[test]
     fn the_table_is_sorted_because_the_lookup_assumes_it() {
         // An unsorted table fails quietly: the binary search misses some
@@ -246,7 +441,7 @@ mod tests {
 
     #[test]
     fn no_key_is_translated_twice() {
-        let mut keys: Vec<&str> = TABLE.iter().map(|(k, _)| *k).collect();
+        let mut keys: Vec<&str> = TABLE.iter().map(|(key, _)| *key).collect();
         keys.dedup();
         assert_eq!(keys.len(), TABLE.len(), "a duplicated key shadows one of the two");
     }
@@ -269,6 +464,17 @@ mod tests {
             assert_eq!(tr("Not enough space on the disk"), "Sem espaço no disco");
             assert_eq!(matched(12, 300), "12 de 300");
         });
+        with("de", || assert_eq!(tr("Downloading"), "Wird heruntergeladen"));
+        with("ru", || assert_eq!(matched(12, 300), "12 из 300"));
+    }
+
+    #[test]
+    fn a_language_may_put_the_number_where_it_belongs() {
+        // The reason the patterns are data. Hindi and Turkish both name the
+        // whole before the part, and no amount of shuffling arguments around a
+        // fixed English template would let them.
+        with("hi", || assert_eq!(matched(12, 300), "300 में से 12"));
+        with("tr", || assert_eq!(matched(12, 300), "300 içinde 12"));
     }
 
     #[test]
@@ -285,39 +491,67 @@ mod tests {
 
     #[test]
     fn the_plural_is_chosen_in_each_language_rather_than_bolted_on() {
-        assert_eq!(fetching_first(1, 11), "1 file first · 11 waiting");
-        assert_eq!(fetching_first(3, 0), "3 files first");
+        with("en", || {
+            assert_eq!(fetching_first(1, 11), "1 file first · 11 waiting");
+            assert_eq!(fetching_first(3, 0), "3 files first");
+        });
         with("pt-BR", || {
             assert_eq!(fetching_first(1, 11), "1 arquivo na frente · 11 esperando");
             assert_eq!(fetching_first(3, 0), "3 arquivos na frente");
         });
+        // Three forms, and the third is not simply "more than four": 21 takes
+        // the same shape as 1, which a two-form language cannot say.
+        with("ru", || {
+            assert_eq!(fetching_first(1, 0), "1 файл первым");
+            assert_eq!(fetching_first(3, 0), "3 файла первыми");
+            assert_eq!(fetching_first(7, 0), "7 файлов первыми");
+            assert_eq!(fetching_first(21, 0), "21 файл первым");
+        });
+        // One form, because the noun does not change after a numeral.
+        with("id", || {
+            assert_eq!(fetching_first(1, 0), "1 berkas didahulukan");
+            assert_eq!(fetching_first(9, 0), "9 berkas didahulukan");
+        });
     }
 
     #[test]
-    fn the_shortfall_reads_as_a_sentence_in_both() {
+    fn the_shortfall_reads_as_a_sentence_in_every_language() {
         // Not one template with the words shuffled around it: Portuguese puts a
         // verb where English puts a noun, and a placeholder-swapping translator
         // would have produced something nobody says out loud.
-        assert_eq!(shortfall("2.51 GB"), "Not enough room in this folder — 2.51 GB short");
+        with("en", || {
+            assert_eq!(shortfall("2.51 GB"), "Not enough room in this folder — 2.51 GB short");
+        });
         with("pt-BR", || assert_eq!(shortfall("2,51 GB"), "Não cabe nesta pasta — faltam 2,51 GB"));
+        with("fr", || {
+            assert_eq!(shortfall("2,51 Go"), "Pas assez de place dans ce dossier — il manque 2,51 Go");
+        });
     }
 
     #[test]
     fn a_download_landing_is_named_and_several_are_counted() {
         // One line however many landed at once: four notices in four seconds
         // would push each other off before any of them was read.
-        assert_eq!(finished_one("Some.Show.S01"), "Some.Show.S01 finished");
-        assert_eq!(finished_many(3), "3 downloads finished");
+        with("en", || {
+            assert_eq!(finished_one("Some.Show.S01"), "Some.Show.S01 finished");
+            assert_eq!(finished_many(3), "3 downloads finished");
+        });
         with("pt-BR", || {
             assert_eq!(finished_one("Some.Show.S01"), "Some.Show.S01 terminou");
             assert_eq!(finished_many(3), "3 downloads terminaram");
+        });
+        with("ru", || {
+            assert_eq!(finished_many(3), "3 загрузки завершены");
+            assert_eq!(finished_many(8), "8 загрузок завершено");
         });
     }
 
     #[test]
     fn a_whole_torrent_is_counted_differently_from_part_of_one() {
-        assert_eq!(files_choice(12, 12, "", "3.72 GB"), "12 files · 3.72 GB");
-        assert_eq!(files_choice(3, 12, "1.44 GB", "3.72 GB"), "3 of 12 files · 1.44 GB of 3.72 GB");
+        with("en", || {
+            assert_eq!(files_choice(12, 12, "", "3.72 GB"), "12 files · 3.72 GB");
+            assert_eq!(files_choice(3, 12, "1.44 GB", "3.72 GB"), "3 of 12 files · 1.44 GB of 3.72 GB");
+        });
         with("pt-BR", || {
             assert_eq!(files_choice(12, 12, "", "3,72 GB"), "12 arquivos · 3,72 GB");
             assert_eq!(files_choice(3, 12, "1,44 GB", "3,72 GB"), "3 de 12 arquivos · 1,44 GB de 3,72 GB");

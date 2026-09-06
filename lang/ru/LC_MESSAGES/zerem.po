@@ -1,0 +1,449 @@
+# Zerem — Russian.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "Файл .torrent, положенный в отслеживаемую папку, добавляется сам."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "BitTorrent-клиент, который не путается под ногами."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "У магнита их нет, пока не придут метаданные."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "Magnet-ссылка не несёт списка файлов — его нужно запросить."
+
+msgid "A paused torrent has none."
+msgstr "У приостановленного торрента их нет."
+
+msgid "About"
+msgstr "О программе"
+
+msgid "Active"
+msgstr "Активные"
+
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Add .torrent file"
+msgstr "Добавить файл .torrent"
+
+msgid "Add file"
+msgstr "Добавить файл"
+
+msgid "Add torrent"
+msgstr "Добавить торрент"
+
+msgid "Add torrents stopped"
+msgstr "Добавлять торренты остановленными"
+
+msgid "All"
+msgstr "Все"
+
+msgid "Also move the data to the recycle bin"
+msgstr "Отправить данные в корзину тоже"
+
+msgid "Alternative limits"
+msgstr "Запасные ограничения"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "Неограниченная отдача забивает исходящий канал и тормозит всё остальное на соединении."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Попросить маршрутизатор открыть порт (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "Вернуться к полным ограничениям"
+
+msgid "Being fetched before the others"
+msgstr "Загружается раньше остальных"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Categories"
+msgstr "Категории"
+
+msgid "Category"
+msgstr "Категория"
+
+msgid "Change"
+msgstr "Изменить"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "Это не перемещает торренты, которые уже в списке."
+
+msgid "Check now"
+msgstr "Проверить сейчас"
+
+msgid "Clear filter"
+msgstr "Очистить фильтр"
+
+msgid "Clear the filter"
+msgstr "Очистить фильтр"
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Close the details panel"
+msgstr "Закрыть панель подробностей"
+
+msgid "Connection"
+msgstr "Соединение"
+
+msgid "Copy magnet link"
+msgstr "Копировать magnet-ссылку"
+
+msgid "Could not update: {}"
+msgstr "Не удалось обновить: {}"
+
+msgid "Dark"
+msgstr "Тёмная"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "Не загружать"
+
+msgid "Download"
+msgstr "Загружать"
+
+msgid "Download at once"
+msgstr "Загрузок одновременно"
+
+msgid "Download limit"
+msgstr "Ограничение загрузки"
+
+msgid "Download speed"
+msgstr "Скорость загрузки"
+
+msgid "Downloading"
+msgstr "Загрузка"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "Загружается, и проверяется, кто это подписал…"
+
+msgid "Downloads"
+msgstr "Загрузки"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Шифровать там, где пир согласен. Прячет трафик от соединения, которое режет BitTorrent."
+
+msgid "Engine"
+msgstr "Движок"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "Каждая настройка возвращается к тому, что было при первом запуске. Торренты не трогаются."
+
+msgid "Every window changes at once. No restart."
+msgstr "Все окна меняются сразу. Без перезапуска."
+
+msgid "Fetch this one before the others"
+msgstr "Загрузить этот раньше остальных"
+
+msgid "Fetch this one first"
+msgstr "Загрузить этот первым"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "Список файлов запрашивается у роя…"
+
+msgid "Files"
+msgstr "Файлы"
+
+msgid "Filter"
+msgstr "Фильтр"
+
+msgid "Filter the list by name"
+msgstr "Отфильтровать список по имени"
+
+msgid "Finished"
+msgstr "Завершённые"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Завершённые торренты остаются в той папке, куда загрузились."
+
+msgid "Folder"
+msgstr "Папка"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "Папки, ограничения, язык и тема — всё это."
+
+msgid "Force recheck"
+msgstr "Проверить заново"
+
+msgid "General"
+msgstr "Основное"
+
+msgid "Hide the state list"
+msgstr "Скрыть список состояний"
+
+msgid "Install"
+msgstr "Установить"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Установлено для всех на этой машине — обновления приходят из вашего пакетного менеджера."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Установлено в песочнице — обновления приходят вместе со средой выполнения."
+
+msgid "Installed. Restart to run it."
+msgstr "Установлено. Перезапустите, чтобы запустить."
+
+msgid "Installing…"
+msgstr "Установка…"
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Light"
+msgstr "Светлая"
+
+msgid "Listening port"
+msgstr "Входящий порт"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Ищется автоматически при каждом запуске приложения."
+
+msgid "Looking…"
+msgstr "Идёт поиск…"
+
+msgid "Matching the filter"
+msgstr "Подходят под фильтр"
+
+msgid "Maximize"
+msgstr "Развернуть"
+
+msgid "Minimize"
+msgstr "Свернуть"
+
+msgid "Move here when finished"
+msgstr "Переместить сюда по завершении"
+
+msgid "Never"
+msgstr "Никогда"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Никогда. Всякий, кто следит за каналом, видит, что это такое."
+
+msgid "No file list yet"
+msgstr "Списка файлов пока нет"
+
+msgid "No limit"
+msgstr "Без ограничения"
+
+msgid "No peers connected"
+msgstr "Нет подключённых пиров"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "Ни в одном названии торрента нет всех введённых слов."
+
+msgid "No torrents yet"
+msgstr "Торрентов пока нет"
+
+msgid "None"
+msgstr "Нет"
+
+msgid "Nothing here"
+msgstr "Здесь ничего нет"
+
+msgid "Nothing matches"
+msgstr "Ничего не подходит"
+
+msgid "Off"
+msgstr "Выключено"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Только пиры, которые шифруют. В канале ничто не выдаёт, что это такое, и пиров будет меньше."
+
+msgid "Open"
+msgstr "Открыть"
+
+msgid "Open containing folder"
+msgstr "Открыть папку с файлом"
+
+msgid "Open folder"
+msgstr "Открыть папку"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Вставьте magnet-ссылку по Ctrl+V или добавьте файл .torrent."
+
+msgid "Paste magnet"
+msgstr "Вставить magnet"
+
+msgid "Pause"
+msgstr "Приостановить"
+
+msgid "Paused"
+msgstr "Приостановлено"
+
+msgid "Peers"
+msgstr "Пиры"
+
+msgid "Play now"
+msgstr "Смотреть сейчас"
+
+msgid "Prefer"
+msgstr "Предпочитать"
+
+msgid "Preferences"
+msgstr "Настройки"
+
+msgid "Protocol encryption"
+msgstr "Шифрование протокола"
+
+msgid "Put every setting back"
+msgstr "Вернуть все настройки"
+
+msgid "Queued"
+msgstr "В очереди"
+
+msgid "Ratio"
+msgstr "Рейтинг"
+
+msgid "Reading torrent…"
+msgstr "Чтение торрента…"
+
+msgid "Releases"
+msgstr "Выпуски"
+
+msgid "Remove"
+msgstr "Удалить"
+
+msgid "Remove…"
+msgstr "Удалить…"
+
+msgid "Require"
+msgstr "Требовать"
+
+msgid "Reset everything"
+msgstr "Сбросить всё"
+
+msgid "Reset…"
+msgstr "Сбросить…"
+
+msgid "Restart now"
+msgstr "Перезапустить сейчас"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Save to"
+msgstr "Сохранять в"
+
+msgid "Seeding"
+msgstr "Раздача"
+
+msgid "Show all"
+msgstr "Показать все"
+
+msgid "Show the state list"
+msgstr "Показать список состояний"
+
+msgid "Slow download"
+msgstr "Медленная загрузка"
+
+msgid "Slow upload"
+msgstr "Медленная отдача"
+
+msgid "Space"
+msgstr "Место"
+
+msgid "Speed"
+msgstr "Скорость"
+
+msgid "Start"
+msgstr "Запустить"
+
+msgid "Stop fetching this one first"
+msgstr "Больше не загружать этот первым"
+
+msgid "Switch to the dark theme"
+msgstr "Перейти на тёмную тему"
+
+msgid "Switch to the light theme"
+msgstr "Перейти на светлую тему"
+
+msgid "Switch to the slow limits"
+msgstr "Перейти на медленные ограничения"
+
+msgid "System"
+msgstr "Системный"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "Файлы уйдут в корзину, так что это можно отменить."
+
+msgid "The files stay where they are."
+msgstr "Файлы остаются на месте."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "Остальные ждут своей очереди. Раздача не ждёт никогда."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "Вторая пара — на случай, когда канал нужен для другого. Кнопка на панели переключает на них."
+
+msgid "Theme"
+msgstr "Тема"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Это вступит в силу при следующем запуске Zerem."
+
+msgid "This is the newest version."
+msgstr "Это самая свежая версия."
+
+msgid "Total"
+msgstr "Всего"
+
+msgid "Try again"
+msgstr "Повторить"
+
+msgid "Unlimited"
+msgstr "Без ограничения"
+
+msgid "Updates"
+msgstr "Обновления"
+
+msgid "Upload limit"
+msgstr "Ограничение отдачи"
+
+msgid "Upload speed"
+msgstr "Скорость отдачи"
+
+msgid "Version {} is ready to install."
+msgstr "Версия {} готова к установке."
+
+msgid "Watch this folder"
+msgstr "Отслеживать эту папку"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Торренты у вас есть, просто не в этой части списка."
+
+msgid "kB/s"
+msgstr "кБ/с"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, а флаги берутся из того, что публикуют пять интернет-регистратур."
+
+msgid "not downloading"
+msgstr "не загружается"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — уступает другому трафику на том же канале"

@@ -40,7 +40,26 @@ fn walk(at: &std::path::Path, into: &mut Vec<(String, String)>) {
     }
 }
 
-const PT_BR: &str = include_str!("../lang/pt-BR/LC_MESSAGES/zerem.po");
+/// Every catalogue the binary ships, read from disk and named by its tag.
+///
+/// `include_str!` named one file, and one file is what got checked: pt-BR was
+/// held to every rule below while the nine languages added beside it were held
+/// to none. The list comes from `SHIPPED` so a language cannot be shipped and
+/// unchecked at the same time — the folder has to be there for the build to
+/// bundle it, and it has to be listed for the app to offer it.
+fn catalogues() -> Vec<(&'static str, String)> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    zerem_core::language::SHIPPED
+        .iter()
+        .filter(|(tag, _)| *tag != "en")
+        .map(|(tag, _)| {
+            let at = root.join("lang").join(tag).join("LC_MESSAGES/zerem.po");
+            let text = std::fs::read_to_string(&at)
+                .unwrap_or_else(|why| panic!("{tag} is shipped but {} would not open: {why}", at.display()));
+            (*tag, text)
+        })
+        .collect()
+}
 
 /// Every `@tr("…")` in the UI.
 fn marked() -> BTreeSet<String> {
@@ -68,14 +87,17 @@ fn translated(po: &str) -> BTreeSet<String> {
 
 #[test]
 fn nothing_the_window_says_is_left_untranslated() {
-    let (ui, po) = (marked(), translated(PT_BR));
-    let missing: Vec<&String> = ui.difference(&po).collect();
-    assert!(
-        missing.is_empty(),
-        "pt-BR is missing {} of them:\n  {}",
-        missing.len(),
-        missing.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n  ")
-    );
+    let ui = marked();
+    for (tag, po) in catalogues() {
+        let po = translated(&po);
+        let missing: Vec<&String> = ui.difference(&po).collect();
+        assert!(
+            missing.is_empty(),
+            "{tag} is missing {} of them:\n  {}",
+            missing.len(),
+            missing.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n  ")
+        );
+    }
 }
 
 #[test]
@@ -83,14 +105,17 @@ fn nothing_is_translated_that_the_window_no_longer_says() {
     // The other direction, and the one that rots quietly: a string edited in
     // the `.slint` leaves its old translation behind, still looking correct,
     // while the new wording falls back to English on screen.
-    let (ui, po) = (marked(), translated(PT_BR));
-    let stale: Vec<&String> = po.difference(&ui).collect();
-    assert!(
-        stale.is_empty(),
-        "pt-BR translates {} strings the UI does not have — edited or removed?\n  {}",
-        stale.len(),
-        stale.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n  ")
-    );
+    let ui = marked();
+    for (tag, po) in catalogues() {
+        let po = translated(&po);
+        let stale: Vec<&String> = po.difference(&ui).collect();
+        assert!(
+            stale.is_empty(),
+            "{tag} translates {} strings the UI does not have — edited or removed?\n  {}",
+            stale.len(),
+            stale.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n  ")
+        );
+    }
 }
 
 #[test]
@@ -106,13 +131,15 @@ fn no_string_is_translated_twice() {
     // see one: both compare sets, and a set quietly swallows the second copy.
     // This nearly shipped — "Paused" is both a state name and a status-bar
     // counter, and adding the counter added a second entry for it.
-    let mut seen = BTreeSet::new();
-    let repeated: Vec<&str> = PT_BR
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix("msgid \"")?.strip_suffix('"'))
-        .filter(|id| !id.is_empty() && !seen.insert(id.to_owned()))
-        .collect();
-    assert!(repeated.is_empty(), "pt-BR translates these twice:\n  {}", repeated.join("\n  "));
+    for (tag, po) in catalogues() {
+        let mut seen = BTreeSet::new();
+        let repeated: Vec<&str> = po
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("msgid \"")?.strip_suffix('"'))
+            .filter(|id| !id.is_empty() && !seen.insert((*id).to_owned()))
+            .collect();
+        assert!(repeated.is_empty(), "{tag} translates these twice:\n  {}", repeated.join("\n  "));
+    }
 }
 
 /// Every string the Rust side passes through `tr` is actually in the catalogue.
@@ -124,17 +151,28 @@ fn no_string_is_translated_twice() {
 /// the gap was silent.
 #[test]
 fn nothing_the_rust_side_says_falls_back_to_english() {
-    zerem_core::text::set("pt-BR");
-
-    let mut untranslated: Vec<String> = Vec::new();
+    // Gathered once, then asked of every language: the phrases are the same set
+    // whichever catalogue is answering.
+    let mut phrases: Vec<(String, &'static str)> = Vec::new();
     for file in rust_sources(std::path::Path::new("src")) {
         let text = std::fs::read_to_string(&file).expect("read a source file");
         for phrase in marked_in_rust(&text) {
             // Leaked so the borrow outlives the loop; a test process is about
             // to end and this is a handful of short strings.
-            let phrase: &'static str = Box::leak(phrase.into_boxed_str());
-            if zerem_core::tr(phrase) == phrase {
-                untranslated.push(format!("{}: {phrase}", file.display()));
+            phrases.push((file.display().to_string(), Box::leak(phrase.into_boxed_str())));
+        }
+    }
+
+    // `has` rather than a comparison with what `tr` gives back. A language is
+    // allowed to keep a word — "Error" is Spanish, "System" is German — and
+    // comparing strings would call that a gap and send somebody looking for a
+    // bug that is a translation.
+    let mut untranslated: Vec<String> = Vec::new();
+    for (tag, _) in zerem_core::language::SHIPPED.iter().filter(|(tag, _)| *tag != "en") {
+        zerem_core::text::set(tag);
+        for (file, phrase) in &phrases {
+            if !zerem_core::text::has(phrase) {
+                untranslated.push(format!("{tag} — {file}: {phrase}"));
             }
         }
     }

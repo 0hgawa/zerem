@@ -1,0 +1,449 @@
+# Zerem — Indonesian.
+#
+# Written by hand, not generated. The keys come from the `@tr()` calls in the
+# `.slint` files; a `msgid` that does not match the original exactly falls back
+# to English, silently — so editing a string in the `.slint` means editing here
+# too.
+#
+# The sentences Rust composes (states, units, causes of failure) are not here:
+# they live in `zerem-core/src/text/catalogue.rs`, for the reason given there.
+msgid ""
+msgstr ""
+"Project-Id-Version: Zerem\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "A .torrent file dropped in a watched folder is added on its own."
+msgstr "Berkas .torrent yang dijatuhkan ke folder yang dipantau akan ditambahkan sendiri."
+
+msgid "A BitTorrent client that does not get in the way."
+msgstr "Klien BitTorrent yang tidak menghalangi."
+
+msgid "A magnet has none until its metadata arrives."
+msgstr "Magnet tidak punya satu pun sampai metadatanya tiba."
+
+msgid "A magnet link carries no file list — it has to be asked for."
+msgstr "Tautan magnet tidak membawa daftar berkas — daftar itu harus diminta."
+
+msgid "A paused torrent has none."
+msgstr "Torrent yang dijeda tidak punya satu pun."
+
+msgid "About"
+msgstr "Tentang"
+
+msgid "Active"
+msgstr "Aktif"
+
+msgid "Add"
+msgstr "Tambah"
+
+msgid "Add .torrent file"
+msgstr "Tambah berkas .torrent"
+
+msgid "Add file"
+msgstr "Tambah berkas"
+
+msgid "Add torrent"
+msgstr "Tambah torrent"
+
+msgid "Add torrents stopped"
+msgstr "Tambahkan torrent dalam keadaan berhenti"
+
+msgid "All"
+msgstr "Semua"
+
+msgid "Also move the data to the recycle bin"
+msgstr "Pindahkan datanya ke tempat sampah juga"
+
+msgid "Alternative limits"
+msgstr "Batas alternatif"
+
+msgid "An unlimited upload fills the uplink and stalls everything else on the connection."
+msgstr "Unggahan tanpa batas memenuhi jalur naik dan menghambat semua hal lain di koneksi ini."
+
+msgid "Ask the router to open the port (UPnP)"
+msgstr "Minta router membuka porta (UPnP)"
+
+msgid "Back to the full speed limits"
+msgstr "Kembali ke batas kecepatan penuh"
+
+msgid "Being fetched before the others"
+msgstr "Sedang diambil sebelum yang lain"
+
+msgid "Cancel"
+msgstr "Batal"
+
+msgid "Categories"
+msgstr "Kategori"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Change"
+msgstr "Ubah"
+
+msgid "Changing this does not move torrents already in the list."
+msgstr "Mengubah ini tidak memindahkan torrent yang sudah ada di daftar."
+
+msgid "Check now"
+msgstr "Periksa sekarang"
+
+msgid "Clear filter"
+msgstr "Hapus saringan"
+
+msgid "Clear the filter"
+msgstr "Hapus saringannya"
+
+msgid "Close"
+msgstr "Tutup"
+
+msgid "Close the details panel"
+msgstr "Tutup panel rincian"
+
+msgid "Connection"
+msgstr "Koneksi"
+
+msgid "Copy magnet link"
+msgstr "Salin tautan magnet"
+
+msgid "Could not update: {}"
+msgstr "Tidak dapat memperbarui: {}"
+
+msgid "Dark"
+msgstr "Gelap"
+
+msgid "Del"
+msgstr "Del"
+
+msgid "Do not download"
+msgstr "Jangan unduh"
+
+msgid "Download"
+msgstr "Unduh"
+
+msgid "Download at once"
+msgstr "Unduhan bersamaan"
+
+msgid "Download limit"
+msgstr "Batas unduh"
+
+msgid "Download speed"
+msgstr "Kecepatan unduh"
+
+msgid "Downloading"
+msgstr "Mengunduh"
+
+msgid "Downloading, and checking who signed it…"
+msgstr "Mengunduh, dan memeriksa siapa yang menandatanganinya…"
+
+msgid "Downloads"
+msgstr "Unduhan"
+
+msgid "Encrypt where the peer will. Hides the traffic from a connection that throttles BitTorrent."
+msgstr "Enkripsi bila peer bersedia. Menyembunyikan lalu lintas dari koneksi yang membatasi BitTorrent."
+
+msgid "Engine"
+msgstr "Mesin"
+
+msgid "Error"
+msgstr "Galat"
+
+msgid "Every preference returns to what it was on the first launch. Torrents are not touched."
+msgstr "Setiap preferensi kembali seperti saat pertama dijalankan. Torrent tidak disentuh."
+
+msgid "Every window changes at once. No restart."
+msgstr "Semua jendela berubah seketika. Tanpa mulai ulang."
+
+msgid "Fetch this one before the others"
+msgstr "Ambil yang ini sebelum yang lain"
+
+msgid "Fetch this one first"
+msgstr "Ambil yang ini dulu"
+
+msgid "Fetching the file list from the swarm…"
+msgstr "Mengambil daftar berkas dari kerumunan…"
+
+msgid "Files"
+msgstr "Berkas"
+
+msgid "Filter"
+msgstr "Saring"
+
+msgid "Filter the list by name"
+msgstr "Saring daftar berdasarkan nama"
+
+msgid "Finished"
+msgstr "Selesai"
+
+msgid "Finished torrents stay in the folder they downloaded to."
+msgstr "Torrent yang selesai tetap di folder tempat ia diunduh."
+
+msgid "Folder"
+msgstr "Folder"
+
+msgid "Folders, limits, language and theme — all of it."
+msgstr "Folder, batas, bahasa dan tema — semuanya."
+
+msgid "Force recheck"
+msgstr "Paksa periksa ulang"
+
+msgid "General"
+msgstr "Umum"
+
+msgid "Hide the state list"
+msgstr "Sembunyikan daftar keadaan"
+
+msgid "Install"
+msgstr "Pasang"
+
+msgid "Installed for everybody on this machine — updates come from your package manager."
+msgstr "Terpasang untuk semua orang di mesin ini — pembaruan datang dari pengelola paket Anda."
+
+msgid "Installed in a sandbox — updates arrive with the runtime."
+msgstr "Terpasang di kotak pasir — pembaruan datang bersama runtime-nya."
+
+msgid "Installed. Restart to run it."
+msgstr "Terpasang. Mulai ulang untuk menjalankannya."
+
+msgid "Installing…"
+msgstr "Memasang…"
+
+msgid "Language"
+msgstr "Bahasa"
+
+msgid "Light"
+msgstr "Terang"
+
+msgid "Listening port"
+msgstr "Porta dengar"
+
+msgid "Looked for automatically each time the app opens."
+msgstr "Dicari otomatis setiap kali aplikasi dibuka."
+
+msgid "Looking…"
+msgstr "Mencari…"
+
+msgid "Matching the filter"
+msgstr "Cocok dengan saringan"
+
+msgid "Maximize"
+msgstr "Maksimalkan"
+
+msgid "Minimize"
+msgstr "Minimalkan"
+
+msgid "Move here when finished"
+msgstr "Pindahkan ke sini setelah selesai"
+
+msgid "Never"
+msgstr "Tidak pernah"
+
+msgid "Never. Anything watching the line can see what this is."
+msgstr "Tidak pernah. Siapa pun yang mengawasi jalur ini bisa melihat isinya."
+
+msgid "No file list yet"
+msgstr "Belum ada daftar berkas"
+
+msgid "No limit"
+msgstr "Tanpa batas"
+
+msgid "No peers connected"
+msgstr "Tidak ada peer terhubung"
+
+msgid "No torrent's name contains every word you typed."
+msgstr "Tidak ada nama torrent yang memuat semua kata yang Anda ketik."
+
+msgid "No torrents yet"
+msgstr "Belum ada torrent"
+
+msgid "None"
+msgstr "Tidak ada"
+
+msgid "Nothing here"
+msgstr "Tidak ada apa-apa di sini"
+
+msgid "Nothing matches"
+msgstr "Tidak ada yang cocok"
+
+msgid "Off"
+msgstr "Mati"
+
+msgid "Only peers that encrypt. Nothing on the wire says what this is, and there will be fewer peers."
+msgstr "Hanya peer yang mengenkripsi. Tidak ada di jalur yang menyebut ini apa, dan peer-nya akan lebih sedikit."
+
+msgid "Open"
+msgstr "Buka"
+
+msgid "Open containing folder"
+msgstr "Buka folder induknya"
+
+msgid "Open folder"
+msgstr "Buka folder"
+
+msgid "Paste a magnet link with Ctrl+V, or add a .torrent file."
+msgstr "Tempel tautan magnet dengan Ctrl+V, atau tambahkan berkas .torrent."
+
+msgid "Paste magnet"
+msgstr "Tempel magnet"
+
+msgid "Pause"
+msgstr "Jeda"
+
+msgid "Paused"
+msgstr "Dijeda"
+
+msgid "Peers"
+msgstr "Peer"
+
+msgid "Play now"
+msgstr "Putar sekarang"
+
+msgid "Prefer"
+msgstr "Utamakan"
+
+msgid "Preferences"
+msgstr "Preferensi"
+
+msgid "Protocol encryption"
+msgstr "Enkripsi protokol"
+
+msgid "Put every setting back"
+msgstr "Kembalikan semua pengaturan"
+
+msgid "Queued"
+msgstr "Dalam antrean"
+
+msgid "Ratio"
+msgstr "Rasio"
+
+msgid "Reading torrent…"
+msgstr "Membaca torrent…"
+
+msgid "Releases"
+msgstr "Rilis"
+
+msgid "Remove"
+msgstr "Hapus"
+
+msgid "Remove…"
+msgstr "Hapus…"
+
+msgid "Require"
+msgstr "Wajibkan"
+
+msgid "Reset everything"
+msgstr "Atur ulang semuanya"
+
+msgid "Reset…"
+msgstr "Atur ulang…"
+
+msgid "Restart now"
+msgstr "Mulai ulang sekarang"
+
+msgid "Restore"
+msgstr "Pulihkan"
+
+msgid "Save to"
+msgstr "Simpan ke"
+
+msgid "Seeding"
+msgstr "Menyebarkan"
+
+msgid "Show all"
+msgstr "Tampilkan semua"
+
+msgid "Show the state list"
+msgstr "Tampilkan daftar keadaan"
+
+msgid "Slow download"
+msgstr "Unduhan lambat"
+
+msgid "Slow upload"
+msgstr "Unggahan lambat"
+
+msgid "Space"
+msgstr "Ruang"
+
+msgid "Speed"
+msgstr "Kecepatan"
+
+msgid "Start"
+msgstr "Mulai"
+
+msgid "Stop fetching this one first"
+msgstr "Berhenti mendahulukan yang ini"
+
+msgid "Switch to the dark theme"
+msgstr "Beralih ke tema gelap"
+
+msgid "Switch to the light theme"
+msgstr "Beralih ke tema terang"
+
+msgid "Switch to the slow limits"
+msgstr "Beralih ke batas lambat"
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "The files go to the recycle bin, so this can be undone."
+msgstr "Berkasnya masuk ke tempat sampah, jadi ini bisa dibatalkan."
+
+msgid "The files stay where they are."
+msgstr "Berkasnya tetap di tempatnya."
+
+msgid "The rest wait their turn. Seeding never waits."
+msgstr "Sisanya menunggu giliran. Menyebarkan tidak pernah menunggu."
+
+msgid "The second pair, for when the line is needed for something else. The button in the toolbar switches to them."
+msgstr "Pasangan kedua, untuk saat jalurnya dibutuhkan hal lain. Tombol di bilah alat beralih ke sana."
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "These take effect the next time Zerem starts."
+msgstr "Ini berlaku saat Zerem dijalankan berikutnya."
+
+msgid "This is the newest version."
+msgstr "Ini versi terbaru."
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Try again"
+msgstr "Coba lagi"
+
+msgid "Unlimited"
+msgstr "Tanpa batas"
+
+msgid "Updates"
+msgstr "Pembaruan"
+
+msgid "Upload limit"
+msgstr "Batas unggah"
+
+msgid "Upload speed"
+msgstr "Kecepatan unggah"
+
+msgid "Version {} is ready to install."
+msgstr "Versi {} siap dipasang."
+
+msgid "Watch this folder"
+msgstr "Pantau folder ini"
+
+msgid "You have torrents, just none in this part of the list."
+msgstr "Anda punya torrent, hanya tidak ada di bagian daftar ini."
+
+msgid "kB/s"
+msgstr "kB/d"
+
+msgid "librqbit, and the flags come from what the five internet registries publish."
+msgstr "librqbit, dan benderanya berasal dari data yang diterbitkan lima registri internet."
+
+msgid "not downloading"
+msgstr "tidak diunduh"
+
+msgid "uTP — yields to other traffic on the same line"
+msgstr "uTP — mengalah pada lalu lintas lain di jalur yang sama"

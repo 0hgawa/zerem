@@ -12,7 +12,19 @@
 /// The tag is the folder name under `lang/`; the name is what the preferences
 /// panel shows, written in that language. A language named in English in a list
 /// of languages is a list somebody has to translate to read.
-pub const SHIPPED: [(&str, &str); 2] = [("en", "English"), ("pt-BR", "Português (Brasil)")];
+pub const SHIPPED: [(&str, &str); 11] = [
+    ("en", "English"),
+    ("ar", "العربية"),
+    ("de", "Deutsch"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("hi", "हिन्दी"),
+    ("id", "Bahasa Indonesia"),
+    ("pt-BR", "Português (Brasil)"),
+    ("ru", "Русский"),
+    ("tr", "Türkçe"),
+    ("vi", "Tiếng Việt"),
+];
 
 /// What the preferences panel shows for "whatever the machine is set to".
 ///

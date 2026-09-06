@@ -4,6 +4,7 @@
 // Each is used from more than one place, which is the test for extracting: a
 // component that exists once is a section of its parent with extra ceremony.
 
+import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind, IconButton } from "button.slint";
@@ -729,47 +730,57 @@ export component Dropdown inherits Rectangle {
                 padding: 4px;
                 padding-top: 2px;
                 padding-bottom: 2px;
-                for name[i] in root.options: Rectangle {
-                    height: 34px;
 
-                    // The highlight is inset from the row, not the row spaced
-                    // from its neighbour. Two rounded shapes that touch read as
-                    // one shape with a pinch in it the moment the cursor
-                    // crosses between them, and spacing the rows apart instead
-                    // would push a list of ten languages past the window.
-                    // The same inset pill the file list draws, for the same
-                    // reason.
-                    Rectangle {
-                        y: 2px;
-                        height: parent.height - 4px;
-                        border-radius: Theme.radius;
-                        background: i == root.current ? Theme.selected : (item.has-hover ? Theme.hover : transparent);
-                        animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
-                    }
+                // Nine rows, and then it scrolls. This list was three entries
+                // long when the component was written and is twelve now; drawn
+                // whole it stands taller than a window somebody has resized
+                // down, and a popup cannot grow past the window it sits in — so
+                // the entries below the fold would not be reachable at all,
+                // which for a language picker means the language you came for.
+                ListView {
+                    height: min(root.options.length * 34px, 306px);
+                    for name[i] in root.options: Rectangle {
+                        height: 34px;
 
-                    accessible-role: list-item;
-                    accessible-label: name;
-                    accessible-item-selected: i == root.current;
-
-                    HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 10px;
-                        Text {
-                            text: name;
-                            color: i == root.current ? Theme.accent : Theme.text;
-                            font-size: Theme.fs-body;
-                            font-family: Theme.font;
-                            vertical-alignment: center;
-                            overflow: elide;
+                        // The highlight is inset from the row, not the row spaced
+                        // from its neighbour. Two rounded shapes that touch read as
+                        // one shape with a pinch in it the moment the cursor
+                        // crosses between them, and spacing the rows apart instead
+                        // would push a list of ten languages past the window.
+                        // The same inset pill the file list draws, for the same
+                        // reason.
+                        Rectangle {
+                            y: 2px;
+                            height: parent.height - 4px;
+                            border-radius: Theme.radius;
+                            background: i == root.current ? Theme.selected : (item.has-hover ? Theme.hover : transparent);
+                            animate background { duration: Theme.quick; easing: Theme.ease-standard(); }
                         }
-                    }
 
-                    item := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.current = i;
-                            root.changed(i);
-                            pop.close();
+                        accessible-role: list-item;
+                        accessible-label: name;
+                        accessible-item-selected: i == root.current;
+
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 10px;
+                            Text {
+                                text: name;
+                                color: i == root.current ? Theme.accent : Theme.text;
+                                font-size: Theme.fs-body;
+                                font-family: Theme.font;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+
+                        item := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.current = i;
+                                root.changed(i);
+                                pop.close();
+                            }
                         }
                     }
                 }
