@@ -130,16 +130,21 @@ export component Toolbar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             IconButton {
-                glyph: TorrentList.rail-state == 2 ? Lucide.panel-left-wide
+                glyph: TorrentList.rail-state == 2 ? Lucide.panel-left-solid
                     : TorrentList.rail-state == 1 ? Lucide.panel-left
                     : Lucide.panel-left-off;
+                // Filled only when the pane is open, and in the same ink as the
+                // outline. The three glyphs are already three drawings — a
+                // colour on top of that would be saying it twice, and the one
+                // it was saying it in was the accent, which everywhere else in
+                // this window means "selected".
+                ink: TorrentList.rail-state == 2 ? Theme.text-dim : transparent;
                 label: TorrentList.rail-state == 2 ? @tr("Minimize the state list")
                     : TorrentList.rail-state == 1 ? @tr("Hide the state list")
                     : @tr("Show the state list");
                 tip: TorrentList.rail-state == 2 ? @tr("Minimize the state list")
                     : TorrentList.rail-state == 1 ? @tr("Hide the state list")
                     : @tr("Show the state list");
-                tint: TorrentList.rail-state > 0 ? Theme.accent : Theme.text-dim;
                 clicked => { TorrentList.toggle-rail(); }
             }
         }

@@ -110,6 +110,9 @@ export component Button inherits Rectangle {
 export component IconButton inherits Rectangle {
     in property <string> glyph;
     in property <brush> tint: Theme.text-dim;
+    /// Passed through to the mark, for the one glyph with a filled part in it.
+    /// See `Icon::ink`.
+    in property <brush> ink: transparent;
     // Google's proportions, which are the ones asked for: a round target of
     // about forty pixels with a twenty-pixel glyph in it. It was 26 and 15 —
     // near half — which is a size that reads as a decoration beside the text
@@ -145,6 +148,7 @@ export component IconButton inherits Rectangle {
     Icon {
         glyph: root.glyph;
         tint: root.tint;
+        ink: root.ink;
         size: root.diameter * 0.56;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;

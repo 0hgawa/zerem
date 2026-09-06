@@ -56,17 +56,34 @@ const EDGE_STRENGTH: f32 = 0.34;
 /// How much of the tile the glyph takes up.
 const GLYPH: f32 = 0.62;
 
-/// The bolt, in the four-hundred-unit space it was drawn in. Seven points, and
-/// the two that matter are the end of the upper arm and the start of the lower:
-/// that pair is the notch that makes it a bolt rather than a chevron.
-const BOLT: [[f32; 2]; 7] = [
-    [157.055, 0.0],
-    [90.798, 196.319],
-    [164.417, 196.319],
-    [88.344, 400.0],
-    [289.571, 159.509],
-    [218.405, 159.509],
-    [311.656, 0.0],
+/// The bolt, in the four-hundred-unit space it is drawn in.
+///
+/// Lucide's `zap`, traced. Twelve points rather than the seven a bolt strictly
+/// needs, because four of its corners are rounded in the original and each of
+/// those arrives here as a short chord across the arc — which at any size this
+/// icon is drawn at reads as the round corner it stands for, and at 16 px is
+/// the difference between a mark and a spike.
+///
+/// The two points that matter are the ones that always mattered: the end of the
+/// upper arm and the start of the lower. That pair is the notch, and the notch
+/// is what makes it a bolt rather than a chevron.
+///
+/// Traced from a 24-unit grid, scaled so the glyph fills this space's height
+/// and centred across its width — which is where the tile's gradient is
+/// brightest, and where the old bolt sat too.
+const BOLT: [[f32; 2]; 12] = [
+    [230.12, 0.0],
+    [41.85, 188.27],
+    [64.02, 241.85],
+    [147.74, 241.85],
+    [157.60, 255.78],
+    [118.12, 367.36],
+    [169.90, 400.0],
+    [358.17, 211.72],
+    [335.97, 158.17],
+    [252.36, 158.17],
+    [242.49, 144.22],
+    [281.88, 32.66],
 ];
 
 /// The side of the space `BOLT` is measured in.
@@ -341,21 +358,26 @@ mod tests {
     fn the_bolt_has_its_notch() {
         // What makes it a bolt rather than a chevron, and what a convex test
         // would quietly fill in.
-        assert!(polygon(200.0, 20.0, &BOLT) < 0.0, "the upper arm is not solid");
+        assert!(polygon(235.0, 20.0, &BOLT) < 0.0, "the upper arm is not solid");
         assert!(polygon(120.0, 20.0, &BOLT) > 0.0, "there is fill left of the upper arm");
-        assert!(polygon(240.0, 180.0, &BOLT) < 0.0, "the lower arm is not solid");
-        // Out to the right of the lower arm, under the re-entrant corner. This
-        // is the one a convex hull would swallow.
-        assert!(polygon(280.0, 250.0, &BOLT) > 0.0, "the notch was filled in");
+        assert!(polygon(240.0, 180.0, &BOLT) < 0.0, "the waist is not solid");
+        // The two re-entrant corners, one on each side. Both sit inside the
+        // convex hull and outside the shape, which is exactly what a convex
+        // test would swallow and what makes this a bolt and not a chevron.
+        assert!(polygon(280.0, 100.0, &BOLT) > 0.0, "the upper notch was filled in");
+        assert!(polygon(110.0, 300.0, &BOLT) > 0.0, "the lower notch was filled in");
     }
 
     #[test]
-    fn the_bolt_narrows_towards_the_point() {
-        // Wide where it starts, a point where it ends. Getting that backwards
-        // draws the same shape upside down, which still looks like a bolt.
+    fn the_bolt_comes_to_a_point_at_both_ends() {
+        // Two tips and a wide waist, which is what a bolt is. The test here
+        // before said wide at the top and pointed at the bottom, which was true
+        // of the drawing before this one and is a good reminder that a test can
+        // describe a picture rather than a property.
         let across = |y: f32| (0..400_u16).filter(|&n| polygon(f32::from(n), y, &BOLT) < 0.0).count();
-        let (top, tip) = (across(10.0), across(380.0));
-        assert!(top > tip * 4, "{top} across the top against {tip} at the point");
+        let (top, waist, bottom) = (across(5.0), across(200.0), across(395.0));
+        assert!(waist > top * 8, "{top} across the top against {waist} at the waist");
+        assert!(waist > bottom * 8, "{bottom} across the bottom against {waist}");
     }
 
     #[test]
