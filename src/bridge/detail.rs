@@ -493,11 +493,11 @@ fn wire_menu(ui: &MainWindow, state: &Rc<UiState>, views: &Rc<super::Views>) {
             let snapshot = state.snapshot();
             let Some(id) = *views.detail.shown.borrow() else { return };
             let Ok(file) = usize::try_from(index) else { return };
-            match snapshot.stream_port {
+            match snapshot.stream.as_ref() {
                 // The whole point: handed to a player *now*, whether or not
                 // the file has finished. The engine's reader waits for the
                 // pieces it needs and tells the picker to fetch those first.
-                Some(port) => zerem_shell::open_url(&zerem_core::stream_url(port, id.0, file)),
+                Some(at) => zerem_shell::open_url(&at.url(id.0, file)),
                 None => state.set_notice(zerem_core::tr("Streaming is not available")),
             }
         }

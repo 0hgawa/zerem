@@ -101,30 +101,63 @@ mod tests {
     }
 }
 
-/// Where a player is pointed to watch one file of one torrent.
+/// Where the loopback server is, and the secret that gets past it.
 ///
-/// Here rather than in the server that answers it, because two places need the
+/// The two travel together and there is no way to hold one without the other,
+/// which is the whole design. The port alone was public: it is a loopback port
+/// and any program on the machine can find it by trying, torrent ids count from
+/// one, and file indexes count from zero — so `GET /t/1/0` from anything at all
+/// read whatever the first torrent was downloading. The port is still easy to
+/// find. It is now useless on its own.
+///
+/// Here rather than in the server that answers it, because two sides need the
 /// shape and they must not drift: the engine builds this, and the window hands
 /// it to whatever plays films. A path the server does not recognise is a play
 /// button that opens a media player on a 404.
-#[must_use]
-pub fn stream_url(port: u16, torrent: u32, file: usize) -> String {
-    format!("http://127.0.0.1:{port}/t/{torrent}/{file}")
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Stream {
+    /// On the loopback, and ephemeral: a new one every launch.
+    pub port: u16,
+    /// Made by the server at startup, never written down, gone when the app
+    /// closes. `Arc` because the snapshot carrying it is cloned every tick.
+    pub key: std::sync::Arc<str>,
+}
+
+impl Stream {
+    /// Where a player is pointed to watch one file of one torrent.
+    #[must_use]
+    pub fn url(&self, torrent: u32, file: usize) -> String {
+        let Self { port, key } = self;
+        format!("http://127.0.0.1:{port}/{key}/t/{torrent}/{file}")
+    }
 }
 
 #[cfg(test)]
 mod address {
-    use super::stream_url;
+    use super::Stream;
+
+    fn at(port: u16) -> Stream {
+        Stream { port, key: "0123456789abcdef0123456789abcdef".into() }
+    }
 
     #[test]
     fn the_url_names_the_torrent_and_the_file() {
-        assert_eq!(stream_url(51413, 7, 2), "http://127.0.0.1:51413/t/7/2");
+        assert_eq!(at(51413).url(7, 2), "http://127.0.0.1:51413/0123456789abcdef0123456789abcdef/t/7/2");
     }
 
     #[test]
     fn it_is_the_loopback_and_says_so() {
         // Never a hostname and never `0.0.0.0`: the server binds the loopback,
         // and a URL naming anything else is a URL that would not answer.
-        assert!(stream_url(1, 0, 0).starts_with("http://127.0.0.1:"));
+        assert!(at(1).url(0, 0).starts_with("http://127.0.0.1:"));
+    }
+
+    #[test]
+    fn the_secret_comes_before_anything_that_names_a_file() {
+        // So a request that does not carry it is refused by the parser, before
+        // a torrent id has been read out of it, let alone looked up.
+        let url = at(1).url(7, 2);
+        let key = url.find("0123456789abcdef").expect("the key is in there");
+        assert!(key < url.find("/t/").expect("the route is in there"));
     }
 }

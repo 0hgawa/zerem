@@ -41,7 +41,7 @@ pub use folder::subfolder;
 pub use geo::country;
 pub use history::{History, Spark};
 pub use language::SHIPPED as LANGUAGES;
-pub use mime::{is_playable, of as mime_of, stream_url};
+pub use mime::{is_playable, of as mime_of, Stream};
 pub use pending::{Pending, PendingFile};
 pub use queue::{admit, Waiting};
 pub use rate::Rate;

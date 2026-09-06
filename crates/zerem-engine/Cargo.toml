@@ -29,6 +29,10 @@ dirs = "5"
 # Deleting a torrent's data sends it to the recycle bin. A mis-click has to stay
 # recoverable — `remove_file` is never the right call on a user's files.
 trash = "5"
+# Sixteen bytes for the stream key, and nothing else. `rand` would bring a
+# whole generator to do what one syscall does; this is that syscall, and it was
+# already in the tree under librqbit.
+getrandom = "0.3"
 
 [lints]
 workspace = true

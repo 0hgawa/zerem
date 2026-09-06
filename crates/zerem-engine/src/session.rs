@@ -984,7 +984,7 @@ impl TorrentSession {
             .with_details(details)
             .with_finished(finished)
             .with_pending(self.pending.clone())
-            .with_stream_port(self.streamer.as_ref().map(crate::stream::Streamer::port));
+            .with_stream(self.streamer.as_ref().map(crate::stream::Streamer::at));
 
         // Recorded from the totals the snapshot just derived, so the footer
         // plots exactly the figures the status bar prints beside it.
