@@ -140,6 +140,10 @@ async fn run(
     ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     let mut was_paused = false;
 
+    // Taken out of the session so the arm below can hold it across the `select!`
+    // while the other arms take `&mut session`.
+    let mut reads = session.take_reads().expect("a fresh session hands its reads over once");
+
     loop {
         let acted = tokio::select! {
             _ = ticker.tick() => false,
@@ -149,6 +153,18 @@ async fn run(
                     return;
                 };
                 apply(&mut session, command, latest).await;
+                true
+            }
+            // A magnet's file list, whenever the swarm gets round to it.
+            //
+            // Its own arm because it is the one thing here that cannot be
+            // waited for in line. Awaited inside `apply` it stopped this loop —
+            // not the dialog, the loop — so every other torrent's figures froze
+            // where they stood and every later command queued behind a link
+            // nobody was seeding. It looked alive, because the window kept
+            // redrawing what it already had.
+            Some(read) = reads.recv() => {
+                session.adopt_read(read);
                 true
             }
         };
@@ -202,12 +218,15 @@ async fn apply(session: &mut TorrentSession, command: Command, latest: &RwLock<A
     let outcome = match command {
         Command::Add { ref source } => session.add(source).await,
         Command::Inspect { ref source } => {
-            // Published between the two halves, so the dialog is on screen
-            // saying "fetching" while the swarm is being asked, rather than
-            // appearing several seconds after the click looked ignored.
+            // Published straight away, so the dialog is on screen saying
+            // "fetching" while the swarm is being asked rather than appearing
+            // several seconds after the click looked ignored.
+            //
+            // And nothing is awaited here. The read is on a task of its own and
+            // its answer comes back through the loop's own arm — see
+            // `begin_inspect` for what waiting on it in this position cost.
             session.begin_inspect(source);
             publish(latest, session.publish());
-            session.finish_inspect(source).await;
             Ok(())
         }
         Command::ConfirmAdd { ref only_files, ref folder, ref destination } => {

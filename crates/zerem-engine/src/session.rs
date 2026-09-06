@@ -163,6 +163,13 @@ struct Notice {
 
 pub struct TorrentSession {
     pub session: Arc<Session>,
+    /// Where a finished magnet read sends its answer.
+    reads: tokio::sync::mpsc::UnboundedSender<Read>,
+    /// And where the loop collects them. Taken out once, by
+    /// [`Self::take_reads`]: the loop selects on it, and a receiver borrowed
+    /// from `self` inside a `select!` cannot coexist with the other arms that
+    /// need `&mut self`.
+    reads_rx: Option<tokio::sync::mpsc::UnboundedReceiver<Read>>,
     pub entries: HashMap<TorrentId, Entry>,
     seq: u64,
     generation: u64,
@@ -222,6 +229,82 @@ pub struct TorrentSession {
     add_paused: bool,
 }
 
+/// How long a magnet is given to produce a file list.
+///
+/// librqbit gives it forever, which is defensible for a download and not for a
+/// dialog somebody is sitting in front of. Two minutes is far longer than a
+/// healthy swarm needs and short enough that a task cannot be left running for
+/// the life of the process — which is what an unbounded wait on a link nobody
+/// seeds actually is.
+const PATIENCE: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// A finished read, on its way back to the loop.
+pub struct Read {
+    /// What was asked for. The dialog may have moved on to another link, and
+    /// the answer has to be able to say which question it belongs to.
+    source: Arc<str>,
+    pending: Pending,
+    /// The metainfo, so accepting the dialog does not ask the swarm twice.
+    /// Absent when the read failed.
+    bytes: Option<Vec<u8>>,
+}
+
+/// Ask the swarm what is in a torrent, on whatever task is running this.
+///
+/// Free of `TorrentSession` on purpose: it takes only the librqbit session,
+/// which is an `Arc`, so it can be moved onto a task while the engine's loop
+/// carries on with everything else.
+async fn read_torrent(session: &Arc<Session>, source: Arc<str>) -> Read {
+    let read = async {
+        let add = AddTorrent::from_cli_argument(&source)
+            .context("that is not a magnet link, a URL, or a .torrent file")?;
+        let listed = tokio::time::timeout(
+            PATIENCE,
+            session.add_torrent(add, Some(AddTorrentOptions { list_only: true, ..Default::default() })),
+        )
+        .await
+        .map_err(|_| anyhow::anyhow!("nobody answered with the file list"))?
+        .context("reading the torrent")?;
+
+        match listed {
+            AddTorrentResponse::ListOnly(listed) => Ok(listed),
+            // Already in the list. Not an error worth a dialog — the user gets
+            // told, and nothing is added twice.
+            AddTorrentResponse::AlreadyManaged(..) | AddTorrentResponse::Added(..) => {
+                anyhow::bail!("that torrent is already in the list")
+            }
+        }
+    };
+
+    match read.await {
+        Ok(listed) => {
+            let files: Vec<PendingFile> = listed
+                .info
+                .iter_file_details()
+                .map(|f| PendingFile {
+                    path: Arc::from(f.filename.to_pathbuf().to_string_lossy().as_ref()),
+                    size: f.len,
+                    wanted: true,
+                })
+                .collect();
+            let name: Arc<str> = Arc::from(listed.info.name().unwrap_or_default().as_ref());
+            Read {
+                source: Arc::clone(&source),
+                pending: Pending {
+                    name: if name.is_empty() { Arc::clone(&source) } else { name },
+                    source,
+                    info_hash: Arc::from(format!("{:?}", listed.info_hash).as_str()),
+                    files,
+                    fetching: false,
+                    error: None,
+                },
+                bytes: Some(listed.torrent_bytes.to_vec()),
+            }
+        }
+        Err(e) => Read { pending: Pending::failed(&source, &format!("{e:#}")), source, bytes: None },
+    }
+}
+
 impl TorrentSession {
     pub async fn start(config: &EngineConfig) -> anyhow::Result<Self> {
         std::fs::create_dir_all(&config.download_dir)
@@ -253,6 +336,7 @@ impl TorrentSession {
             "session started"
         );
 
+        let (reads_tx, reads_rx) = tokio::sync::mpsc::unbounded_channel();
         let mut this = Self {
             watch_dir: config.watch_dir.clone(),
             since_sweep: 0,
@@ -267,6 +351,8 @@ impl TorrentSession {
             notice: None,
             output_dir: config.download_dir.clone(),
             watching: None,
+            reads: reads_tx,
+            reads_rx: Some(reads_rx),
             pending: None,
             pending_bytes: None,
             history: History::default(),
@@ -387,64 +473,50 @@ impl TorrentSession {
     /// from the swarm, for a magnet — and hands back the file list plus the
     /// torrent bytes, without touching the disk. The bytes are kept so
     /// confirming does not fetch a second time.
-    /// Say that a torrent is being read, before reaching for it.
+    /// Start reading a torrent, and come back at once.
     ///
-    /// Split from the fetch so the engine can publish in between. A magnet's
-    /// metadata comes from the swarm and takes seconds; a dialog that appears
-    /// only once it has arrived leaves the click looking ignored, which is what
-    /// makes someone click four more times.
+    /// The fetch runs on a task of its own and the answer arrives through
+    /// [`Self::take_reads`]. That shape is the whole point: it used to be
+    /// awaited inside the engine's loop, and a magnet is metadata that comes
+    /// from a swarm with no promise about when — so a link nobody was seeding
+    /// stopped the loop. Not the dialog: the *loop*. Every other torrent's
+    /// figures froze where they stood, every later command queued behind it
+    /// unanswered, and nothing recovered on its own, because librqbit puts no
+    /// timeout on resolving a magnet and neither did this.
+    ///
+    /// It looked alive, because the window still redrew. It was not. It was one
+    /// paste away from being a picture of itself.
     pub fn begin_inspect(&mut self, source: &str) {
         self.pending = Some(Pending::fetching(source));
+
+        let session = Arc::clone(&self.session);
+        let sender = self.reads.clone();
+        let source: Arc<str> = Arc::from(source);
+        tokio::spawn(async move {
+            // The loop is gone if the app is closing, and a read nobody is
+            // waiting for is not a failure.
+            let _ = sender.send(read_torrent(&session, source).await);
+        });
     }
 
-    /// Read it. [`Self::begin_inspect`] has already announced that this is
-    /// happening.
-    pub async fn finish_inspect(&mut self, source: &str) {
-        let read = async {
-            let add = AddTorrent::from_cli_argument(source)
-                .context("that is not a magnet link, a URL, or a .torrent file")?;
-            match self
-                .session
-                .add_torrent(add, Some(AddTorrentOptions { list_only: true, ..Default::default() }))
-                .await
-                .context("reading the torrent")?
-            {
-                AddTorrentResponse::ListOnly(listed) => Ok(listed),
-                // Already in the list. Not an error worth a dialog — the user
-                // gets told, and nothing is added twice.
-                AddTorrentResponse::AlreadyManaged(..) | AddTorrentResponse::Added(..) => {
-                    anyhow::bail!("that torrent is already in the list")
-                }
-            }
-        };
+    /// The channel finished reads arrive on. Taken once, by the loop.
+    pub const fn take_reads(&mut self) -> Option<tokio::sync::mpsc::UnboundedReceiver<Read>> {
+        self.reads_rx.take()
+    }
 
-        match read.await {
-            Ok(listed) => {
-                let files: Vec<PendingFile> = listed
-                    .info
-                    .iter_file_details()
-                    .map(|f| PendingFile {
-                        path: Arc::from(f.filename.to_pathbuf().to_string_lossy().as_ref()),
-                        size: f.len,
-                        wanted: true,
-                    })
-                    .collect();
-                let name: Arc<str> = Arc::from(listed.info.name().unwrap_or_default().as_ref());
-                self.pending_bytes = Some(listed.torrent_bytes.to_vec());
-                self.pending = Some(Pending {
-                    source: Arc::from(source),
-                    name: if name.is_empty() { Arc::from(source) } else { name },
-                    info_hash: Arc::from(format!("{:?}", listed.info_hash).as_str()),
-                    files,
-                    fetching: false,
-                    error: None,
-                });
-            }
-            Err(e) => {
-                self.pending_bytes = None;
-                self.pending = Some(Pending::failed(source, &format!("{e:#}")));
-            }
+    /// Put a finished read in front of the dialog.
+    ///
+    /// Ignored unless the dialog is still waiting on *this* source. Two pastes
+    /// in a row leave two reads in flight and the first to answer is not
+    /// necessarily the one being asked about — without this, a slow first
+    /// magnet would land on top of a fast second one seconds after the dialog
+    /// had already filled itself in.
+    pub fn adopt_read(&mut self, read: Read) {
+        if self.pending.as_ref().is_none_or(|p| p.source != read.source) {
+            return;
         }
+        self.pending_bytes = read.bytes;
+        self.pending = Some(read.pending);
     }
 
     /// Accept what `inspect` found, into a folder of the caller's choosing.
@@ -1131,11 +1203,18 @@ mod swarm {
 
         let mut session = super::TorrentSession::start(&config).await.expect("the session should start");
 
+        // The loop's half of it, done by hand: take the channel, start the
+        // read, wait on the answer. `begin_inspect` returns at once now — that
+        // it does is the fix, so the test says it before it says anything else.
+        let mut reads = session.take_reads().expect("a fresh session hands these over");
+
         let began = std::time::Instant::now();
         session.begin_inspect(SINTEL);
+        assert!(began.elapsed() < std::time::Duration::from_millis(50), "it waited for the swarm");
         assert!(session.publish().pending.as_ref().is_some_and(|p| p.fetching), "it did not say so");
 
-        session.finish_inspect(SINTEL).await;
+        let read = reads.recv().await.expect("the read task should answer");
+        session.adopt_read(read);
         let took = began.elapsed();
 
         let snapshot = session.publish();
