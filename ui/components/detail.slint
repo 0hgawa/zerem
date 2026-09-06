@@ -676,12 +676,14 @@ export component DetailDrawer inherits Rectangle {
                     label: DetailState.running ? @tr("Pause") : @tr("Start");
                     glyph: DetailState.running ? Lucide.pause : Lucide.play;
                     kind: ButtonKind.text;
+                    filled: true;
                     clicked => { DetailState.toggle-running(); }
                 }
                 Button {
                     label: @tr("Open folder");
                     glyph: Lucide.folder-open;
                     kind: ButtonKind.text;
+                    filled: true;
                     clicked => { DetailState.open-folder(); }
                 }
                 Rectangle { horizontal-stretch: 1; }
@@ -689,6 +691,7 @@ export component DetailDrawer inherits Rectangle {
                     label: @tr("Remove…");
                     glyph: Lucide.trash;
                     kind: ButtonKind.danger;
+                    filled: true;
                     // The colour without the weight. It keeps the red — and
                     // with the borders gone it is the only colour in the row,
                     // which is what a warning should be rather than one framed

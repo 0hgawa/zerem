@@ -70,7 +70,25 @@ export component Button inherits Rectangle {
         : kind == ButtonKind.danger && ta.has-hover ? Theme.danger.with-alpha(0.12)
         : ta.pressed ? Theme.pressed
         : ta.has-hover ? Theme.hover
+        : root.filled ? Theme.surface-hi
         : transparent;
+
+    /// Whether it sits on a fill of its own when nobody is pointing at it.
+    ///
+    /// Every button in this app was transparent at rest and drew its shape with
+    /// an edge, which is Fluent's outlined button. The detail panel wanted
+    /// three of them quiet and the borders came off — and quiet turned out to
+    /// be too quiet: three words in a row with nothing under them read as a
+    /// sentence, not as three things to press.
+    ///
+    /// A fill instead of an edge, which is M3's filled-tonal and the softer of
+    /// the two ways to say "object". `surface-hi` is the same raised neutral the
+    /// count chips and the flyouts sit on, so this borrows a surface the window
+    /// already has rather than inventing one.
+    ///
+    /// Only at rest: hover and pressed keep their own colours, so the button
+    /// still lights up under the cursor rather than sitting at one shade.
+    in property <bool> filled;
 
     /// Whether it wears an edge.
     ///
