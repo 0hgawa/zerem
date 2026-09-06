@@ -75,7 +75,10 @@ export component MainWindow inherits Window {
     /// plus the gap between the two cards.
     property <length> list-floor: 248px;
 
-    property <length> rail-room: TorrentList.rail-open ? 174px : 0px;
+    /// What the rail takes from the band, folded or open, plus the gap beside
+    /// it. Never zero any more: the pane does not leave the screen, it narrows
+    /// to a strip of icons.
+    property <length> rail-room: TorrentList.rail-open ? 174px : 56px;
 
     /// Whether the panel has to go over the list instead of beside it.
     ///
@@ -235,7 +238,7 @@ export component MainWindow inherits Window {
                 spacing: 8px;
                 changed width => { root.room = self.width; }
 
-                if TorrentList.rail-open: Rail { }
+                Rail { collapsed: !TorrentList.rail-open; }
 
                 // `min-width: 0` and `clip` are what make the panel possible at
                 // all. The columns are fixed widths, so this layout's natural

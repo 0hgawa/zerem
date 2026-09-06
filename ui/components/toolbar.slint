@@ -58,22 +58,11 @@ export component Toolbar inherits Rectangle {
                 accessible-label: "Zerem";
             }
         }
-        Rectangle { width: 4px; }
-        // Then the fold, hard against the left, because that is where the thing
-        // it opens is. It used to sit at the far right among the preferences
-        // and the theme switch, a control for the left of the window living on
-        // the right of the toolbar — every application on this desktop puts
-        // this button over the panel it reveals.
-        VerticalLayout {
-            alignment: center;
-            IconButton {
-                glyph: Lucide.panel-left;
-                label: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
-                tip: TorrentList.rail-open ? @tr("Hide the state list") : @tr("Show the state list");
-                tint: TorrentList.rail-open ? Theme.accent : Theme.text-dim;
-                clicked => { TorrentList.toggle-rail(); }
-            }
-        }
+        // The fold used to be here, hard against the left and beside the app
+        // icon. It moved into the rail's own header, where every navigation
+        // pane on this desktop keeps it — a control that belongs to a panel
+        // reads as a function of the app when it sits in the title bar, and
+        // that is what it looked like.
         Rectangle { width: 4px; }
         VerticalLayout {
             alignment: center;

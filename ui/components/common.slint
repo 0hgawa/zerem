@@ -8,6 +8,7 @@ import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 import { Icon, Lucide } from "icons.slint";
 import { Button, ButtonKind, IconButton } from "button.slint";
+import { Tip } from "tip.slint";
 import { Hint } from "../state.slint";
 
 /// A number in the status bar, marked by what it counts.
@@ -464,7 +465,13 @@ export component Sparkline inherits Rectangle {
 /// The count is the reason the rail is worth its width — it answers "is
 /// anything stuck?" without a click, which a row of chips at the top could not
 /// do without stealing the room the names need.
+///
+/// Folded, the count becomes a chip over the icon and keeps its colour, so the
+/// question the rail exists to answer is still answered at a glance: a red
+/// number on the warning triangle is the whole point of it.
 export component RailItem inherits Rectangle {
+    /// Icons only, at the width of the folded rail.
+    in property <bool> collapsed;
     in property <string> label;
     in property <string> glyph;
     in property <string> count;
@@ -495,7 +502,39 @@ export component RailItem inherits Rectangle {
         animate height { duration: Theme.quick; easing: Theme.ease-emphasized(); }
     }
 
-    HorizontalLayout {
+    // Folded: the icon alone, centred, with the count as a chip over its
+    // corner. The name is gone from the pane and lives in the tip, which is
+    // what makes the fold survivable — six icons are not six words.
+    if root.collapsed: Icon {
+        glyph: root.glyph;
+        tint: root.active ? Theme.accent : root.tint;
+        size: 16px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+    // Nothing for a shelf that is empty. A row of zeroes down the strip is six
+    // marks saying the same thing, and the one that matters stops standing out.
+    if root.collapsed && root.count != "" && root.count != "0": Rectangle {
+        x: parent.width - self.width - 3px;
+        y: 2px;
+        height: 14px;
+        width: max(14px, badge.width + 8px);
+        border-radius: 7px;
+        background: Theme.surface-hi;
+        badge := Text {
+            text: root.count;
+            // The item's own colour, so a red number on the warning triangle
+            // answers "is anything stuck?" without the word beside it.
+            color: root.tint == Theme.text-dim ? Theme.text : root.tint;
+            font-size: 9px;
+            font-family: Theme.font;
+            font-weight: Theme.semibold;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+        }
+    }
+
+    if !root.collapsed: HorizontalLayout {
         padding-left: 11px;
         padding-right: 9px;
         spacing: 9px;
@@ -523,9 +562,19 @@ export component RailItem inherits Rectangle {
         }
     }
 
+    // Only folded. Expanded, the name is already on screen and a caption
+    // repeating it is a caption nobody needed.
+    tip := Tip {
+        text: root.collapsed ? (root.count == "" ? root.label : root.label + " — " + root.count) : "";
+        over: ta.has-hover;
+    }
+
     ta := TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.chosen(); }
+        clicked => {
+            tip.dismiss();
+            root.chosen();
+        }
     }
 }
 

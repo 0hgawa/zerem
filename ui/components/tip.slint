@@ -1,0 +1,82 @@
+// The tooltip, on its own, because two very different things need it.
+//
+// It was inside `IconButton`. The rail needs it too — folded to icons,
+// `arrow-down` and `loader` are not tellable apart and two categories are the
+// same folder twice — and `common.slint` already imports `button.slint`, so it
+// could not live in either without an import that points both ways.
+
+import { Hint } from "../state.slint";
+
+/// A label that appears on screen after the pointer has stayed a moment.
+///
+/// Lived inside `IconButton` and is now its own thing, because the rail needs
+/// it too: folded to icons, `arrow-down` and `loader` are not tellable apart,
+/// and two categories are the same folder twice. A tooltip stops being a
+/// courtesy there and becomes the only label.
+///
+/// It draws nothing itself. The window draws the tip, at the top of everything,
+/// because this renderer works out its dirty region from an element's own
+/// geometry — a child painting below and outside its parent leaves its pixels
+/// behind and takes a bite out of whatever was under them. Parts of the window
+/// went missing once, and that was why.
+///
+/// No `TouchArea` of its own either: one here would sit over the control it
+/// explains and swallow its clicks. The owner passes its own hover in.
+export component Tip inherits Rectangle {
+    /// What to say. Empty says nothing, which is how a control turns its tip
+    /// off without removing it.
+    in property <string> text;
+    /// Whether the pointer is on the thing this describes.
+    in property <bool> over;
+
+    /// What this one last put on screen.
+    ///
+    /// Not `text`, and that is the bug it exists for: a control whose words
+    /// change on click — the slow-limits button — changed `text` under the
+    /// comparison below, and its tip stopped being recognised as its own and
+    /// stayed up for the rest of the session.
+    property <string> published;
+
+    /// Take it down, for an owner that has just been clicked. A click is a
+    /// decision, so the words explaining the choice have done their job.
+    public function dismiss() {
+        wait.running = false;
+        if (Hint.text == root.published) {
+            Hint.text = "";
+        }
+    }
+
+    width: 100%;
+    height: 100%;
+
+    wait := Timer {
+        // Windows waits about half a second. Long enough that crossing a bar on
+        // the way somewhere else lights nothing up, short enough that somebody
+        // who has stopped to look gets an answer.
+        interval: 450ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            if (root.text != "") {
+                root.published = root.text;
+                Hint.text = root.text;
+                Hint.at-x = root.absolute-position.x + root.width / 2;
+                Hint.at-y = root.absolute-position.y + root.height + 5px;
+            }
+        }
+    }
+
+    changed over => {
+        if (root.over) {
+            wait.running = true;
+        } else {
+            wait.running = false;
+            // Only if it is still mine. Moving from one control to the next
+            // fires this after the other has already asked, and clearing then
+            // would take the new tip down with the old.
+            if (Hint.text == root.published) {
+                Hint.text = "";
+            }
+        }
+    }
+}

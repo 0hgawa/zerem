@@ -17,6 +17,7 @@
 import { Theme } from "../theme.slint";
 import { Icon } from "icons.slint";
 import { Hint } from "../state.slint";
+import { Tip } from "tip.slint";
 
 export enum ButtonKind { tonal, text, primary, danger }
 
@@ -131,49 +132,6 @@ export component IconButton inherits Rectangle {
     in property <string> tip;
     callback clicked;
 
-    /// The label, on screen, after a pause.
-    ///
-    /// It was written for screen readers and nothing else could reach it, which
-    /// meant five icons in a toolbar and no way to learn any of them. The first
-    /// question anybody asked about this toolbar was what one of the buttons
-    /// did — that is the question a tooltip exists to answer.
-    ///
-    /// The button asks for it rather than drawing it. Drawing it here meant a
-    /// rectangle painted *below the button and outside it*, and this app
-    /// renders in software with partial redraw: the dirty region is worked out
-    /// from an element's own geometry, so a child painting outside its parent
-    /// leaves its pixels behind and takes a bite out of whatever was under
-    /// them. Parts of the window went missing, and this was why.
-    ///
-    /// So the window draws it, at the top of everything, like every other
-    /// floating thing here already is.
-    property <bool> settled;
-    /// What this button last put on screen.
-    ///
-    /// Not `label`, and that is the bug this exists for: the slow-limits
-    /// button says one thing when the limits are full and another when they
-    /// are not, so clicking it while its tooltip was up changed `label` under
-    /// the comparison below — the tooltip stopped being recognised as this
-    /// button's and stayed on screen for the rest of the session.
-    property <string> published;
-    wait := Timer {
-        // Windows waits about half a second. Long enough that crossing a bar on
-        // the way somewhere else lights nothing up, short enough that somebody
-        // who has stopped to look gets an answer.
-        interval: 450ms;
-        running: false;
-        triggered => {
-            root.settled = true;
-            self.running = false;
-            if (root.tip != "") {
-                root.published = root.tip;
-                Hint.text = root.tip;
-                Hint.at-x = root.absolute-position.x + root.width / 2;
-                Hint.at-y = root.absolute-position.y + root.height + 5px;
-            }
-        }
-    }
-
     accessible-role: button;
     accessible-label: root.label;
     accessible-action-default => { root.clicked(); }
@@ -192,32 +150,19 @@ export component IconButton inherits Rectangle {
         y: (parent.height - self.height) / 2;
     }
 
+    // The waiting, the anchoring and the taking-down all live in here now. The
+    // rail needs the same behaviour and this file cannot reach it there, so it
+    // moved out rather than being written twice.
+    tip := Tip {
+        text: root.tip;
+        over: ta.has-hover;
+    }
+
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            // A click is a decision, so the label explaining the choice has
-            // done its job. It also stops a button whose words change on
-            // click from leaving the old ones on screen.
-            if (Hint.text == root.published) {
-                Hint.text = "";
-            }
-            root.settled = false;
-            wait.running = false;
+            tip.dismiss();
             root.clicked();
-        }
-        changed has-hover => {
-            if (self.has-hover) {
-                wait.running = true;
-            } else {
-                wait.running = false;
-                root.settled = false;
-                // Only if it is still mine. Moving from one button to the next
-                // fires this after the other one has already asked, and
-                // clearing then would take the new tooltip down with the old.
-                if (Hint.text == root.published) {
-                    Hint.text = "";
-                }
-            }
         }
     }
 }

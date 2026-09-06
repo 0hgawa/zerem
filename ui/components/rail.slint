@@ -14,16 +14,49 @@ import { Theme } from "../theme.slint";
 import { SessionState, TorrentList } from "../state.slint";
 import { Lucide } from "icons.slint";
 import { RailItem } from "common.slint";
+import { IconButton } from "button.slint";
 
 export component Rail inherits Rectangle {
-    width: 166px;
+    /// Folded to a strip of icons rather than taken off screen.
+    ///
+    /// It used to disappear entirely, and the button that brought it back sat
+    /// in the title bar beside the app icon — a control for the left of the
+    /// window living where the window says what it is. Folding is what every
+    /// navigation pane on this desktop does instead: Settings, File Explorer,
+    /// Photos, Mail. The filter never leaves the screen, so there is no state
+    /// to explain, and the button belongs to the pane it folds.
+    in property <bool> collapsed;
+
+    width: root.collapsed ? 48px : 166px;
+    animate width { duration: Theme.quick; easing: Theme.ease-emphasized(); }
     background: Theme.surface;
     border-radius: Theme.radius-float;
+    clip: true;
+
     VerticalLayout {
         padding: 6px;
         spacing: 2px;
         alignment: start;
+
+        // The fold, at the top of the thing it folds. Left-aligned open and
+        // centred shut, which is where the hand looks for it in both.
+        HorizontalLayout {
+            height: 34px;
+            alignment: root.collapsed ? center : start;
+            VerticalLayout {
+                alignment: center;
+                IconButton {
+                    glyph: Lucide.panel-left;
+                    label: root.collapsed ? @tr("Show the state list") : @tr("Hide the state list");
+                    tip: root.collapsed ? @tr("Show the state list") : @tr("Hide the state list");
+                    tint: Theme.text-dim;
+                    clicked => { TorrentList.toggle-rail(); }
+                }
+            }
+        }
+
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("All");
             glyph: Lucide.files;
             count: SessionState.total;
@@ -31,6 +64,7 @@ export component Rail inherits Rectangle {
             chosen => { TorrentList.show-state(0); }
         }
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("Downloading");
             glyph: Lucide.arrow-down;
             count: SessionState.downloading;
@@ -39,6 +73,7 @@ export component Rail inherits Rectangle {
             chosen => { TorrentList.show-state(1); }
         }
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("Seeding");
             glyph: Lucide.arrow-up;
             count: SessionState.seeding;
@@ -47,6 +82,7 @@ export component Rail inherits Rectangle {
             chosen => { TorrentList.show-state(2); }
         }
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("Queued");
             glyph: Lucide.loader;
             count: SessionState.queued;
@@ -54,6 +90,7 @@ export component Rail inherits Rectangle {
             chosen => { TorrentList.show-state(3); }
         }
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("Paused");
             glyph: Lucide.pause;
             count: SessionState.paused;
@@ -61,6 +98,7 @@ export component Rail inherits Rectangle {
             chosen => { TorrentList.show-state(4); }
         }
         RailItem {
+            collapsed: root.collapsed;
             label: @tr("Error");
             glyph: Lucide.triangle-alert;
             count: SessionState.failed;
@@ -72,7 +110,7 @@ export component Rail inherits Rectangle {
         // The shelves, under the states and only once there is
         // one. An empty heading over an empty list is a
         // promise the app has not kept yet.
-        if TorrentList.categories.length > 0: Rectangle {
+        if TorrentList.categories.length > 0 && !root.collapsed: Rectangle {
             height: 22px;
             HorizontalLayout {
                 padding-left: 9px;
@@ -88,7 +126,21 @@ export component Rail inherits Rectangle {
                 }
             }
         }
+        // Folded, the word does not fit and a clipped heading is worse than
+        // none. A rule says the same thing — what follows is a different kind
+        // of row — in the width there is.
+        if TorrentList.categories.length > 0 && root.collapsed: Rectangle {
+            height: 13px;
+            Rectangle {
+                y: 6px;
+                width: 20px;
+                height: 1px;
+                x: (parent.width - self.width) / 2;
+                background: Theme.border;
+            }
+        }
         for c in TorrentList.categories: RailItem {
+            collapsed: root.collapsed;
             label: c.name;
             glyph: Lucide.folder-open;
             count: c.count;
